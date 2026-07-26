@@ -1,0 +1,47 @@
+---
+import { drawingSvg, type DrawingKind } from '../lib/drawing';
+
+interface Props {
+  kind?: DrawingKind;
+  seed?: number;
+  alt: string;
+  /** Drawings can be opened full screen; line work is unreadable when small. */
+  zoomable?: boolean;
+  reg?: boolean;
+  class?: string;
+}
+
+const { kind = 'photo', seed = 1, alt, zoomable = false, reg = true, class: cls = '' } = Astro.props;
+const { body, viewBox } = drawingSvg(kind, seed);
+---
+
+{
+  zoomable ? (
+    <button class={`frame ${cls}`} type="button" data-zoom aria-label={`Open ${alt} full screen`}>
+      <svg viewBox={viewBox} role="img" aria-label={alt} set:html={body} />
+      {reg && (
+        <span class="reg" aria-hidden="true">
+          <i /><i /><i /><i />
+        </span>
+      )}
+    </button>
+  ) : (
+    <div class={`frame ${cls}`}>
+      <svg viewBox={viewBox} role="img" aria-label={alt} set:html={body} />
+      {reg && (
+        <span class="reg" aria-hidden="true">
+          <i /><i /><i /><i />
+        </span>
+      )}
+    </div>
+  )
+}
+
+<style>
+  button.frame {
+    display: block;
+    width: 100%;
+    padding: 0;
+    cursor: zoom-in;
+  }
+</style>

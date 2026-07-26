@@ -1,0 +1,61 @@
+---
+import { SHEETS } from '../lib/sheets';
+
+interface Props {
+  sheet: string;
+  title: string;
+  scale: string;
+  revision: string;
+  issued: string;
+}
+
+const { sheet, title, scale, revision, issued } = Astro.props;
+const path = Astro.url.pathname.replace(/\/$/, '') || '/';
+---
+
+<!--
+  The title block. On a drawing set this is what identifies a sheet and what a
+  reader looks at first, so it carries the navigation rather than a header bar.
+-->
+<div class="titleblock">
+  <div class="tb-sheet">
+    <span class="l">Sheet</span>
+    <span class="n">{sheet}</span>
+  </div>
+
+  <nav aria-label="Sheet index">
+    <ul class="tb-index">
+      {
+        SHEETS.map((s) => (
+          <li>
+            <a href={s.href} aria-current={path === s.href ? 'page' : undefined}>
+              <span class="s">{s.sheet}</span>
+              {s.short}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+
+  <div class="tb-spine">
+    <span>{title}</span>
+  </div>
+
+  <dl class="tb-fields">
+    <div class="tb-field"><dt>Scale</dt><dd>{scale}</dd></div>
+    <div class="tb-field"><dt>Issued</dt><dd>{issued}</dd></div>
+    <div class="tb-field"><dt>Rev</dt><dd>{revision}</dd></div>
+    <div class="tb-field"><dt>Drawn</dt><dd>AA</dd></div>
+  </dl>
+
+  <button class="menu-btn" type="button" data-menu-open aria-expanded="false" aria-controls="sheet-index">
+    Index
+    <b>Open</b>
+  </button>
+
+  <button class="tb-toggle" type="button" data-print-toggle aria-live="polite">
+    Print
+    <b data-print-label>Bond</b>
+  </button>
+</div>

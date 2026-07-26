@@ -1,0 +1,193 @@
+---
+import { getCollection, render } from 'astro:content';
+import Sheet from '../../layouts/Sheet.astro';
+import Drawing from '../../components/Drawing.astro';
+
+export async function getStaticPaths() {
+  const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+  return projects.map((project, i) => ({
+    params: { slug: project.id },
+    props: {
+      project,
+      prev: i > 0 ? projects[i - 1] : projects[projects.length - 1],
+      next: i < projects.length - 1 ? projects[i + 1] : projects[0],
+    },
+  }));
+}
+
+const { project, prev, next } = Astro.props;
+const d = project.data;
+const { Content } = await render(project);
+
+const facts = [
+  ['Year', String(d.year)],
+  ['Location', d.location],
+  ['Type', d.buildingType],
+  ['Area', d.area ?? 'Not recorded'],
+  ['Status', d.status],
+  ['Category', d.category],
+];
+
+const marks = [
+  { id: 'top', label: 'A', name: 'Project' },
+  { id: 'brief', label: 'B', name: 'Brief' },
+  { id: 'role', label: 'C', name: 'My role' },
+  { id: 'images', label: 'D', name: 'Images' },
+  { id: 'drawings', label: 'E', name: 'Drawings' },
+];
+---
+
+<Sheet
+  sheet={d.sheet}
+  title={d.title}
+  pageTitle={`${d.title}, Ahmad Assi`}
+  description={d.summary}
+  scale="1:100"
+  marks={d.drawings.length > 0 ? marks : marks.slice(0, 4)}
+>
+  <section class="band band-tight" id="top">
+    <a class="anno back" href="/work">&larr; &nbsp;Project index</a>
+    <h1 style="margin-top:var(--s5)">{d.title}</h1>
+    <p class="prose-lead" style="margin-top:var(--s4);max-width:52ch">{d.summary}</p>
+  </section>
+
+  <div class="lead">
+    <Drawing kind={d.leadImage.kind} seed={d.leadImage.seed} alt={d.leadImage.alt} zoomable />
+  </div>
+
+  <section class="band" id="brief">
+    <div class="split-narrow brief">
+      <div class="brief-prose prose">
+        <Content />
+      </div>
+      <div class="brief-facts">
+        <p class="anno" style="margin-bottom:var(--s3)">Project data</p>
+        <dl class="facts">
+          {
+            facts.map(([k, v]) => (
+              <div>
+                <dt>{k}</dt>
+                <dd>{v}</dd>
+              </div>
+            ))
+          }
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stated separately from the description on purpose. On team projects this
+       is what a reviewer is actually assessing. -->
+  <section class="band band-tight role" id="role">
+    <div class="split">
+      <div>
+        <p class="anno">C &nbsp;/&nbsp; My role</p>
+        <p class="role-title">{d.role}</p>
+      </div>
+      <p class="prose" style="font-size:var(--t-2)">{d.contribution}</p>
+    </div>
+  </section>
+
+  {
+    d.imageGroups.length > 0 && (
+      <section class="band" id="images">
+        <div class="band-head">
+          <p class="anno">D &nbsp;/&nbsp; Images</p>
+          <span class="fill" aria-hidden="true" />
+        </div>
+        {d.imageGroups.map((g) => (
+          <figure class="group reveal">
+            <div class={g.layout === 'pair' ? 'pair' : g.layout === 'triptych' ? 'triptych' : ''}>
+              {g.images.map((img) => (
+                <Drawing kind={img.kind} seed={img.seed} alt={img.alt} zoomable />
+              ))}
+            </div>
+            {g.caption && <figcaption class="caption">{g.caption}</figcaption>}
+          </figure>
+        ))}
+      </section>
+    )
+  }
+
+  {
+    d.drawings.length > 0 && (
+      <section class="band drawings" id="drawings">
+        <div class="band-head">
+          <p class="anno">E &nbsp;/&nbsp; Drawings</p>
+          <span class="fill" aria-hidden="true" />
+          <p class="anno">Click to magnify</p>
+        </div>
+        <div class="drawing-list">
+          {d.drawings.map((dr) => (
+            <figure class="reveal" style="margin:0">
+              <Drawing kind={dr.kind} seed={dr.seed} alt={dr.alt} zoomable />
+              <figcaption class="caption">
+                {dr.drawingType}. {dr.alt}
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  <nav class="pager" aria-label="Adjacent sheets">
+    <a href={`/work/${prev.id}`}>
+      <p class="anno">Previous sheet &nbsp;&middot;&nbsp; {prev.data.sheet}</p>
+      <p class="t">{prev.data.title}</p>
+    </a>
+    <a href={`/work/${next.id}`}>
+      <p class="anno">Next sheet &nbsp;&middot;&nbsp; {next.data.sheet}</p>
+      <p class="t">{next.data.title}</p>
+    </a>
+  </nav>
+</Sheet>
+
+<style>
+  .back {
+    display: inline-block;
+    color: var(--ink-2);
+    transition: color 0.18s var(--ease);
+  }
+  .back:hover { color: var(--accent); }
+
+  .lead { padding: 0 var(--pad-x) var(--s7); }
+
+  .brief { gap: var(--s8); }
+  .brief-prose :global(p) { margin-bottom: var(--s5); }
+  .brief-prose :global(p:first-child)::first-letter {
+    font-family: var(--display);
+    font-stretch: 118%;
+    font-weight: 600;
+    font-size: 2.6em;
+    line-height: 0.82;
+    float: left;
+    padding: 0.06em 0.12em 0 0;
+  }
+
+  .role { background: var(--sheet-2); }
+  .role-title {
+    font-family: var(--display);
+    font-stretch: 112%;
+    font-weight: 600;
+    font-size: var(--t-4);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin: var(--s3) 0 0;
+  }
+
+  .group { margin: 0 0 var(--s8); }
+  .group:last-child { margin-bottom: 0; }
+
+  .drawings { background: var(--sheet-2); }
+  .drawing-list { display: grid; gap: var(--s7); }
+
+  @media (max-width: 920px) {
+    /* The fact table is the densest useful information on a phone, so it comes
+       before the prose. Desktop reads the other way round. */
+    .brief { display: flex; flex-direction: column; }
+    .brief-facts { order: -1; }
+    .brief-prose :global(p:first-child)::first-letter { font-size: 1em; float: none; padding: 0; }
+    .lead { padding-inline: 0; }
+  }
+</style>
