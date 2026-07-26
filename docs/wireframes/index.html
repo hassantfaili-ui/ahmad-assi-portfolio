@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="en-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ahmad Assi Website: low-fidelity wireframes v1</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box}
+  :root{
+    --paper:#fff; --ink:#222; --mid:#666; --faint:#949494;
+    --f1:#f5f5f5; --f2:#ebebeb; --f3:#dedede; --f4:#cfcfcf; --rule:#c9c9c9;
+    --gap:24px;
+  }
+  html{background:#8f8f8f}
+  body{
+    margin:0; padding:32px 20px 96px;
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    color:var(--ink); -webkit-font-smoothing:antialiased;
+  }
+  .doc{max-width:1180px;margin:0 auto}
+
+  /* ---- document chrome ---- */
+  .docHead{background:var(--paper);border:1px solid var(--rule);padding:28px 32px;margin-bottom:28px}
+  .docHead h1{margin:0 0 6px;font-size:19px;letter-spacing:.01em}
+  .docHead p{margin:0 0 4px;color:var(--mid);max-width:70ch}
+  .docHead .warn{margin-top:14px;padding:10px 14px;background:var(--f1);border-left:3px solid var(--faint);color:var(--ink)}
+  .kbd{display:inline-block;padding:1px 6px;background:var(--f2);border:1px solid var(--rule);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+
+  .screen{margin:0 0 40px}
+  .screenBar{
+    display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+    background:var(--ink);color:#fff;padding:9px 16px;
+  }
+  .screenBar b{font-size:14px;letter-spacing:.02em}
+  .screenBar span{color:#c4c4c4;font-size:12.5px}
+  .screenBar .vp{margin-left:auto;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#c4c4c4}
+
+  .frame{background:var(--paper);border:1px solid var(--rule);border-top:0;padding:0;overflow:hidden}
+  .frame.mob{max-width:392px}
+  .pad{padding:28px 44px 28px 46px}
+  .mob .pad{padding:18px 16px 18px 34px}
+
+  /* ---- wireframe primitives ---- */
+  .lbl{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);margin:0 0 7px}
+  .bar{height:11px;background:var(--f3);border-radius:1px;margin:0 0 7px}
+  .bar.t{height:15px;background:var(--f4)}
+  .bar:last-child{margin-bottom:0}
+  .w95{width:95%}.w90{width:90%}.w80{width:80%}.w70{width:70%}.w60{width:60%}
+  .w50{width:50%}.w45{width:45%}.w40{width:40%}.w30{width:30%}.w25{width:25%}.w20{width:20%}
+  .hd{background:var(--f4);height:30px;width:56%;margin:0 0 14px}
+  .hd.xl{height:46px;width:72%}
+  .hd.sm{height:20px;width:36%;margin-bottom:10px}
+  .txt{margin:0 0 var(--gap)}
+
+  .img{
+    position:relative;background:var(--f2);border:1px solid var(--f4);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--faint);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  }
+  .img::before,.img::after{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(to top right,transparent calc(50% - .5px),var(--f4) 50%,transparent calc(50% + .5px));
+  }
+  .img::after{background:linear-gradient(to bottom right,transparent calc(50% - .5px),var(--f4) 50%,transparent calc(50% + .5px))}
+  .img > *{position:relative;z-index:1;background:var(--f2);padding:2px 8px}
+  .r21{aspect-ratio:21/9}.r169{aspect-ratio:16/9}.r43{aspect-ratio:4/3}
+  .r11{aspect-ratio:1/1}.r34{aspect-ratio:3/4}.r23{aspect-ratio:2/3}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;
+    min-height:38px;padding:0 20px;border:1.5px solid var(--mid);color:var(--mid);
+    font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+  .btn.solid{background:var(--ink);border-color:var(--ink);color:#fff}
+  .field{height:40px;background:var(--f1);border:1px solid var(--f4);margin-bottom:12px}
+  .field.ta{height:104px}
+  .rule{height:1px;background:var(--rule);margin:var(--gap) 0}
+  .rule.tight{margin:14px 0}
+
+  /* ---- layout helpers ---- */
+  .row{display:flex;gap:var(--gap)}
+  .row.tight{gap:12px}
+  .row.wrap{flex-wrap:wrap}
+  .col{flex:1;min-width:0}
+  .g2{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--gap)}
+  .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap)}
+  .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .side{display:grid;grid-template-columns:1fr 2fr;gap:44px}
+  .side.flip{grid-template-columns:2fr 1fr}
+  .stack > * + *{margin-top:var(--gap)}
+  .big{margin-top:64px}
+  .mob .big{margin-top:40px}
+
+  /* ---- site nav ---- */
+  .nav{display:flex;align-items:center;gap:28px;padding:16px 36px;border-bottom:1px solid var(--rule)}
+  .mob .nav{padding:14px 16px;gap:0}
+  .nav .mark{width:120px;height:16px;background:var(--f4)}
+  .nav .links{margin-left:auto;display:flex;gap:22px}
+  .nav .links i{display:block;width:52px;height:10px;background:var(--f3);font-style:normal}
+  .nav .burger{margin-left:auto;width:22px;height:14px;
+    background:linear-gradient(var(--f4) 2px,transparent 2px 6px) 0 0/100% 6px repeat-y}
+
+  /* ---- footer ---- */
+  .foot{background:var(--f1);border-top:1px solid var(--rule);padding:28px 36px}
+  .mob .foot{padding:20px 16px}
+
+  /* ---- annotation callouts ---- */
+  .an{position:relative}
+  .pin{
+    position:absolute;top:-3px;left:-34px;z-index:3;
+    width:22px;height:22px;border-radius:50%;
+    background:var(--ink);color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;
+  }
+  .pin.r{left:auto;right:-34px}
+  .mob .pin{left:-26px}
+  /* full-bleed blocks have no left margin to sit in, so the pin sits inside */
+  .nav > .pin, .foot > .pin, .fw > .pin{left:8px;top:8px}
+  .mob .nav > .pin, .mob .foot > .pin, .mob .fw > .pin{left:6px;top:6px}
+  .legend{background:var(--f1);border:1px solid var(--rule);border-top:0;padding:20px 36px}
+  .legend h4{margin:0 0 12px;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--mid)}
+  .legend ol{margin:0;padding:0;list-style:none;counter-reset:a}
+  .legend li{position:relative;padding:0 0 9px 34px;counter-increment:a;max-width:96ch;color:#333}
+  .legend li::before{
+    content:counter(a);position:absolute;left:0;top:0;
+    width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;
+  }
+  .legend li:last-child{padding-bottom:0}
+  .q{color:#000;font-weight:600}
+</style>
+</head>
+<body>
+<div class="doc">
+
+<div class="docHead">
+  <h1>Ahmad Assi Website: low-fidelity wireframes, v1</h1>
+  <p>Structure only. Greyscale, no typeface personality, no colour, no real copy. Every grey box marked with a cross is an image slot; every grey bar is a line of text yet to be written.</p>
+  <p>Seven screens: five desktop, two mobile. Each numbered pin maps to a note in the list under that screen.</p>
+  <div class="warn">
+    <strong>How to give feedback:</strong> reference the pin, for example <span class="kbd">1.4</span> or <span class="kbd">3.6</span>, and say what should change: move it, cut it, make it bigger, split it in two. Structural changes are cheap at this stage and expensive after the visual design is applied.
+  </div>
+</div>
+
+<!-- ============================= W1 HOME ============================= -->
+<section class="screen">
+  <div class="screenBar"><b>1 &nbsp;Home</b><span>/ &nbsp; the resume itself, with selected work</span><span class="vp">desktop 1280</span></div>
+  <div class="frame">
+
+    <div class="nav an">
+      <div class="pin">1</div>
+      <div class="mark"></div>
+      <div class="links"><i></i><i></i><i></i><i></i></div>
+    </div>
+
+    <div class="pad">
+
+      <!-- intro -->
+      <div class="an" style="padding-top:16px">
+        <div class="pin">2</div>
+        <div class="side">
+          <div>
+            <p class="lbl">name</p>
+            <div class="hd xl" style="width:88%"></div>
+            <div class="bar t w70"></div>
+          </div>
+          <div>
+            <p class="lbl">positioning statement, 2 to 3 lines</p>
+            <div class="txt">
+              <div class="bar w95"></div><div class="bar w90"></div><div class="bar w45"></div>
+            </div>
+            <div class="row tight wrap">
+              <span class="btn solid">View work</span>
+              <span class="btn">Download CV</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="rule"></div>
+
+      <!-- facts strip -->
+      <div class="an">
+        <div class="pin">3</div>
+        <div class="g4">
+          <div><p class="lbl">status</p><div class="bar w80"></div></div>
+          <div><p class="lbl">location</p><div class="bar w70"></div></div>
+          <div><p class="lbl">credential</p><div class="bar w90"></div></div>
+          <div><p class="lbl">years</p><div class="bar w40"></div></div>
+        </div>
+      </div>
+
+      <!-- selected work -->
+      <div class="big an">
+        <div class="pin">4</div>
+        <div class="row" style="align-items:baseline;margin-bottom:18px">
+          <div class="hd sm" style="margin:0"></div>
+          <div style="margin-left:auto"><div class="bar w95" style="width:110px;margin:0"></div></div>
+        </div>
+        <div class="g3">
+          <div class="stack"><div class="img r43"><span>image</span></div><div><div class="bar w80"></div><div class="bar w40"></div></div></div>
+          <div class="stack"><div class="img r43"><span>image</span></div><div><div class="bar w70"></div><div class="bar w45"></div></div></div>
+          <div class="stack"><div class="img r43"><span>image</span></div><div><div class="bar w90"></div><div class="bar w30"></div></div></div>
+        </div>
+        <div class="g3" style="margin-top:var(--gap)">
+          <div class="stack"><div class="img r43"><span>image</span></div><div><div class="bar w80"></div><div class="bar w40"></div></div></div>
+          <div class="stack"><div class="img r43"><span>image</span></div><div><div class="bar w60"></div><div class="bar w45"></div></div></div>
+          <div class="stack"><div class="img r43"><span>image</span></div><div><div class="bar w85"></div><div class="bar w30"></div></div></div>
+        </div>
+        <div style="margin-top:22px"><span class="btn">All projects</span></div>
+      </div>
+
+      <!-- experience -->
+      <div class="big an">
+        <div class="pin">5</div>
+        <div class="hd sm"></div>
+        <div class="stack">
+          <div class="side">
+            <div><p class="lbl">dates</p><div class="bar w70"></div></div>
+            <div>
+              <div class="bar t w60"></div><div class="bar w40" style="margin-bottom:12px"></div>
+              <div class="bar w95"></div><div class="bar w90"></div><div class="bar w50"></div>
+            </div>
+          </div>
+          <div class="rule tight"></div>
+          <div class="side">
+            <div><p class="lbl">dates</p><div class="bar w70"></div></div>
+            <div>
+              <div class="bar t w50"></div><div class="bar w45" style="margin-bottom:12px"></div>
+              <div class="bar w90"></div><div class="bar w80"></div>
+            </div>
+          </div>
+          <div class="rule tight"></div>
+          <div class="side">
+            <div><p class="lbl">dates</p><div class="bar w70"></div></div>
+            <div>
+              <div class="bar t w60"></div><div class="bar w40" style="margin-bottom:12px"></div>
+              <div class="bar w95"></div><div class="bar w60"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- education + skills -->
+      <div class="big an">
+        <div class="pin">6</div>
+        <div class="g2">
+          <div>
+            <div class="hd sm"></div>
+            <div class="stack">
+              <div><div class="bar t w80"></div><div class="bar w50"></div><div class="bar w30"></div></div>
+              <div><div class="bar t w70"></div><div class="bar w60"></div><div class="bar w25"></div></div>
+            </div>
+          </div>
+          <div>
+            <div class="hd sm"></div>
+            <p class="lbl">software and technical skills, grouped</p>
+            <div class="row tight wrap" style="gap:8px">
+              <span class="btn" style="min-height:28px;padding:0 12px">tag</span>
+              <span class="btn" style="min-height:28px;padding:0 12px">tag</span>
+              <span class="btn" style="min-height:28px;padding:0 12px">tag</span>
+              <span class="btn" style="min-height:28px;padding:0 12px">tag</span>
+              <span class="btn" style="min-height:28px;padding:0 12px">tag</span>
+              <span class="btn" style="min-height:28px;padding:0 12px">tag</span>
+              <span class="btn" style="min-height:28px;padding:0 12px">tag</span>
+              <span class="btn" style="min-height:28px;padding:0 12px">tag</span>
+            </div>
+            <div class="rule tight"></div>
+            <p class="lbl">languages / registrations</p>
+            <div class="bar w60"></div><div class="bar w45"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- contact strip -->
+      <div class="big an">
+        <div class="pin">7</div>
+        <div style="background:var(--f1);border:1px solid var(--f4);padding:32px">
+          <div class="row" style="align-items:center">
+            <div class="col">
+              <div class="hd sm" style="margin-bottom:8px"></div>
+              <div class="bar w80"></div>
+            </div>
+            <div><span class="btn solid">Get in touch</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="foot an">
+      <div class="pin">8</div>
+      <div class="row">
+        <div class="col"><div class="bar w60"></div><div class="bar w40"></div></div>
+        <div class="col"><p class="lbl">links</p><div class="bar w50"></div><div class="bar w45"></div></div>
+        <div class="col"><p class="lbl">social</p><div class="bar w50"></div><div class="bar w30"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <h4>Screen 1 notes</h4>
+    <ol>
+      <li>Header: wordmark left, four links right (Work, About, Contact, and CV). Stays put while scrolling or scrolls away, <span class="q">your call</span>.</li>
+      <li>The only thing above the fold: his name, what he does, and two actions. No hero image. Deliberate, because with placeholder imagery a hero slot invites a weak stock photo, and because a resume-first site should lead with the person. <span class="q">Flag this if you want a hero image instead</span>, it is the single biggest open structural question on this screen.</li>
+      <li>Four scannable facts a hiring firm looks for first: availability, location, credential or licence status, years of experience. Cut any that do not apply.</li>
+      <li>Selected work, six projects maximum, three across. Curated subset, not everything. Each card is image, project name, and one line of meta such as type and year. Link out to the full index.</li>
+      <li>Experience: dates in a narrow left column, role and firm plus two or three lines of contribution on the right. Reverse chronological. This is the section that makes it a resume rather than a gallery.</li>
+      <li>Education on the left, software and skills as tags on the right, with languages and registrations below. Tags are the honest format here: firms scan for specific software names.</li>
+      <li>One contact prompt before the footer so a visitor who has read the whole page does not have to scroll back up.</li>
+      <li>Footer: contact details, page links, professional social. Anything he wants findable without hunting.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============================= W2 WORK INDEX ============================= -->
+<section class="screen">
+  <div class="screenBar"><b>2 &nbsp;Work index</b><span>/work &nbsp; everything, filterable</span><span class="vp">desktop 1280</span></div>
+  <div class="frame">
+    <div class="nav"><div class="mark"></div><div class="links"><i></i><i></i><i></i><i></i></div></div>
+    <div class="pad">
+
+      <div class="an" style="padding-top:8px">
+        <div class="pin">1</div>
+        <div class="hd" style="width:34%"></div>
+        <div class="bar w60"></div><div class="bar w30"></div>
+      </div>
+
+      <div class="rule"></div>
+
+      <div class="an">
+        <div class="pin">2</div>
+        <div class="row" style="align-items:center">
+          <div class="row tight wrap">
+            <span class="btn solid" style="min-height:32px;padding:0 14px">All</span>
+            <span class="btn" style="min-height:32px;padding:0 14px">Residential</span>
+            <span class="btn" style="min-height:32px;padding:0 14px">Commercial</span>
+            <span class="btn" style="min-height:32px;padding:0 14px">Cultural</span>
+            <span class="btn" style="min-height:32px;padding:0 14px">Academic</span>
+          </div>
+          <div style="margin-left:auto"><p class="lbl" style="margin:0">count</p></div>
+        </div>
+      </div>
+
+      <div class="an" style="margin-top:var(--gap)">
+        <div class="pin">3</div>
+        <div class="g3">
+          <div class="stack"><div class="img r43"><span>image</span></div><div><div class="bar t w80"></div><div class="bar w50"></div></div></div>
+          <div class="stack"><div class="img r43"><span>image</span></div><div><div class="bar t w60"></div><div class="bar w45"></div></div></div>
+          <div class="stack"><div class="img r43"><span>image</span></div><div><div class="bar t w90"></div><div class="bar w40"></div></div></div>
+          <div class="stack"><div class="img r43"><span>image</span></div><div><div class="bar t w70"></div><div class="bar w50"></div></div></div>
+          <div class="stack"><div class="img r43"><span>image</span></div><div><div class="bar t w85"></div><div class="bar w30"></div></div></div>
+          <div class="stack"><div class="img r43"><span>image</span></div><div><div class="bar t w60"></div><div class="bar w45"></div></div></div>
+          <div class="stack"><div class="img r43"><span>image</span></div><div><div class="bar t w75"></div><div class="bar w40"></div></div></div>
+          <div class="stack"><div class="img r43"><span>image</span></div><div><div class="bar t w90"></div><div class="bar w50"></div></div></div>
+          <div class="stack"><div class="img r43"><span>image</span></div><div><div class="bar t w65"></div><div class="bar w35"></div></div></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="foot">
+      <div class="row">
+        <div class="col"><div class="bar w60"></div><div class="bar w40"></div></div>
+        <div class="col"><p class="lbl">links</p><div class="bar w50"></div><div class="bar w45"></div></div>
+        <div class="col"><p class="lbl">social</p><div class="bar w50"></div><div class="bar w30"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <h4>Screen 2 notes</h4>
+    <ol>
+      <li>Page title with one or two lines framing how the work is organized. Short.</li>
+      <li>Category filters, client-side, no page reload, no results count theatre. Categories are placeholders: <span class="q">the real ones depend on what he has built</span>, and a student or early-career set may need Academic and Competition instead of Commercial and Cultural. Filters only appear once there are enough projects to justify them.</li>
+      <li>Uniform grid, three across, consistent 4:3 crop so the page stays calm regardless of the source image shapes. Every card links to its own page. Cards carry name plus type and year only, no description: the grid is for choosing, not reading.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============================= W3 PROJECT ============================= -->
+<section class="screen">
+  <div class="screenBar"><b>3 &nbsp;Project detail</b><span>/work/&lt;project&gt; &nbsp; the page that does the persuading</span><span class="vp">desktop 1280</span></div>
+  <div class="frame">
+    <div class="nav"><div class="mark"></div><div class="links"><i></i><i></i><i></i><i></i></div></div>
+
+    <div class="pad">
+      <div class="an" style="padding-top:8px">
+        <div class="pin">1</div>
+        <div class="bar w20" style="margin-bottom:18px"></div>
+        <div class="hd" style="width:64%"></div>
+      </div>
+    </div>
+
+    <div class="an" style="margin:0 44px 0 46px">
+      <div class="pin">2</div>
+      <div class="img r21"><span>lead image</span></div>
+    </div>
+
+    <div class="pad">
+      <div class="an" style="margin-top:var(--gap)">
+        <div class="pin">3</div>
+        <div class="side flip">
+          <div>
+            <p class="lbl">brief / concept, 2 to 4 short paragraphs</p>
+            <div class="txt">
+              <div class="bar w95"></div><div class="bar w90"></div><div class="bar w95"></div><div class="bar w60"></div>
+            </div>
+            <div class="txt">
+              <div class="bar w90"></div><div class="bar w95"></div><div class="bar w45"></div>
+            </div>
+          </div>
+          <div>
+            <p class="lbl">fact table</p>
+            <div class="rule tight" style="margin-top:0"></div>
+            <div class="row tight"><div class="bar w40" style="flex:0 0 34%"></div><div class="bar w70" style="flex:1"></div></div>
+            <div class="rule tight"></div>
+            <div class="row tight"><div class="bar w40" style="flex:0 0 34%"></div><div class="bar w60" style="flex:1"></div></div>
+            <div class="rule tight"></div>
+            <div class="row tight"><div class="bar w40" style="flex:0 0 34%"></div><div class="bar w80" style="flex:1"></div></div>
+            <div class="rule tight"></div>
+            <div class="row tight"><div class="bar w40" style="flex:0 0 34%"></div><div class="bar w50" style="flex:1"></div></div>
+            <div class="rule tight"></div>
+            <div class="row tight"><div class="bar w40" style="flex:0 0 34%"></div><div class="bar w70" style="flex:1"></div></div>
+            <div class="rule tight"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="big an">
+        <div class="pin">4</div>
+        <div class="g2">
+          <div class="img r34"><span>image</span></div>
+          <div class="img r34"><span>image</span></div>
+        </div>
+        <div style="margin-top:14px"><div class="bar w50"></div></div>
+      </div>
+
+      <div class="big an">
+        <div class="pin">5</div>
+        <div class="img r169"><span>drawing: plan / section / elevation</span></div>
+        <div style="margin-top:14px"><div class="bar w60"></div></div>
+      </div>
+
+      <div class="big an">
+        <div class="pin">6</div>
+        <div class="side">
+          <div>
+            <p class="lbl">his role on the project</p>
+            <div class="bar w80"></div><div class="bar w60"></div>
+          </div>
+          <div>
+            <div class="bar w95"></div><div class="bar w90"></div><div class="bar w70"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="big an">
+        <div class="pin">7</div>
+        <div class="g3">
+          <div class="img r11"><span>image</span></div>
+          <div class="img r11"><span>image</span></div>
+          <div class="img r11"><span>image</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="an fw" style="border-top:1px solid var(--rule);margin-top:44px">
+      <div class="pin">8</div>
+      <div class="row" style="gap:0">
+        <div class="col" style="padding:26px 46px;border-right:1px solid var(--rule)">
+          <p class="lbl">previous</p><div class="bar t w60"></div>
+        </div>
+        <div class="col" style="padding:26px 44px;text-align:right">
+          <p class="lbl">next</p><div class="bar t w60" style="margin-left:auto"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <div class="row">
+        <div class="col"><div class="bar w60"></div><div class="bar w40"></div></div>
+        <div class="col"><p class="lbl">links</p><div class="bar w50"></div><div class="bar w45"></div></div>
+        <div class="col"><p class="lbl">social</p><div class="bar w50"></div><div class="bar w30"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <h4>Screen 3 notes</h4>
+    <ol>
+      <li>Back link to the work index, then the project name. No image above the title, so the page announces what it is before it performs.</li>
+      <li>Lead image, wide crop, inset rather than full-bleed to the window edge. Full-bleed is <span class="q">a reasonable alternative</span> and a genuine fork: full-bleed is more dramatic, inset keeps the whole site on one consistent margin.</li>
+      <li>Brief on the left, fact table on the right: year, location, type, size, status, and his role. Firms read the table before the prose, so it must be scannable and identical in order on every project.</li>
+      <li>Image pair, portrait crops, with one shared caption. Captions matter for architecture and are frequently forgotten.</li>
+      <li>Drawings get their own slot and a light background, because plans and sections are usually line work on white and need different treatment from photography. This is the section most portfolio templates omit and the one hiring firms most want to see.</li>
+      <li>An explicit statement of what he personally did, separate from the project description. On team projects this is the difference between honest and misleading, and it is what a reviewer is actually assessing.</li>
+      <li>Remaining images, square crops, three across. Repeats as needed. The CMS should let him choose a block layout per image group rather than forcing one rhythm.</li>
+      <li>Previous and next project, so a reviewer never dead-ends and has to use the back button.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============================= W4 ABOUT ============================= -->
+<section class="screen">
+  <div class="screenBar"><b>4 &nbsp;About</b><span>/about &nbsp; the long-form resume and the CV download</span><span class="vp">desktop 1280</span></div>
+  <div class="frame">
+    <div class="nav"><div class="mark"></div><div class="links"><i></i><i></i><i></i><i></i></div></div>
+    <div class="pad">
+
+      <div class="an" style="padding-top:8px">
+        <div class="pin">1</div>
+        <div class="side">
+          <div><div class="img r34"><span>portrait</span></div></div>
+          <div>
+            <div class="hd" style="width:50%"></div>
+            <div class="txt">
+              <div class="bar w95"></div><div class="bar w90"></div><div class="bar w95"></div><div class="bar w70"></div>
+            </div>
+            <div class="txt">
+              <div class="bar w90"></div><div class="bar w95"></div><div class="bar w85"></div><div class="bar w45"></div>
+            </div>
+            <div class="row tight wrap">
+              <span class="btn solid">Download CV (PDF)</span>
+              <span class="btn">Email</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="big an">
+        <div class="pin">2</div>
+        <div class="hd sm"></div>
+        <div class="stack">
+          <div class="side"><div><div class="bar w70"></div></div><div><div class="bar t w60"></div><div class="bar w40"></div><div class="bar w90"></div></div></div>
+          <div class="rule tight"></div>
+          <div class="side"><div><div class="bar w70"></div></div><div><div class="bar t w50"></div><div class="bar w45"></div><div class="bar w80"></div></div></div>
+          <div class="rule tight"></div>
+          <div class="side"><div><div class="bar w70"></div></div><div><div class="bar t w60"></div><div class="bar w40"></div><div class="bar w85"></div></div></div>
+        </div>
+      </div>
+
+      <div class="big an">
+        <div class="pin">3</div>
+        <div class="g3">
+          <div>
+            <div class="hd sm" style="width:60%"></div>
+            <div class="bar w90"></div><div class="bar w70"></div><div class="bar w80"></div>
+          </div>
+          <div>
+            <div class="hd sm" style="width:60%"></div>
+            <div class="bar w80"></div><div class="bar w90"></div><div class="bar w60"></div>
+          </div>
+          <div>
+            <div class="hd sm" style="width:60%"></div>
+            <div class="bar w70"></div><div class="bar w85"></div><div class="bar w50"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="foot">
+      <div class="row">
+        <div class="col"><div class="bar w60"></div><div class="bar w40"></div></div>
+        <div class="col"><p class="lbl">links</p><div class="bar w50"></div><div class="bar w45"></div></div>
+        <div class="col"><p class="lbl">social</p><div class="bar w50"></div><div class="bar w30"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <h4>Screen 4 notes</h4>
+    <ol>
+      <li>Portrait plus the long-form bio the home page compresses into one line, then the CV download as a real PDF. Firms still want the PDF; the site does not replace it. <span class="q">If he has no portrait he is willing to use, say so</span> and this becomes a single text column rather than a two-column layout with an empty slot.</li>
+      <li>Full experience history, unabridged, in the same dates-left format as the home page. Home shows three roles, this shows all of them.</li>
+      <li>Three supporting columns: education and credentials, awards and exhibitions, publications and press. Any that are empty get cut rather than shown empty. <span class="q">Tell me which of these three actually have content</span>, or all three stay as placeholders.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============================= W5 CONTACT ============================= -->
+<section class="screen">
+  <div class="screenBar"><b>5 &nbsp;Contact</b><span>/contact &nbsp; one form, no friction</span><span class="vp">desktop 1280</span></div>
+  <div class="frame">
+    <div class="nav"><div class="mark"></div><div class="links"><i></i><i></i><i></i><i></i></div></div>
+    <div class="pad">
+      <div class="side" style="padding:8px 0 24px">
+        <div class="an">
+          <div class="pin">1</div>
+          <div class="hd" style="width:70%"></div>
+          <div class="bar w90"></div><div class="bar w60"></div>
+          <div class="rule"></div>
+          <p class="lbl">email</p><div class="bar w80" style="margin-bottom:14px"></div>
+          <p class="lbl">phone</p><div class="bar w60" style="margin-bottom:14px"></div>
+          <p class="lbl">based in</p><div class="bar w50" style="margin-bottom:14px"></div>
+          <p class="lbl">linkedin</p><div class="bar w70"></div>
+        </div>
+        <div class="an">
+          <div class="pin r">2</div>
+          <p class="lbl">name</p><div class="field"></div>
+          <p class="lbl">email</p><div class="field"></div>
+          <p class="lbl">subject</p><div class="field"></div>
+          <p class="lbl">message</p><div class="field ta"></div>
+          <span class="btn solid">Send message</span>
+          <div style="margin-top:14px"><div class="bar w80"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="foot">
+      <div class="row">
+        <div class="col"><div class="bar w60"></div><div class="bar w40"></div></div>
+        <div class="col"><p class="lbl">links</p><div class="bar w50"></div><div class="bar w45"></div></div>
+        <div class="col"><p class="lbl">social</p><div class="bar w50"></div><div class="bar w30"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <h4>Screen 5 notes</h4>
+    <ol>
+      <li>Direct details first: a hiring manager will email rather than fill a form, so the address must be visible and copyable, never hidden behind the form.</li>
+      <li>Four fields, no more. Success and error states shown inline on the same page, no redirect to a thank-you page. Spam protection without a CAPTCHA, since we cannot ask visitors to solve puzzles to reach him.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============================= W6 HOME MOBILE ============================= -->
+<section class="screen">
+  <div class="screenBar"><b>6 &nbsp;Home, mobile</b><span>/ at 390 &nbsp; where most first visits land</span><span class="vp">mobile 390</span></div>
+  <div class="frame mob">
+    <div class="nav an"><div class="pin">1</div><div class="mark" style="width:96px"></div><div class="burger"></div></div>
+    <div class="pad">
+      <div class="an" style="padding-top:8px">
+        <div class="pin">2</div>
+        <p class="lbl">name</p>
+        <div class="hd" style="width:92%;height:34px"></div>
+        <div class="bar t w80"></div>
+        <div style="margin:16px 0 0">
+          <div class="bar w95"></div><div class="bar w90"></div><div class="bar w60"></div>
+        </div>
+        <div class="stack" style="margin-top:18px">
+          <span class="btn solid" style="width:100%">View work</span>
+          <span class="btn" style="width:100%">Download CV</span>
+        </div>
+      </div>
+
+      <div class="rule"></div>
+
+      <div class="an">
+        <div class="pin">3</div>
+        <div class="g2" style="gap:14px">
+          <div><p class="lbl">status</p><div class="bar w90"></div></div>
+          <div><p class="lbl">location</p><div class="bar w80"></div></div>
+          <div><p class="lbl">credential</p><div class="bar w90"></div></div>
+          <div><p class="lbl">years</p><div class="bar w50"></div></div>
+        </div>
+      </div>
+
+      <div class="big an">
+        <div class="pin">4</div>
+        <div class="hd sm" style="width:52%"></div>
+        <div class="stack">
+          <div><div class="img r43"><span>image</span></div><div style="margin-top:10px"><div class="bar w80"></div><div class="bar w40"></div></div></div>
+          <div><div class="img r43"><span>image</span></div><div style="margin-top:10px"><div class="bar w70"></div><div class="bar w45"></div></div></div>
+          <div><div class="img r43"><span>image</span></div><div style="margin-top:10px"><div class="bar w85"></div><div class="bar w30"></div></div></div>
+        </div>
+        <div style="margin-top:18px"><span class="btn" style="width:100%">All projects</span></div>
+      </div>
+
+      <div class="big an">
+        <div class="pin">5</div>
+        <div class="hd sm" style="width:52%"></div>
+        <div class="stack">
+          <div><p class="lbl">dates</p><div class="bar t w70"></div><div class="bar w50" style="margin-bottom:10px"></div><div class="bar w95"></div><div class="bar w80"></div></div>
+          <div class="rule tight"></div>
+          <div><p class="lbl">dates</p><div class="bar t w60"></div><div class="bar w45" style="margin-bottom:10px"></div><div class="bar w90"></div><div class="bar w60"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="foot">
+      <div class="stack" style="--gap:14px">
+        <div><div class="bar w70"></div><div class="bar w50"></div></div>
+        <div><p class="lbl">links</p><div class="bar w60"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <h4>Screen 6 notes</h4>
+    <ol>
+      <li>Menu collapses to a button opening a full-screen overlay. Four links do not justify a drawer with animation.</li>
+      <li>Same order as desktop, nothing hidden on mobile. Buttons go full width and stack.</li>
+      <li>Facts strip becomes a two-by-two grid rather than shrinking four columns into unreadable slivers.</li>
+      <li>Work grid becomes a single column. Three visible on mobile rather than six, because vertical scroll cost is real, with the rest behind the index link.</li>
+      <li>Experience switches from two columns to stacked, dates above the role. The narrow-left-column pattern collapses at this width.</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============================= W7 PROJECT MOBILE ============================= -->
+<section class="screen">
+  <div class="screenBar"><b>7 &nbsp;Project detail, mobile</b><span>/work/&lt;project&gt; at 390</span><span class="vp">mobile 390</span></div>
+  <div class="frame mob">
+    <div class="nav"><div class="mark" style="width:96px"></div><div class="burger"></div></div>
+    <div class="pad">
+      <div class="an" style="padding-top:8px">
+        <div class="pin">1</div>
+        <div class="bar w30" style="margin-bottom:14px"></div>
+        <div class="hd" style="width:86%;height:26px"></div>
+      </div>
+      <div class="img r43" style="margin-bottom:var(--gap)"><span>lead image</span></div>
+
+      <div class="an">
+        <div class="pin">2</div>
+        <p class="lbl">fact table</p>
+        <div class="rule tight" style="margin-top:0"></div>
+        <div class="row tight"><div class="bar w40" style="flex:0 0 40%"></div><div class="bar w70" style="flex:1"></div></div>
+        <div class="rule tight"></div>
+        <div class="row tight"><div class="bar w40" style="flex:0 0 40%"></div><div class="bar w60" style="flex:1"></div></div>
+        <div class="rule tight"></div>
+        <div class="row tight"><div class="bar w40" style="flex:0 0 40%"></div><div class="bar w80" style="flex:1"></div></div>
+        <div class="rule tight"></div>
+      </div>
+
+      <div class="an" style="margin-top:var(--gap)">
+        <div class="pin">3</div>
+        <div class="txt"><div class="bar w95"></div><div class="bar w90"></div><div class="bar w95"></div><div class="bar w60"></div></div>
+        <div class="txt"><div class="bar w90"></div><div class="bar w80"></div><div class="bar w45"></div></div>
+      </div>
+
+      <div class="an">
+        <div class="pin">4</div>
+        <div class="stack" style="--gap:14px">
+          <div class="img r34"><span>image</span></div>
+          <div class="img r34"><span>image</span></div>
+          <div class="img r169"><span>drawing</span></div>
+        </div>
+        <div style="margin-top:12px"><div class="bar w70"></div></div>
+      </div>
+    </div>
+    <div class="an fw" style="border-top:1px solid var(--rule)">
+      <div class="pin">5</div>
+      <div style="padding:18px 16px 18px 34px"><p class="lbl">next project</p><div class="bar t w70"></div></div>
+    </div>
+    <div class="foot">
+      <div><div class="bar w70"></div><div class="bar w50"></div></div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <h4>Screen 7 notes</h4>
+    <ol>
+      <li>Lead image drops from a 21:9 crop to 4:3, because a wide crop at 390 wide is a letterbox sliver.</li>
+      <li>Fact table moves <em>above</em> the brief on mobile, inverting the desktop reading order. It is the densest useful information and should not sit below several paragraphs on a phone.</li>
+      <li>Brief follows the table.</li>
+      <li>All images become one column. Drawings keep the wider crop since line work needs the horizontal room, and get pinch-to-zoom, which matters more than anything else on this screen.</li>
+      <li>Next project only, not previous and next, to keep the footer area simple.</li>
+    </ol>
+  </div>
+</section>
+
+</div>
+</body>
+</html>
