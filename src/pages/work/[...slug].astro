@@ -52,7 +52,13 @@ const marks = [
   </section>
 
   <div class="lead">
-    <Drawing kind={d.leadImage.kind} seed={d.leadImage.seed} alt={d.leadImage.alt} zoomable />
+    <Drawing
+      kind={d.leadImage.kind}
+      seed={d.leadImage.seed}
+      src={d.leadImage.src}
+      alt={d.leadImage.alt}
+      zoomable
+    />
   </div>
 
   <section class="band" id="brief">
@@ -99,7 +105,7 @@ const marks = [
           <figure class="group reveal">
             <div class={g.layout === 'pair' ? 'pair' : g.layout === 'triptych' ? 'triptych' : ''}>
               {g.images.map((img) => (
-                <Drawing kind={img.kind} seed={img.seed} alt={img.alt} zoomable />
+                <Drawing kind={img.kind} seed={img.seed} src={img.src} alt={img.alt} zoomable />
               ))}
             </div>
             {g.caption && <figcaption class="caption">{g.caption}</figcaption>}
@@ -120,7 +126,7 @@ const marks = [
         <div class="drawing-list">
           {d.drawings.map((dr) => (
             <figure class="reveal" style="margin:0">
-              <Drawing kind={dr.kind} seed={dr.seed} alt={dr.alt} zoomable />
+              <Drawing kind={dr.kind} seed={dr.seed} src={dr.src} alt={dr.alt} zoomable />
               <figcaption class="caption">
                 {dr.drawingType}. {dr.alt}
               </figcaption>

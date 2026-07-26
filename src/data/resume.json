@@ -1,6 +1,4 @@
 {
-  "_note": "PLACEHOLDER CONTENT. Every string here is invented and needs replacing with Ahmad's real record. Structure is final; words are not.",
-
   "name": "Ahmad Assi",
   "discipline": "Architect",
   "credential": "OAA, MRAIC",
@@ -9,32 +7,44 @@
   "yearsExperience": "11 years in practice",
   "availability": "Open to senior project roles",
   "issued": "2026.07",
-
   "positioning": "I design buildings that hold up under a prairie winter and still feel generous in it. Eleven years across housing, civic and cultural work, most of it spent on the drawings that get built.",
-
   "longBio": [
     "I came to architecture through building. Three summers framing houses outside Edmonton taught me that a detail either works at minus thirty or it does not, and that most of what separates a good building from a merely handsome one is decided long after the concept is signed off.",
     "Since then I have worked mostly in the middle of projects, where design intent meets a real budget. I run drawing sets, resolve envelopes, and sit in the meetings where a decision is either defended or quietly lost. I am equally comfortable presenting to a council committee and standing on a site in a hard hat explaining why a joint matters.",
     "My own interest is in cold climate public space: how a building can make winter usable rather than merely survivable. Most of my competition work circles that question."
   ],
-
   "portraitAlt": "Portrait of Ahmad Assi. Placeholder until a photograph is supplied.",
   "cvFile": "",
-
   "email": "ahmad@example.ca",
   "phone": "+1 780 000 0000",
   "social": [
-    { "label": "LinkedIn", "href": "https://www.linkedin.com/" },
-    { "label": "Instagram", "href": "https://www.instagram.com/" }
+    {
+      "label": "LinkedIn",
+      "href": "https://www.linkedin.com/"
+    },
+    {
+      "label": "Instagram",
+      "href": "https://www.instagram.com/"
+    }
   ],
-
   "facts": [
-    { "label": "Status", "value": "Open to senior project roles" },
-    { "label": "Based in", "value": "Edmonton, Alberta" },
-    { "label": "Registration", "value": "OAA, MRAIC" },
-    { "label": "In practice", "value": "11 years" }
+    {
+      "label": "Status",
+      "value": "Open to senior project roles"
+    },
+    {
+      "label": "Based in",
+      "value": "Edmonton, Alberta"
+    },
+    {
+      "label": "Registration",
+      "value": "OAA, MRAIC"
+    },
+    {
+      "label": "In practice",
+      "value": "11 years"
+    }
   ],
-
   "experience": [
     {
       "role": "Senior Project Architect",
@@ -81,7 +91,6 @@
       ]
     }
   ],
-
   "education": [
     {
       "credential": "Master of Architecture",
@@ -96,36 +105,77 @@
       "note": "Graduated with distinction."
     }
   ],
-
   "skillGroups": [
     {
       "label": "Documentation",
-      "items": ["Revit", "AutoCAD", "Bluebeam", "NBC and Alberta Building Code", "Specifications, MasterFormat"]
+      "items": [
+        "Revit",
+        "AutoCAD",
+        "Bluebeam",
+        "NBC and Alberta Building Code",
+        "Specifications, MasterFormat"
+      ]
     },
     {
       "label": "Design and visualisation",
-      "items": ["Rhino", "Grasshopper", "V-Ray", "Illustrator", "InDesign", "Physical modelling"]
+      "items": [
+        "Rhino",
+        "Grasshopper",
+        "V-Ray",
+        "Illustrator",
+        "InDesign",
+        "Physical modelling"
+      ]
     },
     {
       "label": "Performance",
-      "items": ["Climate Studio", "THERM", "Envelope detailing", "Passive House principles"]
+      "items": [
+        "Climate Studio",
+        "THERM",
+        "Envelope detailing",
+        "Passive House principles"
+      ]
     }
   ],
-
-  "languages": ["English, fluent", "Arabic, fluent", "French, working"],
-
+  "languages": [
+    "English, fluent",
+    "Arabic, fluent",
+    "French, working"
+  ],
   "awards": [
-    { "title": "Prairie Design Awards, Merit", "detail": "Whitemud Library Addition", "year": "2025" },
-    { "title": "Nordic Pavilion, shortlisted", "detail": "Open international competition", "year": "2023" },
-    { "title": "OAA Guild Medal", "detail": "Graduating thesis", "year": "2015" }
+    {
+      "title": "Prairie Design Awards, Merit",
+      "detail": "Whitemud Library Addition",
+      "year": "2025"
+    },
+    {
+      "title": "Nordic Pavilion, shortlisted",
+      "detail": "Open international competition",
+      "year": "2023"
+    },
+    {
+      "title": "OAA Guild Medal",
+      "detail": "Graduating thesis",
+      "year": "2015"
+    }
   ],
-
   "publications": [
-    { "title": "Warm rooms in a cold city", "detail": "Canadian Architect, essay", "year": "2024" },
-    { "title": "Detailing for minus thirty", "detail": "RAIC conference paper", "year": "2022" }
+    {
+      "title": "Warm rooms in a cold city",
+      "detail": "Canadian Architect, essay",
+      "year": "2024"
+    },
+    {
+      "title": "Detailing for minus thirty",
+      "detail": "RAIC conference paper",
+      "year": "2022"
+    }
   ],
-
   "exhibitions": [
-    { "title": "Winter Commons", "detail": "Edmonton Design Week", "year": "2024" }
+    {
+      "title": "Winter Commons",
+      "detail": "Edmonton Design Week",
+      "year": "2024"
+    }
   ]
 }

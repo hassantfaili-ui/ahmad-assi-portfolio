@@ -120,10 +120,13 @@ function closeView() {
 document.querySelectorAll<HTMLButtonElement>('[data-zoom]').forEach((btn) => {
   btn.addEventListener('click', () => {
     if (!view || !stage) return;
-    const svg = btn.querySelector('svg');
-    if (!svg) return;
-    stage.replaceChildren(svg.cloneNode(true));
-    if (viewLabel) viewLabel.textContent = svg.getAttribute('aria-label') || 'Drawing';
+    const art = btn.querySelector('svg, img');
+    if (!art) return;
+    stage.replaceChildren(art.cloneNode(true));
+    if (viewLabel) {
+      viewLabel.textContent =
+        art.getAttribute('aria-label') || art.getAttribute('alt') || 'Drawing';
+    }
     lastOpener = btn;
     view.setAttribute('open', '');
     document.body.style.overflow = 'hidden';

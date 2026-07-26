@@ -5,37 +5,54 @@ interface Props {
   kind?: DrawingKind;
   seed?: number;
   alt: string;
+  /**
+   * A path under /media once Ahmad has real files. Anything that is not an
+   * absolute path (including the placeholder value "generated") falls back to
+   * generated line work, so the site never shows a broken image.
+   */
+  src?: string;
   /** Drawings can be opened full screen; line work is unreadable when small. */
   zoomable?: boolean;
   reg?: boolean;
   class?: string;
 }
 
-const { kind = 'photo', seed = 1, alt, zoomable = false, reg = true, class: cls = '' } = Astro.props;
-const { body, viewBox } = drawingSvg(kind, seed);
+const {
+  kind = 'photo',
+  seed = 1,
+  alt,
+  src,
+  zoomable = false,
+  reg = true,
+  class: cls = '',
+} = Astro.props;
+
+const isFile = Boolean(src && src.startsWith('/'));
+const { body, viewBox } = isFile ? { body: '', viewBox: '' } : drawingSvg(kind, seed);
+const Tag = zoomable ? 'button' : 'div';
 ---
 
-{
-  zoomable ? (
-    <button class={`frame ${cls}`} type="button" data-zoom aria-label={`Open ${alt} full screen`}>
+<Tag
+  class={`frame ${cls}`}
+  type={zoomable ? 'button' : undefined}
+  data-zoom={zoomable ? '' : undefined}
+  aria-label={zoomable ? `Open ${alt} full screen` : undefined}
+>
+  {
+    isFile ? (
+      <img src={src} alt={alt} loading="lazy" decoding="async" />
+    ) : (
       <svg viewBox={viewBox} role="img" aria-label={alt} set:html={body} />
-      {reg && (
-        <span class="reg" aria-hidden="true">
-          <i /><i /><i /><i />
-        </span>
-      )}
-    </button>
-  ) : (
-    <div class={`frame ${cls}`}>
-      <svg viewBox={viewBox} role="img" aria-label={alt} set:html={body} />
-      {reg && (
-        <span class="reg" aria-hidden="true">
-          <i /><i /><i /><i />
-        </span>
-      )}
-    </div>
-  )
-}
+    )
+  }
+  {
+    reg && (
+      <span class="reg" aria-hidden="true">
+        <i /><i /><i /><i />
+      </span>
+    )
+  }
+</Tag>
 
 <style>
   button.frame {
@@ -43,5 +60,9 @@ const { body, viewBox } = drawingSvg(kind, seed);
     width: 100%;
     padding: 0;
     cursor: zoom-in;
+  }
+  .frame img {
+    width: 100%;
+    height: auto;
   }
 </style>
