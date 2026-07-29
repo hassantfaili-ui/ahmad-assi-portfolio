@@ -1,18 +1,19 @@
 ---
-import Curated from '../layouts/Curated.astro';
+import Datum from '../layouts/Datum.astro';
 import resume from '../data/resume.json';
 
 /** Set to the host's form handler once hosting is chosen. See the README. */
 const FORM_ENDPOINT = '';
 ---
 
-<Curated
+<Datum
   pageTitle={`Contact, ${resume.name}`}
   description={`Get in touch with ${resume.name} in ${resume.location}.`}
 >
   <section class="hero load">
-    <h1 style="--i:0">Contact</h1>
-    <p class="sub" style="--i:1">{resume.availability}</p>
+    <p class="eyebrow" style="--i:0">{resume.location} &nbsp;/&nbsp; <em>Available now</em></p>
+    <h1 class="page-title" style="--i:1">Contact</h1>
+    <p class="sub" style="--i:2">{resume.availability}</p>
   </section>
 
   <section class="band">
@@ -20,7 +21,7 @@ const FORM_ENDPOINT = '';
       <div>
         <dt>Email</dt>
         <dd>
-          <a href={`mailto:${resume.email}`} style="border-bottom:1px solid var(--ink-3)">
+          <a href={`mailto:${resume.email}`} class="inline">
             {resume.email}
           </a>
         </dd>
@@ -74,7 +75,7 @@ const FORM_ENDPOINT = '';
       <p class="notice" data-notice role="status" hidden></p>
     </form>
   </section>
-</Curated>
+</Datum>
 
 <script>
   const form = document.querySelector<HTMLFormElement>('[data-contact]');

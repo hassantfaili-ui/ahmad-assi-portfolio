@@ -1,12 +1,44 @@
 /**
- * Curated Works behaviour. Three small things: the mobile menu, the filmstrip
- * arrows, and scroll reveals. The strip itself is a native scroll container, so
- * it works with no JavaScript at all; the arrows only add a nicer way to drive it.
+ * Datum behaviour.
+ *  1. the elevation readout at the waterline
+ *  2. the sheet index on narrow screens
+ *  3. filmstrip arrows
+ *  4. scroll reveals
  */
 
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/* ------------------------------------------------------------- 1. menu --- */
+/* ------------------------------------------------------- 1. elevation --- */
+/* The top of the page is the high point and the foot of it is the water, so the
+   number falls as you descend. Height is derived from the page's own length, so
+   a short page reads a smaller range than a long one and it always ends at zero. */
+
+const readout = document.querySelector<HTMLOutputElement>('[data-elev]');
+
+if (readout) {
+  const format = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}`;
+  let frame = 0;
+
+  function update() {
+    frame = 0;
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    // roughly three metres per screen of content, rounded to something plausible
+    const top = Math.max(3, Math.round((scrollable / window.innerHeight) * 3.4 * 10) / 10);
+    const progress = scrollable > 0 ? Math.min(1, Math.max(0, window.scrollY / scrollable)) : 1;
+    readout!.textContent = format(top * (1 - progress));
+  }
+
+  function schedule() {
+    if (frame) return;
+    frame = requestAnimationFrame(update);
+  }
+
+  update();
+  window.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('resize', schedule);
+}
+
+/* ------------------------------------------------------------ 2. index --- */
 
 const menu = document.querySelector<HTMLElement>('[data-menu]');
 const openers = document.querySelectorAll<HTMLButtonElement>('[data-menu-open]');
@@ -23,12 +55,11 @@ function setMenu(open: boolean) {
 
 openers.forEach((b) => b.addEventListener('click', () => setMenu(true)));
 closers.forEach((b) => b.addEventListener('click', () => setMenu(false)));
-
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && menu?.hasAttribute('open')) setMenu(false);
 });
 
-/* -------------------------------------------------------- 2. filmstrip --- */
+/* -------------------------------------------------------- 3. filmstrip --- */
 
 document.querySelectorAll<HTMLElement>('[data-strip-wrap]').forEach((wrap) => {
   const strip = wrap.querySelector<HTMLElement>('[data-strip]');
@@ -36,20 +67,19 @@ document.querySelectorAll<HTMLElement>('[data-strip-wrap]').forEach((wrap) => {
   const next = wrap.querySelector<HTMLButtonElement>('[data-strip-next]');
   if (!strip) return;
 
-  // one tile plus one gap, read from the DOM rather than hard coded
-  function step() {
-    const tile = strip!.querySelector<HTMLElement>('.tile');
+  const step = () => {
+    const tile = strip.querySelector<HTMLElement>('.tile');
     if (!tile) return 310;
-    const gap = parseFloat(getComputedStyle(strip!).columnGap || '10');
+    const gap = parseFloat(getComputedStyle(strip).columnGap || '10');
     return tile.getBoundingClientRect().width + (Number.isNaN(gap) ? 10 : gap);
-  }
+  };
 
-  function sync() {
-    const max = strip!.scrollWidth - strip!.clientWidth - 2;
+  const sync = () => {
+    const max = strip.scrollWidth - strip.clientWidth - 2;
     const overflows = max > 0;
-    if (prev) prev.hidden = !overflows || strip!.scrollLeft <= 2;
-    if (next) next.hidden = !overflows || strip!.scrollLeft >= max;
-  }
+    if (prev) prev.hidden = !overflows || strip.scrollLeft <= 2;
+    if (next) next.hidden = !overflows || strip.scrollLeft >= max;
+  };
 
   prev?.addEventListener('click', () => strip.scrollBy({ left: -step(), behavior: 'smooth' }));
   next?.addEventListener('click', () => strip.scrollBy({ left: step(), behavior: 'smooth' }));
@@ -58,7 +88,7 @@ document.querySelectorAll<HTMLElement>('[data-strip-wrap]').forEach((wrap) => {
   sync();
 });
 
-/* ---------------------------------------------------------- 3. reveals --- */
+/* ---------------------------------------------------------- 4. reveals --- */
 
 const reveals = document.querySelectorAll<HTMLElement>('.reveal');
 if (reduced || !('IntersectionObserver' in window)) {
@@ -77,6 +107,6 @@ if (reduced || !('IntersectionObserver' in window)) {
   reveals.forEach((el) => io.observe(el));
 }
 
-/* This file is loaded as a module by the layout. The explicit export keeps
-   TypeScript treating it as one, so its top-level names stay scoped to it. */
+/* Loaded as a module by the layout; the export keeps TypeScript treating it as
+   one, so these top-level names stay scoped to this file. */
 export {};

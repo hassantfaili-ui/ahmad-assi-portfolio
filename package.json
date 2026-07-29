@@ -18,9 +18,12 @@
   "dependencies": {
     "@astrojs/react": "^6.0.1",
     "@fontsource-variable/archivo": "^5.3.0",
+    "@fontsource-variable/big-shoulders-display": "^5.3.0",
     "@fontsource-variable/jost": "^5.3.0",
+    "@fontsource-variable/martian-mono": "^5.3.0",
     "@fontsource-variable/newsreader": "^5.3.0",
     "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/spectral": "^5.3.0",
     "@keystatic/astro": "^5.2.0",
     "@keystatic/core": "^0.6.2",
     "astro": "^7.1.3",

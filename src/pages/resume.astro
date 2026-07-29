@@ -1,21 +1,24 @@
 ---
-import Curated from '../layouts/Curated.astro';
+import Datum from '../layouts/Datum.astro';
 import resume from '../data/resume.json';
 ---
 
-<Curated
+<Datum
   pageTitle={`Resume, ${resume.name}`}
   description={`Curriculum vitae for ${resume.name}, ${resume.discipline} in ${resume.location}.`}
 >
   <section class="hero load">
-    <h1 style="--i:0">Resume</h1>
-    <p class="sub" style="--i:1">
-      {resume.location} &nbsp;&middot;&nbsp; {resume.phone} &nbsp;&middot;&nbsp;
-      <a href={`mailto:${resume.email}`} style="border-bottom:1px solid currentColor">{resume.email}</a>
+    <p class="eyebrow" style="--i:0">
+      {resume.credential} &nbsp;/&nbsp; <em>{resume.yearsExperience}</em>
+    </p>
+    <h1 class="page-title" style="--i:1">Resume</h1>
+    <p class="sub" style="--i:2">
+      {resume.location} &nbsp;/&nbsp; {resume.phone} &nbsp;/&nbsp;
+      <a class="inline" href={`mailto:${resume.email}`}>{resume.email}</a>
     </p>
     {
       resume.cvFile && (
-        <p style="--i:2; margin-top:2rem">
+        <p style="--i:3; margin-top:2.5rem">
           <a class="btn" href={resume.cvFile} download>
             Download PDF
           </a>
@@ -26,7 +29,7 @@ import resume from '../data/resume.json';
 
   <section class="band">
     <h2 class="section-title">Profile</h2>
-    <div class="prose">
+    <div class="prose reveal">
       {resume.longBio.map((p) => <p>{p}</p>)}
     </div>
   </section>
@@ -37,12 +40,12 @@ import resume from '../data/resume.json';
       {
         resume.education.map((e) => (
           <li class="reveal">
-            <p class="r">{e.credential}</p>
-            <p class="f">
-              {e.institution}
-              {e.year && <> &nbsp;&middot;&nbsp; {e.year}</>}
-            </p>
-            {e.note && <p class="d">{e.note}</p>}
+            <p class="when">{e.year || 'Completed'}</p>
+            <div>
+              <h3 class="r">{e.credential}</h3>
+              <p class="f">{e.institution}</p>
+              {e.note && <p style="margin:0.6rem 0 0;color:var(--ink-2)">{e.note}</p>}
+            </div>
           </li>
         ))
       }
@@ -50,20 +53,21 @@ import resume from '../data/resume.json';
   </section>
 
   <section class="band">
-    <h2 class="section-title">Work Experience</h2>
+    <h2 class="section-title">Experience</h2>
     <ul class="list">
       {
         resume.experience.map((r) => (
           <li class="reveal">
-            <p class="r">{r.role}</p>
-            <p class="f">
-              {r.firm} &nbsp;&middot;&nbsp; {r.location} &nbsp;&middot;&nbsp; {r.period}
-            </p>
-            <ul>
-              {r.contributions.map((c) => (
-                <li>{c}</li>
-              ))}
-            </ul>
+            <p class="when">{r.period}</p>
+            <div>
+              <h3 class="r">{r.role}</h3>
+              <p class="f">{r.firm} &nbsp;/&nbsp; {r.location}</p>
+              <ul>
+                {r.contributions.map((c) => (
+                  <li>{c}</li>
+                ))}
+              </ul>
+            </div>
           </li>
         ))
       }
@@ -73,15 +77,15 @@ import resume from '../data/resume.json';
   {
     resume.volunteering.length > 0 && (
       <section class="band">
-        <h2 class="section-title">Volunteering and Community</h2>
+        <h2 class="section-title">Community</h2>
         <ul class="list">
           {resume.volunteering.map((v) => (
             <li class="reveal">
-              <p class="r">{v.title}</p>
-              <p class="f">
-                {v.detail}
-                {v.year && <> &nbsp;&middot;&nbsp; {v.year}</>}
-              </p>
+              <p class="when">{v.year || 'Ongoing'}</p>
+              <div>
+                <h3 class="r">{v.title}</h3>
+                <p class="f">{v.detail}</p>
+              </div>
             </li>
           ))}
         </ul>
@@ -93,10 +97,8 @@ import resume from '../data/resume.json';
     <h2 class="section-title">Skills</h2>
     {
       resume.skillGroups.map((g) => (
-        <div class="reveal" style="margin-bottom:2.5rem">
-          <p class="centre" style="margin:0 0 1rem;color:var(--ink-3);font-size:var(--t-small)">
-            {g.label}
-          </p>
+        <div class="reveal" style="margin-bottom:2.75rem">
+          <p class="group-label">{g.label}</p>
           <div class="tags">
             {g.items.map((i) => (
               <span class="tag">{i}</span>
@@ -105,18 +107,14 @@ import resume from '../data/resume.json';
         </div>
       ))
     }
-
-    <div class="reveal" style="margin-top:1rem">
-      <p class="centre" style="margin:0 0 1rem;color:var(--ink-3);font-size:var(--t-small)">
-        Languages
-      </p>
+    <div class="reveal">
+      <p class="group-label">Languages</p>
       <div class="tags">
         {resume.languages.map((l) => <span class="tag">{l}</span>)}
       </div>
     </div>
-
-    <p class="centre" style="margin-top:3rem;color:var(--ink-3);font-size:var(--t-small)">
-      References: {resume.references.toLowerCase()}
+    <p class="group-label" style="margin-top:3rem">
+      References {resume.references.toLowerCase()}
     </p>
   </section>
-</Curated>
+</Datum>

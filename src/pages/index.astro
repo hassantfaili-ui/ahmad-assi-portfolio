@@ -1,37 +1,46 @@
 ---
 import { getCollection } from 'astro:content';
-import Curated from '../layouts/Curated.astro';
+import Datum from '../layouts/Datum.astro';
 import Filmstrip from '../components/Filmstrip.astro';
 import resume from '../data/resume.json';
 
 const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
 ---
 
-<Curated
-  pageTitle={`${resume.name}, ${resume.discipline}`}
-  description={resume.positioning}
->
+<Datum pageTitle={`${resume.name}, ${resume.discipline}`} description={resume.positioning}>
   <section class="hero load">
-    <p class="sub" style="--i:0; margin-top:0">{resume.welcome}</p>
-    <h1 style="--i:1">{resume.name}</h1>
+    <p class="eyebrow" style="--i:0">
+      {resume.discipline} &nbsp;/&nbsp; <em>{resume.location}</em>
+    </p>
+
+    <h1 style="--i:1">
+      Ahmad<br />
+      <span class="thin">Assi</span>
+    </h1>
+
     <p class="sub" style="--i:2">{resume.positioning}</p>
-    <p style="--i:3; margin-top:2rem">
-      <a class="btn" href="/portfolio">Explore portfolio</a>
+
+    <p style="--i:3; margin-top:2.5rem">
+      <a class="btn" href="/portfolio">
+        Curated works <span class="i" aria-hidden="true">&rarr;</span>
+      </a>
     </p>
   </section>
 
   <section aria-labelledby="works">
-    <h2 class="section-title" id="works">Curated Works</h2>
+    <h2 class="section-title" id="works">Curated <em>Works</em></h2>
     <Filmstrip projects={projects} />
   </section>
 
-  <section class="band centre reveal">
+  <section class="band">
     <h2 class="section-title">About</h2>
-    <div class="prose">
+    <div class="prose reveal">
       {resume.longBio.map((p) => <p>{p}</p>)}
     </div>
-    <p style="margin-top:2rem">
-      <a class="btn" href="/resume">Resume and CV</a>
+    <p class="centre" style="margin-top:2.5rem">
+      <a class="btn" href="/resume">
+        Resume <span class="i" aria-hidden="true">&rarr;</span>
+      </a>
     </p>
   </section>
-</Curated>
+</Datum>

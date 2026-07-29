@@ -1,5 +1,5 @@
 ---
-import '../styles/curated.css';
+import '../styles/datum.css';
 import resume from '../data/resume.json';
 
 interface Props {
@@ -16,6 +16,11 @@ const PAGES = [
   { label: 'Resume', href: '/resume' },
   { label: 'Contact', href: '/contact' },
 ];
+
+const MAIL_ICON =
+  'M2 5.5A1.5 1.5 0 013.5 4h17A1.5 1.5 0 0122 5.5v13a1.5 1.5 0 01-1.5 1.5h-17A1.5 1.5 0 012 18.5v-13zm2.2.5L12 12l7.8-6H4.2zM20 8.2l-7.4 5.7a1 1 0 01-1.2 0L4 8.2V18h16V8.2z';
+const PHONE_ICON =
+  'M6.6 2h3.1l1.6 4-2.1 1.5a12 12 0 005.3 5.3L16 10.7l4 1.6v3.1a2.6 2.6 0 01-2.9 2.6A15.6 15.6 0 014 6.9 2.6 2.6 0 016.6 2z';
 ---
 
 <!doctype html>
@@ -28,7 +33,7 @@ const PAGES = [
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
-    <meta name="theme-color" content="#372d28" />
+    <meta name="theme-color" content="#071417" />
     <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site).href} />
     <script is:inline>
       document.documentElement.classList.add('js');
@@ -38,26 +43,32 @@ const PAGES = [
   <body>
     <a class="skip" href="#main">Skip to content</a>
 
+    <!--
+      The datum. A waterline fixed across the viewport, with an elevation that
+      falls as you scroll down the page: the top of the page is the high point,
+      the foot of it is the water. Decorative to a screen reader, so hidden.
+    -->
+    <div class="datum" aria-hidden="true">
+      <i></i>
+      <b><span>EL</span><output data-elev>+0.00</output></b>
+      <i></i>
+    </div>
+
     <header class="top">
       <a class="wordmark" href="/">{resume.name}</a>
 
       <ul class="social">
         <li>
           <a href={`mailto:${resume.email}`} aria-label={`Email ${resume.name}`}>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M2 5.5A1.5 1.5 0 013.5 4h17A1.5 1.5 0 0122 5.5v13a1.5 1.5 0 01-1.5 1.5h-17A1.5 1.5 0 012 18.5v-13zm2.2.5L12 12l7.8-6H4.2zM20 8.2l-7.4 5.7a1 1 0 01-1.2 0L4 8.2V18h16V8.2z"
-              ></path>
-            </svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d={MAIL_ICON}></path></svg>
           </a>
         </li>
         <li>
-          <a href={`tel:${resume.phone.replace(/[^\d+]/g, '')}`} aria-label={`Phone ${resume.phone}`}>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M6.6 2h3.1l1.6 4-2.1 1.5a12 12 0 005.3 5.3L16 10.7l4 1.6v3.1a2.6 2.6 0 01-2.9 2.6A15.6 15.6 0 014 6.9 2.6 2.6 0 016.6 2z"
-              ></path>
-            </svg>
+          <a
+            href={`tel:${resume.phone.replace(/[^\d+]/g, '')}`}
+            aria-label={`Telephone ${resume.phone}`}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d={PHONE_ICON}></path></svg>
           </a>
         </li>
       </ul>
@@ -77,7 +88,7 @@ const PAGES = [
       </nav>
 
       <button class="burger" type="button" data-menu-open aria-expanded="false" aria-controls="menu">
-        Menu
+        Index
       </button>
     </header>
 
@@ -95,22 +106,26 @@ const PAGES = [
       <ul class="social">
         <li>
           <a href={`mailto:${resume.email}`} aria-label={`Email ${resume.name}`}>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M2 5.5A1.5 1.5 0 013.5 4h17A1.5 1.5 0 0122 5.5v13a1.5 1.5 0 01-1.5 1.5h-17A1.5 1.5 0 012 18.5v-13zm2.2.5L12 12l7.8-6H4.2zM20 8.2l-7.4 5.7a1 1 0 01-1.2 0L4 8.2V18h16V8.2z"
-              ></path>
-            </svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d={MAIL_ICON}></path></svg>
+          </a>
+        </li>
+        <li>
+          <a
+            href={`tel:${resume.phone.replace(/[^\d+]/g, '')}`}
+            aria-label={`Telephone ${resume.phone}`}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d={PHONE_ICON}></path></svg>
           </a>
         </li>
       </ul>
       <small>
-        {resume.location} &nbsp;&middot;&nbsp; {resume.phone} &nbsp;&middot;&nbsp;
-        <a href={`mailto:${resume.email}`}>{resume.email}</a>
+        {resume.location} &nbsp;/&nbsp; {resume.phone}<br />
+        <a class="inline" href={`mailto:${resume.email}`}>{resume.email}</a>
       </small>
     </footer>
 
     <script>
-      import '../scripts/curated';
+      import '../scripts/datum';
     </script>
   </body>
 </html>
