@@ -1,11 +1,16 @@
-# Ahmad Assi, architect
+# Ahmad Assi, architectural designer
 
 A portfolio website that works as an online resume first and a project gallery second.
 Static output, no server to run, no monthly cost.
 
-> **Every word and image on the site right now is a placeholder.** The names, projects,
-> firms, dates, awards and the email address are invented. The structure is finished;
-> the content is not. See [Replacing the placeholder content](#replacing-the-placeholder-content).
+> **The content is Ahmad's own**, taken from his existing site: his introduction, his full
+> CV, his contact details, and the Lincoln Beach Center and La Casa Aranas projects with
+> his own renders and drawings.
+>
+> Two things to know. The six images that were on his old portfolio page were untouched
+> Wix stock demos, a skincare bottle and a jewellery magazine cover, so they were
+> discarded rather than shown as his work. And a couple of project details are inferred
+> rather than stated by him; see [What still needs Ahmad](#what-still-needs-ahmad).
 
 ## Running it
 
@@ -62,32 +67,48 @@ cannot ship without a description.
 
 ## The design
 
-The direction is **the site is a drawing set**, not a gallery.
+The direction is **"Datum"**. Layout follows the reference portfolio the client supplied:
+centred display type, square tiles in a horizontal filmstrip, staggered project images,
+minimal chrome. The aesthetic comes from Ahmad's own subject instead.
 
-- **Navigation is a sheet index.** The persistent title block on the right edge carries
-  the sheet number, the index, the scale, the issue date and the revision, and replaces
-  the usual header and footer. On narrow screens it becomes the bottom edge of the sheet.
-- **Column grid bubbles** run down the left margin, marking the sections of the page and
-  tracking whichever one is in view, the way grid lines locate things on a real drawing.
-- **Two print types instead of light and dark mode.** `bond` is ink on cool bond paper on
-  a drafting table. `blueline` is a diazo print, white line work on a prussian ground. The
-  control says which one you are looking at. The choice persists and defaults to the
-  system preference.
-- **Type does the work that colour usually does.** Archivo on its real width axis at 125%
-  for drawing lettering, Newsreader for prose, IBM Plex Mono for every label, caption and
-  title-block field. Fonts are self hosted, so no request leaves the visitor's browser.
-- **Motion is one orchestrated page load**, then near silence, with reveals on scroll.
-  All of it respects `prefers-reduced-motion`.
+Both of his projects are about getting above water. Lincoln Beach Center puts a lookout
+over the levee that doubles as a flood platform; La Casa Aranas is an elevated house. So
+the site is organised around a datum.
+
+- **The waterline.** A line fixed across the viewport with a live elevation that falls as
+  you scroll, from a high point at the top of the page to `+0.00` at the foot of it. The
+  range is derived from the page's own length. It reaches in from the margins and leaves
+  the centre clear, because a rule straight across struck through the centred text.
+- **One dominant deep water tone** over a fixed depth gradient, with a single sharp survey
+  orange for ticks, elevations, hovers and errors. There is no second accent.
+- **Type does the work colour usually does.** Big Shoulders Display for condensed civic
+  lettering, Spectral for prose, Martian Mono for anything numeric. All self hosted, so no
+  request leaves the visitor's browser.
+- **The front film.** Ahmad's own renders as a slow moving loop behind his introduction,
+  built by `scripts/build-hero-film.sh` from the files in `public/media`. It is never
+  downloaded on a narrow screen or when reduced motion is requested; those cases keep the
+  poster frame. Replace `hero.mp4` with a real walkthrough when there is one and nothing
+  else has to change.
+- **The works move.** The filmstrip can be grabbed and dragged, nudged with the arrows,
+  scrolled with a vertical wheel, swiped on touch, or tabbed through. It is a native
+  scroll container underneath, so it still works with no JavaScript. A drag past a few
+  pixels suppresses the click, so moving the works never opens a project by accident.
+  Note the arrows and dragging only come into play once there are enough projects to
+  overflow the rail; with two, everything fits and they stay dormant.
+- **Motion is one orchestrated page load**, then near silence, with reveals on scroll. All
+  of it respects `prefers-reduced-motion`.
 
 ### Where things live
 
 | Path | What it is |
 | --- | --- |
-| `src/styles/global.css` | The whole design system. Every colour and size is a token here. |
-| `src/layouts/Sheet.astro` | The page shell: title block, grid rail, menu, drawing viewer. |
-| `src/lib/drawing.ts` | The procedural drawing generators. |
-| `src/lib/sheets.ts` | The sheet index, which is the navigation. |
-| `src/scripts/sheet.ts` | All client behaviour, about 170 lines, no framework. |
+| `src/styles/datum.css` | The whole design system. Every colour and size is a token here. |
+| `src/layouts/Datum.astro` | The page shell: header menu, waterline, footer. |
+| `src/components/HeroFilm.astro` | The front film and the introduction over it. |
+| `src/components/Filmstrip.astro` | The works rail. |
+| `src/lib/drawing.ts` | Generated line work, used for any image slot with no real file. |
+| `src/scripts/datum.ts` | All client behaviour, no framework. |
+| `scripts/build-hero-film.sh` | Rebuilds the front film from the renders. |
 | `src/content/projects/` | One markdown file per project. |
 | `src/data/resume.json` | The resume record. |
 | `keystatic.config.ts` | The editor's schemas. |
@@ -98,38 +119,36 @@ The direction is **the site is a drawing set**, not a gallery.
 
 These are known and deliberate, not oversights:
 
-1. **Replace the placeholder content.** See below.
+1. **Confirm the inferred project details.** See below.
 2. **Connect the contact form.** `src/pages/contact.astro` has a `FORM_ENDPOINT`
    constant. Until it is set, the form validates and then says plainly that it is not
    connected and gives the email address. It never pretends to have sent anything. Set it
    to the host's form handler once hosting is chosen.
 3. **Add the CV PDF.** Put it in `public/cv/` and set `cvFile` in the editor. Until then
-   the About page shows a marked empty slot rather than a broken download.
+   the resume page simply omits the download button rather than offering a broken one.
 4. **Choose hosting and a domain.** The build is portable: Cloudflare Pages, Netlify and
    GitHub Pages all serve it as is.
 5. **Put the editor online** if Ahmad should edit without running a terminal.
-6. **Add tests.** The design spec commits to Playwright coverage of the routes, the
-   filter, form validation, keyboard navigation and the empty states. None of it is
-   written yet.
+6. **Add tests.** No Playwright coverage is written yet: the routes, the drag on the
+   works rail, form validation, keyboard navigation and the empty states all deserve it.
 7. **Register accounts in Ahmad's own name.** The host, the domain and any CMS account
    should be his, so keeping the site online never depends on anyone else.
 
-### Replacing the placeholder content
+### What still needs Ahmad
 
-Work through the editor rather than the files. In order:
+Work through the editor rather than the files.
 
-1. **Resume** first, since the cover sheet is built from it. The email address
-   `ahmad@example.ca` is fake and appears in several places.
-2. **Projects** next. Delete the six invented ones as you add real work. Each needs a
-   unique sheet number (`A-101`, `A-102`, and so on) and its own honest **What you
-   personally did** field, which is separate from the description because on team projects
-   that is what a reviewer is actually assessing.
-3. **Categories.** The current set (Residential, Cultural, Commercial, Academic,
-   Competition) is a guess. Edit the options in `keystatic.config.ts` and the matching
-   enum in `src/content.config.ts` to match the real work.
-4. **Portrait.** The About page currently shows generated line work in the portrait slot.
-   If there is no photograph Ahmad wants to use, drop the slot and let the biography run
-   as a single column.
+1. **Two inferred details.** The elevated house render is matched to **La Casa Aranas**
+   because his CV describes exactly that, an elevated house with terraces under
+   construction. Its bright siding also reads as New Orleans vernacular, so it may belong
+   to Lincoln Beach instead. One field to move if the guess is wrong. The **Lincoln Beach
+   year** is taken from his graduation date rather than stated anywhere.
+2. **More projects.** There are two. The rail is built for more, and its arrows and drag
+   only become useful once there are enough to overflow it.
+3. **A portrait**, if he wants one. There is no photograph of him anywhere in the
+   material supplied.
+4. **Categories.** The set in `keystatic.config.ts` and the matching enum in
+   `src/content.config.ts` should be trimmed to whatever his real work actually is.
 
 ### Putting the editor online
 

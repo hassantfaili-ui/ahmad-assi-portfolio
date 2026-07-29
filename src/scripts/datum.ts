@@ -1,8 +1,8 @@
 /**
  * Datum behaviour.
  *  1. the elevation readout at the waterline
- *  2. the sheet index on narrow screens
- *  3. filmstrip arrows
+ *  2. the hero film
+ *  3. the filmstrip: arrows, drag, and the wheel
  *  4. scroll reveals
  */
 
@@ -38,28 +38,38 @@ if (readout) {
   window.addEventListener('resize', schedule);
 }
 
-/* ------------------------------------------------------------ 2. index --- */
+/* --------------------------------------------------------- 2. hero film --- */
+/* The source is attached here rather than in the markup so a narrow screen or a
+   reduced-motion preference never downloads it. Those cases keep the poster. */
 
-const menu = document.querySelector<HTMLElement>('[data-menu]');
-const openers = document.querySelectorAll<HTMLButtonElement>('[data-menu-open]');
-const closers = document.querySelectorAll<HTMLButtonElement>('[data-menu-close]');
-
-function setMenu(open: boolean) {
-  if (!menu) return;
-  menu.toggleAttribute('open', open);
-  openers.forEach((b) => b.setAttribute('aria-expanded', String(open)));
-  document.body.style.overflow = open ? 'hidden' : '';
-  if (open) menu.querySelector<HTMLAnchorElement>('a')?.focus();
-  else openers[0]?.focus();
+const film = document.querySelector<HTMLVideoElement>('[data-hero]');
+if (film) {
+  const wide = window.matchMedia('(min-width: 700px)').matches;
+  const src = film.dataset.src;
+  if (src && wide && !reduced) {
+    film.src = src;
+    film.play().catch(() => {
+      /* a browser that blocks autoplay simply shows the poster */
+    });
+    // stop it while off screen rather than decoding video nobody can see
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(
+        (entries) => {
+          entries.forEach((e) => {
+            if (e.isIntersecting) film.play().catch(() => {});
+            else film.pause();
+          });
+        },
+        { threshold: 0.05 },
+      ).observe(film);
+    }
+  }
 }
 
-openers.forEach((b) => b.addEventListener('click', () => setMenu(true)));
-closers.forEach((b) => b.addEventListener('click', () => setMenu(false)));
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && menu?.hasAttribute('open')) setMenu(false);
-});
-
 /* -------------------------------------------------------- 3. filmstrip --- */
+/* Arrows, drag to move, and the wheel. Native scroll underneath all of it, so
+   the works can still be moved with a trackpad, a touch swipe or the keyboard
+   if none of this JavaScript runs. */
 
 document.querySelectorAll<HTMLElement>('[data-strip-wrap]').forEach((wrap) => {
   const strip = wrap.querySelector<HTMLElement>('[data-strip]');
@@ -86,6 +96,69 @@ document.querySelectorAll<HTMLElement>('[data-strip-wrap]').forEach((wrap) => {
   strip.addEventListener('scroll', sync, { passive: true });
   window.addEventListener('resize', sync);
   sync();
+
+  /* grab and move. Snapping is turned off while dragging or the strip fights
+     the pointer, and a drag past a few pixels suppresses the click so moving
+     the works never opens a project by accident. */
+  let dragging = false;
+  let startX = 0;
+  let startLeft = 0;
+  let moved = 0;
+
+  strip.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    dragging = true;
+    moved = 0;
+    startX = e.clientX;
+    startLeft = strip.scrollLeft;
+    strip.setPointerCapture(e.pointerId);
+    strip.classList.add('is-dragging');
+  });
+
+  strip.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    moved = Math.max(moved, Math.abs(dx));
+    strip.scrollLeft = startLeft - dx;
+  });
+
+  const endDrag = (e: PointerEvent) => {
+    if (!dragging) return;
+    dragging = false;
+    strip.classList.remove('is-dragging');
+    if (strip.hasPointerCapture(e.pointerId)) strip.releasePointerCapture(e.pointerId);
+    sync();
+  };
+  strip.addEventListener('pointerup', endDrag);
+  strip.addEventListener('pointercancel', endDrag);
+
+  strip.addEventListener(
+    'click',
+    (e) => {
+      if (moved > 6) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    },
+    true,
+  );
+
+  /* a vertical wheel over the works moves them sideways, which is what people
+     expect of a horizontal rail on a desktop */
+  strip.addEventListener(
+    'wheel',
+    (e) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      const max = strip.scrollWidth - strip.clientWidth;
+      if (max <= 0) return;
+      const atStart = strip.scrollLeft <= 0 && e.deltaY < 0;
+      const atEnd = strip.scrollLeft >= max - 1 && e.deltaY > 0;
+      if (atStart || atEnd) return; // let the page scroll on past the ends
+      e.preventDefault();
+      strip.scrollLeft += e.deltaY;
+    },
+    { passive: false },
+  );
 });
 
 /* ---------------------------------------------------------- 4. reveals --- */

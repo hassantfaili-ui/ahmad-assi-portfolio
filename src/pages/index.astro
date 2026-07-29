@@ -2,30 +2,27 @@
 import { getCollection } from 'astro:content';
 import Datum from '../layouts/Datum.astro';
 import Filmstrip from '../components/Filmstrip.astro';
+import HeroFilm from '../components/HeroFilm.astro';
 import resume from '../data/resume.json';
 
 const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+
+/* Short enough to read over moving footage. The full version is on the resume. */
+const intro =
+  'A graduate of the Bachelor of Architectural Studies at Carleton University, ' +
+  'majoring in urbanism. I work between design and the site itself: masterplans ' +
+  'and drawings on one side, construction and built interiors on the other.';
 ---
 
 <Datum pageTitle={`${resume.name}, ${resume.discipline}`} description={resume.positioning}>
-  <section class="hero load">
-    <p class="eyebrow" style="--i:0">
-      {resume.discipline} &nbsp;/&nbsp; <em>{resume.location}</em>
-    </p>
-
-    <h1 style="--i:1">
-      Ahmad<br />
-      <span class="thin">Assi</span>
-    </h1>
-
-    <p class="sub" style="--i:2">{resume.positioning}</p>
-
-    <p style="--i:3; margin-top:2.5rem">
-      <a class="btn" href="/portfolio">
-        Curated works <span class="i" aria-hidden="true">&rarr;</span>
-      </a>
-    </p>
-  </section>
+  <HeroFilm
+    eyebrow={`${resume.discipline} \u00a0/\u00a0 ${resume.location}`}
+    name="Ahmad"
+    surname="Assi"
+    intro={intro}
+    ctaLabel="Architecture"
+    ctaHref="/architecture"
+  />
 
   <section aria-labelledby="works">
     <h2 class="section-title" id="works">Curated <em>Works</em></h2>

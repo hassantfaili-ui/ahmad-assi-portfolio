@@ -1,7 +1,12 @@
 # Ahmad Assi Website: design
 
 **Date:** 2026-07-26
-**Status:** implemented, content pending
+**Status:** SUPERSEDED. Kept as the record of how the site was scoped and why.
+
+> The visual direction in section 6 is no longer what is built. That drawing-set
+> design was replaced by "Datum", and the placeholder content it assumed was
+> replaced by Ahmad's real CV and projects. The information architecture,
+> content model and constraints in sections 1 to 4 still hold.
 **Wireframes:** [`docs/wireframes/index.html`](../../wireframes/index.html) (v1)
 
 ## 1. What this is

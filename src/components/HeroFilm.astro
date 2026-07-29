@@ -1,0 +1,61 @@
+---
+/**
+ * The front hero: Ahmad's own renders as a slow moving film, with his
+ * introduction over it.
+ *
+ * The film is built from the project renders in public/media by
+ * scripts/build-hero-film.sh, so it is genuinely his work rather than stock
+ * footage. Replace hero.mp4 with a walkthrough or flythrough when there is one;
+ * nothing else has to change.
+ *
+ * It never autoplays on a narrow screen or when reduced motion is asked for.
+ * In those cases the poster frame shows and the video is never downloaded,
+ * which is why the source is held in data-src rather than src.
+ */
+interface Props {
+  eyebrow: string;
+  name: string;
+  surname: string;
+  intro: string;
+  ctaLabel: string;
+  ctaHref: string;
+}
+
+const { eyebrow, name, surname, intro, ctaLabel, ctaHref } = Astro.props;
+---
+
+<section class="film">
+  <video
+    class="film-media"
+    data-hero
+    data-src="/media/hero.mp4"
+    poster="/media/hero-poster.jpg"
+    muted
+    loop
+    playsinline
+    preload="none"
+    aria-hidden="true"
+    tabindex="-1"
+  >
+  </video>
+
+  <div class="film-scrim" aria-hidden="true"></div>
+
+  <div class="film-body load">
+    <p class="eyebrow" style="--i:0">{eyebrow}</p>
+    <h1 style="--i:1">
+      {name}<br />
+      <span class="thin">{surname}</span>
+    </h1>
+    <p class="film-intro" style="--i:2">{intro}</p>
+    <p style="--i:3; margin:2.25rem 0 0">
+      <a class="btn" href={ctaHref}>
+        {ctaLabel} <span class="i" aria-hidden="true">&rarr;</span>
+      </a>
+    </p>
+  </div>
+
+  <p class="film-credit" aria-hidden="true">
+    Lincoln Beach Center &nbsp;/&nbsp; La Casa Aranas
+  </p>
+</section>

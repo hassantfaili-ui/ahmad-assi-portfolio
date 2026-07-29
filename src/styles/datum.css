@@ -293,16 +293,6 @@ body::after {
   border-bottom-color: var(--mark);
 }
 
-.burger {
-  display: none;
-  justify-self: end;
-  font-family: var(--data);
-  font-size: var(--t-data);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-2);
-}
-
 /* ------------------------------------------------------------------ hero --- */
 
 .hero {
@@ -357,6 +347,91 @@ body::after {
   text-wrap: pretty;
 }
 
+/* ------------------------------------------------------------------ film --- */
+/* The front hero: his renders as a slow moving film, with the introduction over
+   it. The scrim is what keeps the type legible over moving imagery, so it is
+   part of the design rather than an afterthought. */
+
+.film {
+  position: relative;
+  min-height: min(92vh, 54rem);
+  display: grid;
+  place-items: center;
+  padding: clamp(3rem, 9vh, 6rem) var(--pad) clamp(4rem, 10vh, 7rem);
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.film-media {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* cooled and darkened so it sits in the site rather than on top of it */
+  filter: saturate(0.8) contrast(1.04) brightness(0.82);
+}
+
+.film-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(72% 58% at 50% 44%, rgba(7, 20, 23, 0.42) 0%, rgba(7, 20, 23, 0.8) 72%),
+    linear-gradient(180deg, rgba(7, 20, 23, 0.7) 0%, rgba(7, 20, 23, 0.16) 36%, var(--deep) 100%);
+}
+
+.film-body {
+  position: relative;
+  text-align: center;
+  max-width: 62rem;
+}
+.film-body h1 {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: var(--t-hero);
+  line-height: 0.82;
+  letter-spacing: -0.005em;
+  text-transform: uppercase;
+  margin: 0;
+  text-shadow: 0 2px 40px rgba(4, 15, 18, 0.6);
+}
+.film-body h1 .thin {
+  font-weight: 200;
+}
+
+.film-intro {
+  margin: 1.9rem auto 0;
+  max-width: 46ch;
+  color: var(--ink);
+  font-size: var(--t-lead);
+  line-height: 1.62;
+  text-wrap: pretty;
+}
+
+/* what the footage is, credited quietly in the corner */
+.film-credit {
+  position: absolute;
+  left: var(--pad);
+  bottom: 1.5rem;
+  margin: 0;
+  font-family: var(--data);
+  font-size: var(--t-data);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+@media (max-width: 880px) {
+  .film {
+    min-height: 78vh;
+  }
+  .film-credit {
+    display: none;
+  }
+}
+
 /* ------------------------------------------------------------- filmstrip --- */
 /* Reference geometry: 300px squares on a 310px pitch, horizontal scroll. */
 
@@ -377,6 +452,19 @@ body::after {
 }
 .strip::-webkit-scrollbar {
   display: none;
+}
+/* draggable: grab and move the works sideways */
+.strip {
+  cursor: grab;
+}
+.strip.is-dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+  scroll-behavior: auto;
+  user-select: none;
+}
+.strip.is-dragging a {
+  pointer-events: none;
 }
 
 .tile {
@@ -919,56 +1007,18 @@ body::after {
     --datum: 70vh;
   }
 
+  /* The menu stays at the top on every screen, so the header stacks into three
+     centred rows rather than hiding the pages behind a button. */
   .top {
-    grid-template-columns: auto 1fr auto;
-    row-gap: 1.1rem;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    row-gap: 0.9rem;
+    text-align: center;
   }
-  .top > nav {
-    display: none;
-  }
-  .social {
-    order: 3;
-    grid-column: 1 / -1;
-  }
-  .burger {
-    display: block;
-    grid-column: 3;
-  }
-
-  .menu {
-    position: fixed;
-    inset: 0;
-    z-index: 70;
-    background: var(--below);
-    display: none;
-    flex-direction: column;
-    align-items: center;
+  .pages {
     justify-content: center;
-    gap: 1.5rem;
-  }
-  .menu[open] {
-    display: flex;
-  }
-  .menu a {
-    font-family: var(--display);
-    font-weight: 500;
-    font-size: clamp(2.25rem, 11vw, 3.5rem);
-    line-height: 1;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-  }
-  .menu a:hover {
-    color: var(--mark);
-  }
-  .menu-close {
-    position: absolute;
-    top: 1.5rem;
-    right: var(--pad);
-    font-family: var(--data);
-    font-size: var(--t-data);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--ink-3);
+    flex-wrap: wrap;
+    gap: 1rem 1.25rem;
   }
 
   .stagger {
@@ -986,8 +1036,4 @@ body::after {
   }
 }
 
-@media (min-width: 881px) {
-  .menu {
-    display: none !important;
-  }
-}
+

@@ -12,7 +12,7 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 
 const PAGES = [
   { label: 'Home', href: '/' },
-  { label: 'Portfolio', href: '/portfolio' },
+  { label: 'Architecture', href: '/architecture' },
   { label: 'Resume', href: '/resume' },
   { label: 'Contact', href: '/contact' },
 ];
@@ -87,19 +87,11 @@ const PHONE_ICON =
         </ul>
       </nav>
 
-      <button class="burger" type="button" data-menu-open aria-expanded="false" aria-controls="menu">
-        Index
-      </button>
     </header>
 
     <main id="main">
       <slot />
     </main>
-
-    <div class="menu" data-menu id="menu">
-      <button class="menu-close" type="button" data-menu-close>Close</button>
-      {PAGES.map((p) => <a href={p.href}>{p.label}</a>)}
-    </div>
 
     <footer class="foot">
       <a class="wordmark" href="/">{resume.name}</a>
