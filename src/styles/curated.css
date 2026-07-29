@@ -1,0 +1,666 @@
+/* ==========================================================================
+   Ahmad Assi, architect
+   Design: "Curated Works"
+
+   A close match to the reference portfolio the client supplied: a warm dark
+   brown ground, one geometric sans in light weights, centred display type, and
+   square image tiles in a horizontal filmstrip. Almost no chrome. The images
+   carry the page.
+
+   Measured from the reference rather than guessed:
+     ground        rgb(55, 45, 40)
+     display       Futura Book, 60px, centred, white, normal tracking
+     name          Futura Book, 22px, header and footer
+     tiles         300px squares on a 310px pitch, so 10px gaps
+   Futura is licensed, so Jost stands in for it: same geometric skeleton,
+   same single-storey a, free to embed.
+   ========================================================================== */
+
+@import '@fontsource-variable/jost/wght.css';
+
+:root {
+  --ground: #372d28;
+  --ground-2: #2e2621;
+  --ink: #ffffff;
+  --ink-2: rgba(255, 255, 255, 0.72);
+  --ink-3: rgba(255, 255, 255, 0.48);
+  --rule: rgba(255, 255, 255, 0.16);
+  --veil: rgba(38, 31, 27, 0.55);
+
+  --sans: 'Jost Variable', 'Jost', 'Futura', 'Century Gothic', sans-serif;
+
+  /* the reference sets its display at a flat 60px; this holds that on desktop
+     and steps down rather than overflowing on a phone */
+  --t-hero: clamp(2.25rem, 7vw, 3.75rem);
+  --t-title: clamp(1.75rem, 4.5vw, 2.75rem);
+  --t-name: 1.375rem;
+  --t-nav: 1.0625rem;
+  --t-body: 1.0625rem;
+  --t-small: 0.8125rem;
+
+  --tile: 300px;
+  --gap: 10px;
+
+  --pad: clamp(1.25rem, 5vw, 3.25rem);
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: var(--t-body);
+  font-weight: 300;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--ground);
+}
+
+/* ------------------------------------------------------------- skip link --- */
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 1rem;
+  z-index: 100;
+  padding: 0.75rem 1rem;
+  background: var(--ink);
+  color: var(--ground);
+  font-size: var(--t-small);
+}
+.skip:focus {
+  left: 1rem;
+}
+
+/* ---------------------------------------------------------------- header --- */
+/* Name left, social row centred, pages right. Exactly the reference's split. */
+
+.top {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.75rem var(--pad);
+}
+
+.wordmark {
+  font-size: var(--t-name);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.social {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.social a {
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--ground);
+  transition: opacity 0.2s var(--ease);
+}
+.social a:hover {
+  opacity: 0.72;
+}
+.social svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  fill: currentColor;
+}
+
+.pages {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--t-nav);
+  font-weight: 300;
+}
+.pages a {
+  color: var(--ink-2);
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
+  transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.pages a:hover {
+  color: var(--ink);
+}
+.pages a[aria-current='page'] {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+.burger {
+  display: none;
+  justify-self: end;
+  font-size: var(--t-nav);
+  font-weight: 300;
+  color: var(--ink-2);
+}
+
+/* ------------------------------------------------------------------ hero --- */
+
+.hero {
+  padding: clamp(3rem, 9vw, 6.5rem) var(--pad) clamp(2.5rem, 6vw, 4rem);
+  text-align: center;
+}
+
+.hero h1,
+.hero p.display {
+  margin: 0;
+  font-size: var(--t-hero);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.hero .sub {
+  margin: 1.5rem auto 0;
+  max-width: 46ch;
+  color: var(--ink-2);
+  font-weight: 300;
+}
+
+/* ------------------------------------------------------------- filmstrip --- */
+/* 300px squares, 10px gaps, scrolled horizontally with arrows, exactly as the
+   reference. Native scroll snap does the work so it stays keyboard reachable
+   and works without JavaScript. */
+
+.strip-wrap {
+  position: relative;
+  padding: 0 0 clamp(3rem, 7vw, 5rem);
+}
+
+.strip {
+  display: flex;
+  gap: var(--gap);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  padding: 0 var(--pad);
+  scrollbar-width: none;
+}
+.strip::-webkit-scrollbar {
+  display: none;
+}
+
+.tile {
+  position: relative;
+  flex: 0 0 var(--tile);
+  width: var(--tile);
+  height: var(--tile);
+  scroll-snap-align: center;
+  overflow: hidden;
+  background: var(--ground-2);
+}
+.tile > :first-child {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.tile svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Title over the image, as the reference reveals it. Always visible on touch,
+   because hover does not exist there. */
+.tile-label {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  text-align: center;
+  background: var(--veil);
+  opacity: 0;
+  transition: opacity 0.3s var(--ease);
+}
+.tile-label span {
+  font-size: clamp(1.25rem, 2.6vw, 1.875rem);
+  font-weight: 400;
+  line-height: 1.2;
+}
+.tile:hover .tile-label,
+.tile:focus-visible .tile-label,
+.tile a:focus-visible + .tile-label {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .tile-label {
+    opacity: 1;
+    background: linear-gradient(to top, rgba(38, 31, 27, 0.85) 0%, transparent 62%);
+    place-items: end center;
+  }
+}
+
+.arrow {
+  position: absolute;
+  top: calc(var(--tile) / 2);
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  font-size: 1.5rem;
+  font-weight: 300;
+  transition: opacity 0.2s var(--ease);
+}
+.arrow:hover {
+  opacity: 0.6;
+}
+.arrow[hidden] {
+  display: none;
+}
+.arrow-prev {
+  left: calc(var(--pad) / 4);
+}
+.arrow-next {
+  right: calc(var(--pad) / 4);
+}
+
+/* ------------------------------------------------------- project layout --- */
+/* The reference staggers project images down two columns at differing widths
+   rather than aligning them to a grid. */
+
+.stagger {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: start;
+  padding: 0 var(--pad) clamp(3rem, 7vw, 5rem);
+}
+.stagger figure {
+  margin: 0;
+}
+.stagger > *:nth-child(even) {
+  margin-top: clamp(2rem, 6vw, 5rem);
+}
+.stagger figcaption {
+  margin-top: 0.75rem;
+  color: var(--ink-3);
+  font-size: var(--t-small);
+  line-height: 1.6;
+}
+
+.prose {
+  max-width: 62ch;
+  margin: 0 auto;
+  padding: 0 var(--pad) clamp(2.5rem, 6vw, 4rem);
+  color: var(--ink-2);
+}
+.prose p {
+  margin: 0 0 1.35rem;
+}
+.prose p:last-child {
+  margin-bottom: 0;
+}
+
+.meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 1.5rem 2rem;
+  max-width: 62ch;
+  margin: 0 auto;
+  padding: 0 var(--pad) clamp(2.5rem, 6vw, 4rem);
+}
+.meta dt {
+  font-size: var(--t-small);
+  color: var(--ink-3);
+  margin-bottom: 0.3rem;
+}
+.meta dd {
+  margin: 0;
+  font-weight: 300;
+}
+
+/* prev and next, set wide and light like the reference */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(2rem, 5vw, 3.5rem) var(--pad);
+  border-top: 1px solid var(--rule);
+  font-size: clamp(1.125rem, 2.4vw, 1.5rem);
+  font-weight: 300;
+}
+.pager a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--ink-2);
+  transition: color 0.2s var(--ease);
+}
+.pager a:hover {
+  color: var(--ink);
+}
+.pager .i {
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+/* ------------------------------------------------------------------ text --- */
+
+.section-title {
+  margin: 0 0 clamp(1.5rem, 4vw, 2.5rem);
+  font-size: var(--t-title);
+  font-weight: 400;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.band {
+  padding: clamp(2.5rem, 6vw, 4.5rem) var(--pad);
+}
+.band + .band {
+  border-top: 1px solid var(--rule);
+}
+
+.centre {
+  text-align: center;
+}
+
+.list {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  max-width: 46rem;
+}
+.list li {
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--rule);
+}
+.list li:first-child {
+  border-top: 0;
+}
+.list .r {
+  font-size: 1.25rem;
+  font-weight: 400;
+}
+.list .f,
+.list .d {
+  color: var(--ink-3);
+  font-size: var(--t-small);
+}
+.list ul {
+  margin: 0.75rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--ink-2);
+}
+.list ul li {
+  padding: 0;
+  border: 0;
+  margin-bottom: 0.4rem;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.tag {
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--rule);
+  color: var(--ink-2);
+  font-size: var(--t-small);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.85rem 1.75rem;
+  border: 1px solid var(--ink);
+  font-size: var(--t-nav);
+  font-weight: 300;
+  transition: background 0.24s var(--ease), color 0.24s var(--ease);
+}
+.btn:hover {
+  background: var(--ink);
+  color: var(--ground);
+}
+
+.field {
+  margin-bottom: 1.25rem;
+  text-align: left;
+}
+.field label {
+  display: block;
+  font-size: var(--t-small);
+  color: var(--ink-3);
+  margin-bottom: 0.4rem;
+}
+.field input,
+.field textarea {
+  width: 100%;
+  padding: 0.8rem 0.9rem;
+  font: inherit;
+  font-size: var(--t-body);
+  color: var(--ink);
+  background: var(--ground-2);
+  border: 1px solid var(--rule);
+  border-radius: 0;
+}
+.field input:focus,
+.field textarea:focus {
+  outline: 1px solid var(--ink);
+  outline-offset: 0;
+}
+.field textarea {
+  min-height: 9rem;
+  resize: vertical;
+}
+.field .err {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: var(--t-small);
+  color: #e9a08a;
+}
+.notice {
+  margin-top: 1.25rem;
+  padding: 0.9rem 1rem;
+  border-left: 2px solid var(--ink-3);
+  background: var(--ground-2);
+  font-size: var(--t-small);
+  line-height: 1.6;
+}
+.notice a {
+  border-bottom: 1px solid var(--ink-3);
+}
+
+/* ---------------------------------------------------------------- footer --- */
+
+.foot {
+  padding: clamp(2.5rem, 6vw, 4rem) var(--pad) 2.5rem;
+  text-align: center;
+  border-top: 1px solid var(--rule);
+}
+.foot .wordmark {
+  display: block;
+  margin-bottom: 1rem;
+}
+.foot .social {
+  margin-bottom: 1.25rem;
+}
+.foot small {
+  display: block;
+  color: var(--ink-3);
+  font-size: var(--t-small);
+}
+
+/* ---------------------------------------------------------------- motion --- */
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.load > * {
+  animation: fade-up 0.8s var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 110ms + 80ms);
+}
+
+.js .reveal {
+  opacity: 0;
+  transform: translateY(16px);
+}
+.js .reveal.is-in {
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.8s var(--ease), transform 0.8s var(--ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .strip {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .js .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------------------------------------------------------------- mobile --- */
+
+@media (max-width: 860px) {
+  :root {
+    --tile: 260px;
+  }
+
+  /* Name left, Menu right, social centred beneath. The nav wrapper has to be
+     hidden too, not just the list inside it, or it holds an empty grid cell
+     and shunts the button onto its own row. */
+  .top {
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    row-gap: 1.25rem;
+  }
+  .top > nav {
+    display: none;
+  }
+  .social {
+    order: 3;
+    grid-column: 1 / -1;
+  }
+  .burger {
+    display: block;
+    grid-column: 3;
+  }
+
+  .menu {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: var(--ground);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.75rem;
+    text-align: center;
+  }
+  .menu[open] {
+    display: flex;
+  }
+  .menu a {
+    font-size: clamp(1.75rem, 8vw, 2.5rem);
+    font-weight: 300;
+  }
+  .menu-close {
+    position: absolute;
+    top: 1.75rem;
+    right: var(--pad);
+    font-size: var(--t-nav);
+    color: var(--ink-3);
+  }
+
+  .stagger {
+    grid-template-columns: 1fr;
+  }
+  .stagger > *:nth-child(even) {
+    margin-top: 0;
+  }
+
+  .pager {
+    font-size: 1.0625rem;
+  }
+}
+
+@media (min-width: 861px) {
+  .menu {
+    display: none !important;
+  }
+}

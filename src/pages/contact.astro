@@ -1,116 +1,84 @@
 ---
-import Sheet from '../layouts/Sheet.astro';
+import Curated from '../layouts/Curated.astro';
 import resume from '../data/resume.json';
 
-/**
- * Set this to the host's form handler once hosting is chosen. While it is empty
- * the form validates and then tells the truth: it is not connected yet, and
- * here is the email address instead. It never fakes a success message.
- */
+/** Set to the host's form handler once hosting is chosen. See the README. */
 const FORM_ENDPOINT = '';
 ---
 
-<Sheet
-  sheet="A-990"
-  title="Contact"
-  pageTitle="Contact, Ahmad Assi"
-  description="Get in touch with Ahmad Assi, architect, in Edmonton, Alberta."
-  scale="NTS"
+<Curated
+  pageTitle={`Contact, ${resume.name}`}
+  description={`Get in touch with ${resume.name} in ${resume.location}.`}
 >
+  <section class="hero load">
+    <h1 style="--i:0">Contact</h1>
+    <p class="sub" style="--i:1">{resume.availability}</p>
+  </section>
+
   <section class="band">
-    <p class="anno">A-990 &nbsp;/&nbsp; Contact</p>
-    <h1 style="margin-top:var(--s4)">Get in touch</h1>
-
-    <div class="split contact">
-      <!-- Direct details first. A hiring manager emails; they do not fill forms. -->
+    <dl class="meta reveal" style="padding-bottom:3rem">
       <div>
-        <p class="prose-lead" style="max-width:36ch">{resume.availability}</p>
+        <dt>Email</dt>
+        <dd>
+          <a href={`mailto:${resume.email}`} style="border-bottom:1px solid var(--ink-3)">
+            {resume.email}
+          </a>
+        </dd>
+      </div>
+      <div>
+        <dt>Phone</dt>
+        <dd>
+          <a href={`tel:${resume.phone.replace(/[^\d+]/g, '')}`}>{resume.phone}</a>
+        </dd>
+      </div>
+      <div>
+        <dt>Based in</dt>
+        <dd>{resume.location}</dd>
+      </div>
+    </dl>
 
-        <dl class="facts" style="margin-top:var(--s6)">
-          <div>
-            <dt>Email</dt>
-            <dd><a class="link" href={`mailto:${resume.email}`}>{resume.email}</a></dd>
-          </div>
-          <div>
-            <dt>Phone</dt>
-            <dd>{resume.phone}</dd>
-          </div>
-          <div>
-            <dt>Based in</dt>
-            <dd>{resume.location}</dd>
-          </div>
-          {
-            resume.social.map((s) => (
-              <div>
-                <dt>{s.label}</dt>
-                <dd>
-                  <a class="link" href={s.href} rel="me noopener">
-                    Profile
-                  </a>
-                </dd>
-              </div>
-            ))
-          }
-        </dl>
+    <form
+      class="form reveal"
+      method="post"
+      action={FORM_ENDPOINT || undefined}
+      novalidate
+      data-contact
+      data-endpoint={FORM_ENDPOINT}
+      style="max-width:34rem;margin:0 auto"
+    >
+      <div class="field">
+        <label for="name">Name</label>
+        <input id="name" name="name" type="text" autocomplete="name" required />
+        <span class="err" data-err-for="name" hidden></span>
       </div>
 
-      <form
-        class="form"
-        method="post"
-        action={FORM_ENDPOINT || undefined}
-        novalidate
-        data-contact
-        data-endpoint={FORM_ENDPOINT}
-      >
-        <p class="anno" style="margin-bottom:var(--s5)">Or send a message</p>
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="email" required />
+        <span class="err" data-err-for="email" hidden></span>
+      </div>
 
-        <div class="field">
-          <label for="name">Name</label>
-          <input id="name" name="name" type="text" autocomplete="name" required />
-          <span class="err" data-err-for="name" hidden></span>
-        </div>
+      <div class="field">
+        <label for="message">Message</label>
+        <textarea id="message" name="message" required></textarea>
+        <span class="err" data-err-for="message" hidden></span>
+      </div>
 
-        <div class="field">
-          <label for="email">Email</label>
-          <input id="email" name="email" type="email" autocomplete="email" required />
-          <span class="err" data-err-for="email" hidden></span>
-        </div>
+      <!-- honeypot instead of a CAPTCHA -->
+      <div aria-hidden="true" style="position:absolute;left:-9999px">
+        <label for="company">Company</label>
+        <input id="company" name="company" type="text" tabindex="-1" autocomplete="off" />
+      </div>
 
-        <div class="field">
-          <label for="subject">Subject</label>
-          <input id="subject" name="subject" type="text" required />
-          <span class="err" data-err-for="subject" hidden></span>
-        </div>
-
-        <div class="field">
-          <label for="message">Message</label>
-          <textarea id="message" name="message" required></textarea>
-          <span class="err" data-err-for="message" hidden></span>
-        </div>
-
-        <!-- Honeypot and a timing check instead of a CAPTCHA. Nobody should have
-             to solve a puzzle to reach him. -->
-        <div class="trap" aria-hidden="true">
-          <label for="company">Company</label>
-          <input id="company" name="company" type="text" tabindex="-1" autocomplete="off" />
-        </div>
-        <input type="hidden" name="opened" data-opened />
-
-        <button class="btn btn-solid" type="submit">
-          Send message <span class="arrow" aria-hidden="true">&rarr;</span>
-        </button>
-
-        <p class="notice" data-notice role="status" hidden></p>
-      </form>
-    </div>
+      <button class="btn" type="submit">Send message</button>
+      <p class="notice" data-notice role="status" hidden></p>
+    </form>
   </section>
-</Sheet>
+</Curated>
 
 <script>
   const form = document.querySelector<HTMLFormElement>('[data-contact]');
   const notice = document.querySelector<HTMLElement>('[data-notice]');
-  const opened = document.querySelector<HTMLInputElement>('[data-opened]');
-  if (opened) opened.value = String(Date.now());
 
   function setError(name: string, message: string | null) {
     const err = document.querySelector<HTMLElement>(`[data-err-for="${name}"]`);
@@ -122,10 +90,8 @@ const FORM_ENDPOINT = '';
   }
 
   const RULES: Record<string, (v: string) => string | null> = {
-    name: (v) => (v.trim() ? null : 'Add your name so he knows who is writing.'),
-    email: (v) =>
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? null : 'Check the email address.',
-    subject: (v) => (v.trim() ? null : 'One line on what this is about.'),
+    name: (v) => (v.trim() ? null : 'Add your name so Ahmad knows who is writing.'),
+    email: (v) => (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? null : 'Check the email address.'),
     message: (v) => (v.trim().length >= 12 ? null : 'A little more detail, at least a sentence.'),
   };
 
@@ -138,20 +104,18 @@ const FORM_ENDPOINT = '';
       setError(name, message);
       if (message && !firstBad) firstBad = input;
     }
-
     if (firstBad) {
       e.preventDefault();
       firstBad.focus();
       return;
     }
-
-    // Not yet connected to a form handler: say so rather than pretend to send.
+    // Not connected to a handler yet: say so rather than fake a success.
     if (!form.dataset.endpoint) {
       e.preventDefault();
       if (notice) {
         notice.hidden = false;
         notice.innerHTML =
-          'The form is not connected to a handler yet, so nothing was sent. Email <a class="link" href="mailto:ahmad@example.ca">ahmad@example.ca</a> in the meantime.';
+          'The form is not connected to a handler yet, so nothing was sent. Email <a href="mailto:ahmadassi2003@hotmail.com">ahmadassi2003@hotmail.com</a> in the meantime.';
       }
     }
   });
@@ -163,19 +127,3 @@ const FORM_ENDPOINT = '';
     });
   });
 </script>
-
-<style>
-  .contact { margin-top: var(--s7); align-items: start; }
-  .form { max-width: 34rem; }
-  .trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
-  .notice {
-    margin-top: var(--s4);
-    padding: var(--s3) var(--s4);
-    border-left: var(--w-heavy) solid var(--revision);
-    background: var(--sheet-2);
-    font-family: var(--mono);
-    font-size: var(--t-0);
-    line-height: 1.6;
-    color: var(--ink);
-  }
-</style>

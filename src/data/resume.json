@@ -1,181 +1,163 @@
 {
   "name": "Ahmad Assi",
-  "discipline": "Architect",
-  "credential": "OAA, MRAIC",
-  "registration": "Licensed in Alberta and Ontario",
-  "location": "Edmonton, Alberta",
-  "yearsExperience": "11 years in practice",
-  "availability": "Open to senior project roles",
+  "discipline": "Architectural Designer",
+  "credential": "B.A.S. (Honours), Urbanism",
+  "registration": "Carleton University, Azrieli School of Architecture and Urbanism",
+  "location": "Ottawa, Ontario",
+  "yearsExperience": "Graduated 2025",
+  "availability": "Seeking a position with a professional firm",
   "issued": "2026.07",
-  "positioning": "I design buildings that hold up under a prairie winter and still feel generous in it. Eleven years across housing, civic and cultural work, most of it spent on the drawings that get built.",
+
+  "welcome": "Hello and welcome to the portfolio of",
+
+  "positioning": "I am a graduate of the Bachelor of Architecture program, majoring in urbanism, at the Azrieli School of Carleton University. During my studies and in the past few years I have worked in many fields and have amassed plenty of experience. As you scour my portfolio, I hope that my skills and creativity will catch your eye.",
+
   "longBio": [
-    "I came to architecture through building. Three summers framing houses outside Edmonton taught me that a detail either works at minus thirty or it does not, and that most of what separates a good building from a merely handsome one is decided long after the concept is signed off.",
-    "Since then I have worked mostly in the middle of projects, where design intent meets a real budget. I run drawing sets, resolve envelopes, and sit in the meetings where a decision is either defended or quietly lost. I am equally comfortable presenting to a council committee and standing on a site in a hard hat explaining why a joint matters.",
-    "My own interest is in cold climate public space: how a building can make winter usable rather than merely survivable. Most of my competition work circles that question."
+    "Recent graduate of the Bachelor of Architectural Studies (Honours) program at Carleton University with a major in Urbanism. I combine rigorous academic training with practical, hands-on experience in private residential design, construction, and operations management.",
+    "My background, spanning independent architectural projects, construction labour, and leadership roles, has cultivated a pragmatic, design-driven approach that emphasizes functionality, sustainability, and clear communication.",
+    "I am eager to contribute to a professional firm where I can apply my technical skills, creativity, and experience to deliver high-quality work and continue growing in the field."
   ],
-  "portraitAlt": "Portrait of Ahmad Assi. Placeholder until a photograph is supplied.",
+
+  "portraitAlt": "",
   "cvFile": "",
-  "email": "ahmad@example.ca",
-  "phone": "+1 780 000 0000",
-  "social": [
-    {
-      "label": "LinkedIn",
-      "href": "https://www.linkedin.com/"
-    },
-    {
-      "label": "Instagram",
-      "href": "https://www.instagram.com/"
-    }
-  ],
+
+  "email": "ahmadassi2003@hotmail.com",
+  "phone": "613-291-8074",
+  "social": [],
+
   "facts": [
-    {
-      "label": "Status",
-      "value": "Open to senior project roles"
-    },
-    {
-      "label": "Based in",
-      "value": "Edmonton, Alberta"
-    },
-    {
-      "label": "Registration",
-      "value": "OAA, MRAIC"
-    },
-    {
-      "label": "In practice",
-      "value": "11 years"
-    }
+    { "label": "Status", "value": "Seeking a position with a firm" },
+    { "label": "Based in", "value": "Ottawa, Ontario" },
+    { "label": "Degree", "value": "B.A.S. (Honours), Urbanism" },
+    { "label": "Graduated", "value": "Carleton University, 2025" }
   ],
+
   "experience": [
     {
-      "role": "Senior Project Architect",
-      "firm": "Northlight Architecture",
-      "location": "Edmonton, AB",
-      "period": "2021 to present",
+      "role": "Private Architectural Projects",
+      "firm": "Independent",
+      "location": "Ottawa and internationally",
+      "period": "2023 to present",
       "onHome": true,
       "contributions": [
-        "Lead architect on two civic projects through construction, the larger at 4,200 square metres.",
-        "Rebuilt the office envelope detail library after a moisture failure on an earlier project, now standard on every job.",
-        "Run the drawing set: coordination, consultant integration, and the specification."
+        "La Casa Aranas, Kalibo, Aklan, Philippines. Designed a full-scale elevated house currently under construction with a split-bedroom layout, open-concept living areas, and integrated outdoor terraces. The design emphasizes efficient spatial organization and structural balance.",
+        "Interior design and landscaping. Completed and executed built interior design projects for bedrooms and basement renovations.",
+        "Developed a comprehensive backyard design currently under construction, including an artificial waterfall, interlock surfaces, artificial grass, gazebo, and planted landscape."
       ]
     },
     {
-      "role": "Project Architect",
-      "firm": "Grierson + Bell",
-      "location": "Toronto, ON",
-      "period": "2017 to 2021",
+      "role": "Senior Chef",
+      "firm": "Cafe Cristal",
+      "location": "Ottawa, ON",
+      "period": "2020 to 2024",
       "onHome": true,
       "contributions": [
-        "Delivered eleven mid rise residential permit sets, six of which are built.",
-        "Led the firm's move from drafted details to a coordinated model, which cut consultant clashes noticeably."
+        "Managed culinary operations, overseeing staff and ensuring food quality and presentation.",
+        "Developed innovative menu items, enhancing customer dining experiences and workflow efficiencies."
       ]
     },
     {
-      "role": "Intern Architect",
-      "firm": "Studio Vasa",
-      "location": "Toronto, ON",
-      "period": "2015 to 2017",
+      "role": "Construction Labourer",
+      "firm": "Keep Clean, 2020. JA Renos, 2021 to present",
+      "location": "Ottawa, ON",
+      "period": "2020 to present",
       "onHome": true,
       "contributions": [
-        "Competition drawings, physical models, and the parts of a set nobody volunteers for.",
-        "Site review on a heritage retrofit, twice weekly for fourteen months."
-      ]
-    },
-    {
-      "role": "Carpenter's labourer",
-      "firm": "Assi Brothers Construction",
-      "location": "Edmonton, AB",
-      "period": "2010 to 2013, summers",
-      "onHome": false,
-      "contributions": [
-        "Framing, sheathing and forming on single family houses. The reason I detail the way I do."
+        "Worked on construction sites in Barrhaven, Riverside South, Orleans and Kanata.",
+        "Supported residential construction tasks including site preparation, landscaping, painting, caulking and installations, while maintaining safety and workmanship standards."
       ]
     }
   ],
+
   "education": [
     {
-      "credential": "Master of Architecture",
-      "institution": "University of Toronto, John H. Daniels Faculty",
-      "year": "2015",
-      "note": "Thesis: Terminal Moraine, a public bath on a gravel pit."
+      "credential": "Bachelor of Architectural Studies (Honours), Urbanism Major",
+      "institution": "Carleton University",
+      "year": "2025",
+      "note": "Dean's Honour List, Faculty of Engineering and Design."
     },
     {
-      "credential": "Bachelor of Environmental Design Studies",
-      "institution": "University of Manitoba",
-      "year": "2012",
-      "note": "Graduated with distinction."
+      "credential": "International Baccalaureate (IB) Program",
+      "institution": "Omer Deslauriers Public High School",
+      "year": "",
+      "note": ""
     }
   ],
+
   "skillGroups": [
     {
-      "label": "Documentation",
+      "label": "Software",
       "items": [
-        "Revit",
+        "SketchUp",
+        "D5 Render",
+        "Adobe Illustrator",
+        "Adobe Photoshop",
+        "Adobe InDesign",
         "AutoCAD",
-        "Bluebeam",
-        "NBC and Alberta Building Code",
-        "Specifications, MasterFormat"
-      ]
-    },
-    {
-      "label": "Design and visualisation",
-      "items": [
         "Rhino",
-        "Grasshopper",
-        "V-Ray",
-        "Illustrator",
-        "InDesign",
-        "Physical modelling"
+        "Revit",
+        "ArcGIS Pro"
       ]
     },
     {
-      "label": "Performance",
+      "label": "Personal",
       "items": [
-        "Climate Studio",
-        "THERM",
-        "Envelope detailing",
-        "Passive House principles"
+        "Composure",
+        "Communication",
+        "Management",
+        "Networking",
+        "Leadership",
+        "Collaboration",
+        "Organization",
+        "Critical thinking",
+        "Creativity",
+        "Punctuality",
+        "Consistency",
+        "Resilience"
+      ]
+    },
+    {
+      "label": "Construction",
+      "items": [
+        "Safety protocols",
+        "Hands-on labour",
+        "Equipment operations",
+        "Material handling",
+        "Adaptability"
+      ]
+    },
+    {
+      "label": "Culinary",
+      "items": [
+        "Chef",
+        "Management",
+        "Menu development",
+        "Food preparation",
+        "Presentation",
+        "Customer service",
+        "Event organizing"
       ]
     }
   ],
+
   "languages": [
     "English, fluent",
+    "French, fluent",
     "Arabic, fluent",
-    "French, working"
+    "Spanish, intermediate"
   ],
-  "awards": [
-    {
-      "title": "Prairie Design Awards, Merit",
-      "detail": "Whitemud Library Addition",
-      "year": "2025"
-    },
-    {
-      "title": "Nordic Pavilion, shortlisted",
-      "detail": "Open international competition",
-      "year": "2023"
-    },
-    {
-      "title": "OAA Guild Medal",
-      "detail": "Graduating thesis",
-      "year": "2015"
-    }
+
+  "volunteering": [
+    { "title": "Scouts Leader", "detail": "ABCCO Community Centre", "year": "2025 to present" },
+    { "title": "Admin, Youth Program", "detail": "ABCCO Community Centre", "year": "2025 to present" },
+    { "title": "Viva Retirement Home", "detail": "Barrhaven, assisting the elderly", "year": "" },
+    { "title": "Shepherds of Good Hope", "detail": "Raised donations and provided food", "year": "" },
+    { "title": "Boys and Girls Club", "detail": "Organized youth events and outreach", "year": "" }
   ],
-  "publications": [
-    {
-      "title": "Warm rooms in a cold city",
-      "detail": "Canadian Architect, essay",
-      "year": "2024"
-    },
-    {
-      "title": "Detailing for minus thirty",
-      "detail": "RAIC conference paper",
-      "year": "2022"
-    }
-  ],
-  "exhibitions": [
-    {
-      "title": "Winter Commons",
-      "detail": "Edmonton Design Week",
-      "year": "2024"
-    }
-  ]
+
+  "awards": [],
+  "publications": [],
+  "exhibitions": [],
+
+  "references": "Available upon request"
 }

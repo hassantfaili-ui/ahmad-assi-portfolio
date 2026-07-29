@@ -1,0 +1,22 @@
+---
+import { getCollection } from 'astro:content';
+import Curated from '../layouts/Curated.astro';
+import Filmstrip from '../components/Filmstrip.astro';
+import resume from '../data/resume.json';
+
+const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+---
+
+<Curated
+  pageTitle={`Portfolio, ${resume.name}`}
+  description="A selection of architectural and urbanism work by Ahmad Assi."
+>
+  <section class="hero load">
+    <h1 style="--i:0">Curated Works</h1>
+    <p class="sub" style="--i:1">
+      A selection of my work. Explore the projects to learn more about what I do.
+    </p>
+  </section>
+
+  <Filmstrip projects={projects} />
+</Curated>

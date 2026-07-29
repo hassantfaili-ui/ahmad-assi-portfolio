@@ -178,9 +178,13 @@ export default config({
           label: 'Issue date',
           description: 'Appears in the title block, formatted like 2026.07.',
         }),
+        welcome: fields.text({
+          label: 'Welcome line',
+          description: 'The small line above the name on the home page.',
+        }),
         positioning: fields.text({
-          label: 'Positioning statement',
-          description: 'The two or three lines on the cover sheet.',
+          label: 'Introduction',
+          description: 'The paragraph under the name on the home page.',
           multiline: true,
         }),
         longBio: fields.array(fields.text({ label: 'Paragraph', multiline: true }), {
@@ -254,9 +258,14 @@ export default config({
           label: 'Languages',
           itemLabel: (props) => props.value || 'Language',
         }),
+        volunteering: dated('Volunteering and community'),
         awards: dated('Awards'),
         publications: dated('Writing'),
         exhibitions: dated('Exhibitions'),
+        references: fields.text({
+          label: 'References note',
+          description: 'Shown at the foot of the resume page.',
+        }),
       },
     }),
   },

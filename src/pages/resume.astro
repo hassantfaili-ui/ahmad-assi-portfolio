@@ -1,0 +1,122 @@
+---
+import Curated from '../layouts/Curated.astro';
+import resume from '../data/resume.json';
+---
+
+<Curated
+  pageTitle={`Resume, ${resume.name}`}
+  description={`Curriculum vitae for ${resume.name}, ${resume.discipline} in ${resume.location}.`}
+>
+  <section class="hero load">
+    <h1 style="--i:0">Resume</h1>
+    <p class="sub" style="--i:1">
+      {resume.location} &nbsp;&middot;&nbsp; {resume.phone} &nbsp;&middot;&nbsp;
+      <a href={`mailto:${resume.email}`} style="border-bottom:1px solid currentColor">{resume.email}</a>
+    </p>
+    {
+      resume.cvFile && (
+        <p style="--i:2; margin-top:2rem">
+          <a class="btn" href={resume.cvFile} download>
+            Download PDF
+          </a>
+        </p>
+      )
+    }
+  </section>
+
+  <section class="band">
+    <h2 class="section-title">Profile</h2>
+    <div class="prose">
+      {resume.longBio.map((p) => <p>{p}</p>)}
+    </div>
+  </section>
+
+  <section class="band">
+    <h2 class="section-title">Education</h2>
+    <ul class="list">
+      {
+        resume.education.map((e) => (
+          <li class="reveal">
+            <p class="r">{e.credential}</p>
+            <p class="f">
+              {e.institution}
+              {e.year && <> &nbsp;&middot;&nbsp; {e.year}</>}
+            </p>
+            {e.note && <p class="d">{e.note}</p>}
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section class="band">
+    <h2 class="section-title">Work Experience</h2>
+    <ul class="list">
+      {
+        resume.experience.map((r) => (
+          <li class="reveal">
+            <p class="r">{r.role}</p>
+            <p class="f">
+              {r.firm} &nbsp;&middot;&nbsp; {r.location} &nbsp;&middot;&nbsp; {r.period}
+            </p>
+            <ul>
+              {r.contributions.map((c) => (
+                <li>{c}</li>
+              ))}
+            </ul>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  {
+    resume.volunteering.length > 0 && (
+      <section class="band">
+        <h2 class="section-title">Volunteering and Community</h2>
+        <ul class="list">
+          {resume.volunteering.map((v) => (
+            <li class="reveal">
+              <p class="r">{v.title}</p>
+              <p class="f">
+                {v.detail}
+                {v.year && <> &nbsp;&middot;&nbsp; {v.year}</>}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  <section class="band">
+    <h2 class="section-title">Skills</h2>
+    {
+      resume.skillGroups.map((g) => (
+        <div class="reveal" style="margin-bottom:2.5rem">
+          <p class="centre" style="margin:0 0 1rem;color:var(--ink-3);font-size:var(--t-small)">
+            {g.label}
+          </p>
+          <div class="tags">
+            {g.items.map((i) => (
+              <span class="tag">{i}</span>
+            ))}
+          </div>
+        </div>
+      ))
+    }
+
+    <div class="reveal" style="margin-top:1rem">
+      <p class="centre" style="margin:0 0 1rem;color:var(--ink-3);font-size:var(--t-small)">
+        Languages
+      </p>
+      <div class="tags">
+        {resume.languages.map((l) => <span class="tag">{l}</span>)}
+      </div>
+    </div>
+
+    <p class="centre" style="margin-top:3rem;color:var(--ink-3);font-size:var(--t-small)">
+      References: {resume.references.toLowerCase()}
+    </p>
+  </section>
+</Curated>

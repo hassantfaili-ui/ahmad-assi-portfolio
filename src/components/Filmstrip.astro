@@ -1,0 +1,59 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import Drawing from './Drawing.astro';
+
+interface Props {
+  projects: CollectionEntry<'projects'>[];
+}
+
+const { projects } = Astro.props;
+---
+
+<!--
+  The filmstrip: square tiles on a horizontal scroll, the title revealed over
+  the image. Measured off the reference at 300px tiles with 10px gaps.
+-->
+<div class="strip-wrap" data-strip-wrap>
+  <button class="arrow arrow-prev" type="button" data-strip-prev aria-label="Previous projects" hidden>
+    &#8249;
+  </button>
+
+  <ul class="strip" data-strip>
+    {
+      projects.map((p) => (
+        <li class="tile">
+          <a href={`/work/${p.id}`} aria-label={p.data.title}>
+            {p.data.leadImage.src && p.data.leadImage.src.startsWith('/') ? (
+              <img src={p.data.leadImage.src} alt={p.data.leadImage.alt} loading="lazy" decoding="async" />
+            ) : (
+              <Drawing kind={p.data.leadImage.kind} seed={p.data.leadImage.seed} alt={p.data.leadImage.alt} reg={false} />
+            )}
+          </a>
+          <span class="tile-label" aria-hidden="true">
+            <span>{p.data.title}</span>
+          </span>
+        </li>
+      ))
+    }
+  </ul>
+
+  <button class="arrow arrow-next" type="button" data-strip-next aria-label="More projects" hidden>
+    &#8250;
+  </button>
+</div>
+
+<style>
+  .strip {
+    list-style: none;
+    margin: 0;
+  }
+  .tile a {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  /* the label sits above the link, so pointer events must pass through it */
+  .tile-label {
+    pointer-events: none;
+  }
+</style>

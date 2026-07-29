@@ -168,3 +168,7 @@ if (filters.length && items.length) {
     });
   });
 }
+
+/* This file is loaded as a module by the layout. The explicit export keeps
+   TypeScript treating it as one, so its top-level names stay scoped to it. */
+export {};

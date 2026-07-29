@@ -1,270 +1,37 @@
 ---
 import { getCollection } from 'astro:content';
-import Sheet from '../layouts/Sheet.astro';
-import Drawing from '../components/Drawing.astro';
+import Curated from '../layouts/Curated.astro';
+import Filmstrip from '../components/Filmstrip.astro';
 import resume from '../data/resume.json';
 
-const projects = (await getCollection('projects'))
-  .filter((p) => p.data.featured)
-  .sort((a, b) => a.data.order - b.data.order)
-  .slice(0, 6);
-
-const roles = resume.experience.filter((e) => e.onHome);
-
-const marks = [
-  { id: 'cover', label: 'A', name: 'Cover' },
-  { id: 'work', label: 'B', name: 'Selected work' },
-  { id: 'record', label: 'C', name: 'Experience' },
-  { id: 'skills', label: 'D', name: 'Education and skills' },
-  { id: 'contact', label: 'E', name: 'Contact' },
-];
+const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
 ---
 
-<Sheet
-  sheet="A-000"
-  title="Cover sheet"
+<Curated
   pageTitle={`${resume.name}, ${resume.discipline}`}
   description={resume.positioning}
-  scale="NTS"
-  marks={marks}
 >
-  <!-- A cover sheet names the set, lists what is in it, and shows one key drawing. -->
-  <section class="band band-tall cover load" id="cover">
-    <p class="anno" style="--i:0">
-      A-000 &nbsp;/&nbsp; Cover sheet &nbsp;/&nbsp; Issued {resume.issued} &nbsp;/&nbsp; Rev A
-    </p>
-
-    <h1 class="name" style="--i:1">Ahmad <em>Assi</em></h1>
-
-    <div class="cover-rule load-rule" aria-hidden="true"></div>
-
-    <div class="cover-body" style="--i:2">
-      <div>
-        <p class="anno-lg">
-          {resume.discipline} &nbsp;&middot;&nbsp; {resume.credential}<br />
-          {resume.registration}
-        </p>
-      </div>
-      <div>
-        <p class="prose-lead">{resume.positioning}</p>
-        <div class="cover-actions">
-          <a class="btn btn-solid" href="/work">
-            Open the set <span class="arrow" aria-hidden="true">&rarr;</span>
-          </a>
-          <a class="btn" href="/about">Curriculum vitae</a>
-        </div>
-      </div>
-    </div>
-
-    <dl class="strip" style="--i:3">
-      {
-        resume.facts.map((f) => (
-          <div>
-            <dt class="anno">{f.label}</dt>
-            <dd>{f.value}</dd>
-          </div>
-        ))
-      }
-    </dl>
-  </section>
-
-  <!-- selected work -->
-  <section class="band" id="work">
-    <div class="band-head">
-      <p class="anno">B &nbsp;/&nbsp; Selected work</p>
-      <span class="fill" aria-hidden="true"></span>
-      <p class="anno">{projects.length} sheets</p>
-    </div>
-
-    <div class="grid-3">
-      {
-        projects.map((p) => (
-          <a class="card reveal" href={`/work/${p.id}`}>
-            <Drawing
-              kind={p.data.leadImage.kind}
-              seed={p.data.leadImage.seed}
-              src={p.data.leadImage.src}
-              alt={p.data.leadImage.alt}
-            />
-            <div class="card-meta">
-              <span class="card-title">{p.data.title}</span>
-              <span class="card-sheet">{p.data.sheet}</span>
-            </div>
-            <p class="anno" style="margin-top:6px">
-              {p.data.buildingType} &nbsp;&middot;&nbsp; {p.data.year} &nbsp;&middot;&nbsp;{' '}
-              {p.data.status}
-            </p>
-          </a>
-        ))
-      }
-    </div>
-
-    <p style="margin-top:var(--s6)">
-      <a class="btn" href="/work">All projects <span class="arrow" aria-hidden="true">&rarr;</span></a>
+  <section class="hero load">
+    <p class="sub" style="--i:0; margin-top:0">{resume.welcome}</p>
+    <h1 style="--i:1">{resume.name}</h1>
+    <p class="sub" style="--i:2">{resume.positioning}</p>
+    <p style="--i:3; margin-top:2rem">
+      <a class="btn" href="/portfolio">Explore portfolio</a>
     </p>
   </section>
 
-  <!-- experience -->
-  <section class="band" id="record">
-    <div class="band-head">
-      <p class="anno">C &nbsp;/&nbsp; Experience</p>
-      <span class="fill" aria-hidden="true"></span>
-      <p class="anno">{resume.yearsExperience}</p>
-    </div>
+  <section aria-labelledby="works">
+    <h2 class="section-title" id="works">Curated Works</h2>
+    <Filmstrip projects={projects} />
+  </section>
 
-    <div class="entries">
-      {
-        roles.map((r) => (
-          <article class="entry reveal">
-            <div>
-              <p class="anno">{r.period}</p>
-              <p class="anno" style="margin-top:4px">{r.location}</p>
-            </div>
-            <div>
-              <h3 class="entry-role">{r.role}</h3>
-              <p class="entry-firm">{r.firm}</p>
-              <ul>
-                {r.contributions.map((c) => (
-                  <li>{c}</li>
-                ))}
-              </ul>
-            </div>
-          </article>
-        ))
-      }
+  <section class="band centre reveal">
+    <h2 class="section-title">About</h2>
+    <div class="prose">
+      {resume.longBio.map((p) => <p>{p}</p>)}
     </div>
-
-    <p style="margin-top:var(--s6)">
-      <a class="link anno-lg" href="/about">Full record, including earlier work</a>
+    <p style="margin-top:2rem">
+      <a class="btn" href="/resume">Resume and CV</a>
     </p>
   </section>
-
-  <!-- education and skills -->
-  <section class="band" id="skills">
-    <div class="band-head">
-      <p class="anno">D &nbsp;/&nbsp; Education and capability</p>
-      <span class="fill" aria-hidden="true"></span>
-    </div>
-
-    <div class="split reveal">
-      <div>
-        <p class="dim dim-l"><span>Education</span></p>
-        <div class="entries">
-          {
-            resume.education.map((e) => (
-              <article class="entry" style="grid-template-columns:5rem 1fr">
-                <p class="anno">{e.year}</p>
-                <div>
-                  <h3 class="entry-role" style="font-size:var(--t-2)">{e.credential}</h3>
-                  <p class="entry-firm">{e.institution}</p>
-                  <p style="font-size:var(--t-1);color:var(--ink-2)">{e.note}</p>
-                </div>
-              </article>
-            ))
-          }
-        </div>
-
-        <p class="dim dim-l" style="margin-top:var(--s7)"><span>Languages</span></p>
-        <div class="tags">
-          {resume.languages.map((l) => <span class="tag">{l}</span>)}
-        </div>
-      </div>
-
-      <div>
-        {
-          resume.skillGroups.map((g) => (
-            <div style="margin-bottom:var(--s6)">
-              <p class="dim dim-l"><span>{g.label}</span></p>
-              <div class="tags">
-                {g.items.map((i) => (
-                  <span class="tag">{i}</span>
-                ))}
-              </div>
-            </div>
-          ))
-        }
-      </div>
-    </div>
-  </section>
-
-  <!-- contact -->
-  <section class="band band-tight" id="contact">
-    <div class="closing reveal">
-      <div>
-        <p class="anno">E &nbsp;/&nbsp; Contact</p>
-        <h2 style="margin-top:var(--s3);font-size:var(--t-5)">{resume.availability}</h2>
-        <p class="anno-lg" style="margin-top:var(--s3)">
-          {resume.location} &nbsp;&middot;&nbsp; {resume.credential}
-        </p>
-      </div>
-      <div class="closing-actions">
-        <a class="btn btn-solid" href="/contact">
-          Get in touch <span class="arrow" aria-hidden="true">&rarr;</span>
-        </a>
-        <a class="link anno-lg" href={`mailto:${resume.email}`}>{resume.email}</a>
-      </div>
-    </div>
-  </section>
-</Sheet>
-
-<style>
-  .cover { padding-top: clamp(var(--s7), 9vh, var(--s10)); }
-
-  .cover-rule {
-    height: var(--w-heavy);
-    background: var(--ink);
-    margin: clamp(var(--s5), 3vw, var(--s7)) 0 var(--s5);
-  }
-
-  .cover-body {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
-    gap: var(--s7);
-    align-items: start;
-  }
-
-  .cover-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--s3);
-    margin-top: var(--s6);
-  }
-
-  .strip {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: var(--s5);
-    margin: var(--s9) 0 0;
-    padding-top: var(--s4);
-    border-top: var(--w-thin) solid var(--line);
-  }
-  .strip dd {
-    margin: var(--s2) 0 0;
-    font-family: var(--mono);
-    font-size: var(--t-1);
-    color: var(--ink);
-    letter-spacing: 0.01em;
-  }
-
-  .closing {
-    display: flex;
-    align-items: flex-end;
-    gap: var(--s7);
-    flex-wrap: wrap;
-    padding: var(--s6) 0;
-  }
-  .closing-actions {
-    margin-left: auto;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--s4);
-  }
-
-  @media (max-width: 920px) {
-    .cover-body { grid-template-columns: 1fr; gap: var(--s5); }
-    .strip { grid-template-columns: 1fr 1fr; gap: var(--s4); }
-    .closing { flex-direction: column; align-items: stretch; gap: var(--s5); }
-    .closing-actions { margin-left: 0; }
-  }
-</style>
+</Curated>
