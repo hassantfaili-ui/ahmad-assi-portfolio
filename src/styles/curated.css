@@ -245,14 +245,19 @@ button {
   overflow: hidden;
   background: var(--ground-2);
 }
-.tile > :first-child {
+/* The link wraps the image, so the fit has to be set on the media itself, not
+   on the tile's first child. */
+.tile > a,
+.tile > .frame {
+  display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
 }
+.tile img,
 .tile svg {
   width: 100%;
   height: 100%;
+  object-fit: cover;
 }
 
 /* Title over the image, as the reference reveals it. Always visible on touch,
