@@ -85,6 +85,26 @@ const gallery = d.imageGroups.flatMap((g) =>
     }
   </div>
 
+  {
+    d.drawings.length > 0 && (
+      <section class="band" aria-labelledby="drawings">
+        <h2 class="section-title" id="drawings">Drawings</h2>
+        <div class="sheets">
+          {d.drawings.map((dr) => (
+            <figure class="reveal">
+              {isFile(dr.src) ? (
+                <img src={dr.src} alt={dr.alt} loading="lazy" decoding="async" />
+              ) : (
+                <Drawing kind={dr.kind} seed={dr.seed} alt={dr.alt} reg={false} />
+              )}
+              <figcaption>{dr.drawingType}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
   <nav class="pager" aria-label="Other projects">
     <a href={`/work/${prev.id}`}>
       <span aria-hidden="true">&#8249;</span> Previous

@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Rebuilds public/media/hero.mp4 and its poster from the project renders.
 #
-# Only image-led renders are used. The phasing diagram was tried and dropped:
-# it carries its own paragraphs of text, which fight the hero copy sitting over
-# the film.
+# Only image-led imagery is used, and only from projects the footage can be
+# honestly credited to: the La Casa Aranas site plan and the Lincoln Beach
+# masterplan. The phasing diagram was tried and dropped, since it carries its own
+# paragraphs of text which fight the hero copy sitting over the film.
 #
 # Three clips, so it loops cleanly: the house render panning one way, the
 # masterplan panning the other, then the house render panning back to where it
@@ -18,7 +19,7 @@ cd "$(dirname "$0")/.."
 D=6                      # seconds per clip
 X=1.4                    # crossfade
 OUT=public/media/hero.mp4
-A=public/media/elevated-house-render.jpg
+A=public/media/dave-site-circle.jpg
 B=public/media/lincoln-beach-masterplan.jpg
 
 # xfade consumes the overlap, so each offset steps by D - X
