@@ -61,6 +61,24 @@ const gallery = d.imageGroups.flatMap((g) =>
     </div>
   </div>
 
+  {
+    d.film && (
+      <section class="band" aria-labelledby="film">
+        <h2 class="section-title" id="film">Walkthrough</h2>
+        <figure class="film-frame reveal">
+          <video
+            controls
+            preload="none"
+            playsinline
+            poster={d.film.poster}
+            src={d.film.src}
+          />
+          {d.film.caption && <figcaption>{d.film.caption}</figcaption>}
+        </figure>
+      </section>
+    )
+  }
+
   <div class="stagger">
     <figure class="reveal">
       {

@@ -146,6 +146,23 @@ export default config({
             itemLabel: (props) => props.fields.drawingType.value || 'Drawing',
           },
         ),
+        film: fields.conditional(
+          fields.checkbox({ label: 'This project has a walkthrough film', defaultValue: false }),
+          {
+            false: fields.empty(),
+            true: fields.object({
+              src: fields.text({
+                label: 'Film file',
+                description: 'A path under /media, for example /media/lincoln-beach-film.mp4',
+              }),
+              poster: fields.text({
+                label: 'Poster frame',
+                description: 'A still shown before it plays, for example /media/lincoln-beach-film-poster.jpg',
+              }),
+              caption: fields.text({ label: 'Caption', multiline: true }),
+            }),
+          },
+        ),
         featured: fields.checkbox({
           label: 'Show on the cover sheet',
           description: 'The home page shows up to six featured projects.',

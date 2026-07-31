@@ -46,6 +46,14 @@ const projects = defineCollection({
     drawings: z
       .array(image.extend({ drawingType: z.string() }))
       .default([]),
+    /** An optional walkthrough or flythrough for this project. */
+    film: z
+      .object({
+        src: z.string(),
+        poster: z.string(),
+        caption: z.string().optional(),
+      })
+      .optional(),
     featured: z.boolean().default(false),
     order: z.number().int().default(99),
   }),

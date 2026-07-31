@@ -3,14 +3,14 @@
 A portfolio website that works as an online resume first and a project gallery second.
 Static output, no server to run, no monthly cost.
 
-> **The content is Ahmad's own**, taken from his existing site: his introduction, his full
-> CV, his contact details, and the Lincoln Beach Center and La Casa Aranas projects with
-> his own renders and drawings.
+> **All content is Ahmad's own.** His introduction, CV and contact details come from his
+> existing site. Three projects carry his own renders, drawings and film: Lincoln Beach
+> Center, La Casa Aranas and the Media Wall Cabinets.
 >
-> Two things to know. The six images that were on his old portfolio page were untouched
-> Wix stock demos, a skincare bottle and a jewellery magazine cover, so they were
-> discarded rather than shown as his work. And a couple of project details are inferred
-> rather than stated by him; see [What still needs Ahmad](#what-still-needs-ahmad).
+> Nothing on the site is stock. The six images that were on his old Wix portfolio page
+> were untouched template demos, a skincare bottle and a jewellery magazine cover, so they
+> were discarded rather than shown as his work. See
+> [What still needs Ahmad](#what-still-needs-ahmad) for the open items.
 
 ## Running it
 
@@ -84,11 +84,12 @@ the site is organised around a datum.
 - **Type does the work colour usually does.** Big Shoulders Display for condensed civic
   lettering, Spectral for prose, Martian Mono for anything numeric. All self hosted, so no
   request leaves the visitor's browser.
-- **The front film.** Ahmad's own renders as a slow moving loop behind his introduction,
-  built by `scripts/build-hero-film.sh` from the files in `public/media`. It is never
-  downloaded on a narrow screen or when reduced motion is requested; those cases keep the
-  poster frame. Replace `hero.mp4` with a real walkthrough when there is one and nothing
-  else has to change.
+- **The front film.** A 14 second excerpt of Ahmad's own Lincoln Beach walkthrough runs
+  behind his introduction. It is never downloaded on a narrow screen or when reduced
+  motion is requested; those cases keep the poster frame. The full 67 second film sits on
+  the Lincoln Beach project page as click to play, with `preload="none"` so an 11MB file
+  is only fetched by someone who asks for it. `scripts/build-hero-film.sh` still exists
+  for building a pan-and-crossfade loop out of stills if there is ever no video.
 - **The works move.** The filmstrip can be grabbed and dragged, nudged with the arrows,
   scrolled with a vertical wheel, swiped on touch, or tabbed through. It is a native
   scroll container underneath, so it still works with no JavaScript. A drag past a few
@@ -138,16 +139,20 @@ These are known and deliberate, not oversights:
 
 Work through the editor rather than the files.
 
-1. **Two inferred details.** The elevated house render is matched to **La Casa Aranas**
-   because his CV describes exactly that, an elevated house with terraces under
-   construction. Its bright siding also reads as New Orleans vernacular, so it may belong
-   to Lincoln Beach instead. One field to move if the guess is wrong. The **Lincoln Beach
-   year** is taken from his graduation date rather than stated anywhere.
-2. **More projects.** There are two. The rail is built for more, and its arrows and drag
-   only become useful once there are enough to overflow it.
-3. **A portrait**, if he wants one. There is no photograph of him anywhere in the
-   material supplied.
-4. **Categories.** The set in `keystatic.config.ts` and the matching enum in
+1. **Sts. Peter and Paul Church is deliberately not published.** The design development
+   set in that folder is the copyright of **Muzaiko Architecture**, is dated 2021-08, is
+   drawn by "P.A." rather than by him, and carries an explicit notice forbidding
+   reproduction without their written permission. Before any of it goes online we need to
+   know what his role actually was, and the Muzaiko sheets need their permission. The
+   outdoor renders may well be his own work and could go up crediting Muzaiko as project
+   architect, which is the normal and safe way to show it.
+2. **Confirm "Dave's House" is La Casa Aranas.** The drawings in that folder describe the
+   house his CV names, so they were merged into that project. If they are two different
+   houses, it is one file to split.
+3. **Two dates are inferred**, not stated in the material: the Lincoln Beach and La Casa
+   Aranas years both come from his graduation year.
+4. **A portrait**, if he wants one. There is no photograph of him in anything supplied.
+5. **Categories.** The set in `keystatic.config.ts` and the matching enum in
    `src/content.config.ts` should be trimmed to whatever his real work actually is.
 
 ### Putting the editor online

@@ -756,6 +756,28 @@ body::after {
   line-height: 1.6;
 }
 
+/* The project walkthrough. Click to play: never autoplayed, and preload="none"
+   so an 11MB film is only fetched by someone who actually wants it. */
+.film-frame {
+  max-width: 70rem;
+  margin: 0 auto;
+}
+.film-frame video {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: var(--below);
+  border: 1px solid var(--line);
+}
+.film-frame figcaption {
+  margin-top: 0.9rem;
+  padding-left: 0.9rem;
+  border-left: 1px solid var(--mark);
+  color: var(--ink-3);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
 /* Drawing sheets: line work on white, so each gets a hairline and room to
    breathe rather than bleeding into the dark ground. */
 .sheets {
