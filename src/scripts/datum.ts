@@ -98,9 +98,15 @@ document.querySelectorAll<HTMLElement>('[data-strip-wrap]').forEach((wrap) => {
   window.addEventListener('resize', sync);
   sync();
 
-  /* grab and move. Snapping is turned off while dragging or the strip fights
-     the pointer, and a drag past a few pixels suppresses the click so moving
-     the works never opens a project by accident. */
+  /* Grab and move.
+
+     Dragging starts lazily: the pointer is NOT captured on pointerdown, because
+     capturing retargets the following click to the strip and the tile's own link
+     never receives it, which silently breaks clicking the photos entirely.
+     Capture is taken only once the pointer has actually moved past a threshold,
+     so a plain click always reaches the link and a drag still works. */
+  const DRAG_START = 5; // px of movement before this counts as a drag
+  let pending = false;
   let dragging = false;
   let startX = 0;
   let startLeft = 0;
@@ -108,22 +114,34 @@ document.querySelectorAll<HTMLElement>('[data-strip-wrap]').forEach((wrap) => {
 
   strip.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
-    dragging = true;
+    pending = true;
+    dragging = false;
     moved = 0;
     startX = e.clientX;
     startLeft = strip.scrollLeft;
-    strip.setPointerCapture(e.pointerId);
-    strip.classList.add('is-dragging');
   });
 
   strip.addEventListener('pointermove', (e) => {
-    if (!dragging) return;
+    if (!pending && !dragging) return;
     const dx = e.clientX - startX;
     moved = Math.max(moved, Math.abs(dx));
-    strip.scrollLeft = startLeft - dx;
+
+    if (pending && moved > DRAG_START) {
+      pending = false;
+      dragging = true;
+      try {
+        strip.setPointerCapture(e.pointerId);
+      } catch {
+        /* capture is a nicety; the drag still works without it */
+      }
+      strip.classList.add('is-dragging');
+    }
+
+    if (dragging) strip.scrollLeft = startLeft - dx;
   });
 
   const endDrag = (e: PointerEvent) => {
+    pending = false;
     if (!dragging) return;
     dragging = false;
     strip.classList.remove('is-dragging');
@@ -133,10 +151,12 @@ document.querySelectorAll<HTMLElement>('[data-strip-wrap]').forEach((wrap) => {
   strip.addEventListener('pointerup', endDrag);
   strip.addEventListener('pointercancel', endDrag);
 
+  /* Only a real drag suppresses the click, so moving the works never opens a
+     project by accident and a click never gets eaten. */
   strip.addEventListener(
     'click',
     (e) => {
-      if (moved > 6) {
+      if (moved > DRAG_START) {
         e.preventDefault();
         e.stopPropagation();
       }

@@ -453,9 +453,13 @@ body::after {
 .strip::-webkit-scrollbar {
   display: none;
 }
-/* draggable: grab and move the works sideways */
+/* The tiles are links first, so they get a pointer. The rail can still be
+   grabbed and dragged; only then does the cursor change to a grabbing hand. */
 .strip {
-  cursor: grab;
+  cursor: default;
+}
+.tile > a {
+  cursor: pointer;
 }
 .strip.is-dragging {
   cursor: grabbing;
@@ -463,8 +467,9 @@ body::after {
   scroll-behavior: auto;
   user-select: none;
 }
-.strip.is-dragging a {
-  pointer-events: none;
+.strip.is-dragging,
+.strip.is-dragging .tile > a {
+  cursor: grabbing;
 }
 
 .tile {
