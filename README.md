@@ -12,6 +12,25 @@ Static output, no server to run, no monthly cost.
 > were discarded rather than shown as his work. See
 > [What still needs Ahmad](#what-still-needs-ahmad) for the open items.
 
+## Live site
+
+**https://hassantfaili-ui.github.io/ahmad-assi-portfolio/**
+
+Deployed by GitHub Actions on every push to `main`
+(`.github/workflows/deploy.yml`): checkout, `npm ci`, `astro check`, build,
+publish. The type check runs in CI, so a build with type errors cannot publish.
+
+Because this is a project repo, Pages serves it from a subfolder rather than the
+domain root. That is why `astro.config.mjs` sets `base` and why every internal
+link and asset goes through `url()` in `src/lib/url.ts`. Content files keep clean
+paths like `/media/hero.mp4`; the prefix is added at render time. To move to a
+custom domain such as ahmadassi.ca, set `site` to the domain, set `base` back to
+`'/'`, add a `CNAME` file in `public/`, and point the DNS at GitHub. Nothing else
+changes.
+
+The Keystatic editor never reaches the deployed site: it is mounted only when
+`npm_lifecycle_event` is `dev`, and CI runs `build`.
+
 ## Running it
 
 ```bash
@@ -121,10 +140,12 @@ the site is organised around a datum.
 These are known and deliberate, not oversights:
 
 1. **Confirm the inferred project details.** See below.
-2. **Connect the contact form.** `src/pages/contact.astro` has a `FORM_ENDPOINT`
-   constant. Until it is set, the form validates and then says plainly that it is not
-   connected and gives the email address. It never pretends to have sent anything. Set it
-   to the host's form handler once hosting is chosen.
+2. **Connect the contact form.** GitHub Pages is static only, so it cannot receive a
+   form post at all. `src/pages/contact.astro` has a `FORM_ENDPOINT` constant; until it
+   is set the form validates and then says plainly that it is not connected, and gives
+   the email address. It never pretends to have sent anything. To make it work, point
+   `FORM_ENDPOINT` at a third party handler such as Formspree, or drop the form and keep
+   the email and phone, which are already the fastest way to reach him.
 3. **Add the CV PDF.** Put it in `public/cv/` and set `cvFile` in the editor. Until then
    the resume page simply omits the download button rather than offering a broken one.
 4. **Choose hosting and a domain.** The build is portable: Cloudflare Pages, Netlify and
