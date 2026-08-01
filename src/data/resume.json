@@ -7,68 +7,101 @@
   "yearsExperience": "Graduated 2025",
   "availability": "Seeking a position with a professional firm",
   "issued": "2026.07",
-
   "welcome": "Hello and welcome to the portfolio of",
-
   "positioning": "I am a graduate of the Bachelor of Architecture program, majoring in urbanism, at the Azrieli School of Carleton University. During my studies and in the past few years I have worked in many fields and have amassed plenty of experience. As you scour my portfolio, I hope that my skills and creativity will catch your eye.",
-
   "longBio": [
-    "Recent graduate of the Bachelor of Architectural Studies (Honours) program at Carleton University with a major in Urbanism. I combine rigorous academic training with practical, hands-on experience in private residential design, construction, and operations management.",
-    "My background, spanning independent architectural projects, construction labour, and leadership roles, has cultivated a pragmatic, design-driven approach that emphasizes functionality, sustainability, and clear communication.",
-    "I am eager to contribute to a professional firm where I can apply my technical skills, creativity, and experience to deliver high-quality work and continue growing in the field."
+    "Recent graduate of the Bachelor of Architectural Studies (Honours) program at Carleton University with a major in Urbanism. I combine rigorous academic training with practical, hands-on experience in private residential design, construction, and operations-based roles across multiple work environments.",
+    "My background, spanning independent architectural projects, construction labour, project support, leadership, and time-sensitive responsibilities, has cultivated a pragmatic, design-driven approach that emphasizes functionality, sustainability, and clear communication.",
+    "I am eager to contribute to a professional firm where I can apply my technical skills, creativity, and experience to deliver high-quality work and continue growing professionally."
   ],
-
   "portraitAlt": "",
-  "cvFile": "",
-
+  "cvFile": "/cv/Ahmad_Assi_Resume.pdf",
   "email": "ahmadassi2003@hotmail.com",
   "phone": "613-291-8074",
   "social": [],
-
   "facts": [
-    { "label": "Status", "value": "Seeking a position with a firm" },
-    { "label": "Based in", "value": "Ottawa, Ontario" },
-    { "label": "Degree", "value": "B.A.S. (Honours), Urbanism" },
-    { "label": "Graduated", "value": "Carleton University, 2025" }
+    {
+      "label": "Status",
+      "value": "Seeking a position with a firm"
+    },
+    {
+      "label": "Based in",
+      "value": "Ottawa, Ontario"
+    },
+    {
+      "label": "Degree",
+      "value": "B.A.S. (Honours), Urbanism"
+    },
+    {
+      "label": "Graduated",
+      "value": "Carleton University, 2025"
+    }
   ],
-
   "experience": [
     {
       "role": "Private Architectural Projects",
       "firm": "Independent",
       "location": "Ottawa and internationally",
-      "period": "2023 to present",
-      "onHome": true,
+      "period": "May 2023 to present",
       "contributions": [
-        "La Casa Aranas, Kalibo, Aklan, Philippines. Designed a full-scale elevated house currently under construction with a split-bedroom layout, open-concept living areas, and integrated outdoor terraces. The design emphasizes efficient spatial organization and structural balance.",
+        "La Casa Aranas, Kalibo, Aklan, Philippines. Designed a full-scale elevated house currently under construction with a split-bedroom layout, open-concept living areas and integrated outdoor terraces. The design emphasizes efficient spatial organization, structural balance and strong technical coordination.",
         "Interior design and landscaping. Completed and executed built interior design projects for bedrooms and basement renovations.",
-        "Developed a comprehensive backyard design currently under construction, including an artificial waterfall, interlock surfaces, artificial grass, gazebo, and planted landscape."
+        "Developed a comprehensive backyard design currently under construction, including an artificial waterfall, interlock surfaces, artificial grass, a gazebo and planted landscape."
+      ]
+    },
+    {
+      "role": "Project Support Assistant",
+      "firm": "SD Consulting and Management Inc., Government projects",
+      "location": "Ottawa, ON",
+      "period": "February 2025 to October 2025",
+      "contributions": [
+        "Supported Government of Canada projects, assisting with project planning, research and documentation.",
+        "Contributed to project requirements development, costing spreadsheets and formal documentation while adhering to strict security and confidentiality protocols.",
+        "Prepared presentation materials and meeting minutes for management and project stakeholders, and provided ongoing part-time administrative and research support across multiple projects."
+      ]
+    },
+    {
+      "role": "Construction Labourer",
+      "firm": "Keep Clean, June to September 2020. JA Renos, May 2021 to present",
+      "location": "Ottawa, ON",
+      "period": "2020 to present",
+      "contributions": [
+        "Worked on residential construction sites in Barrhaven, Riverside South, Orleans and Kanata.",
+        "Supported site preparation, landscaping, painting, caulking and installations, consistently maintaining high safety and workmanship standards.",
+        "Demonstrated strong work ethic, adherence to safety protocols and effective teamwork in fast-paced construction environments."
+      ]
+    },
+    {
+      "role": "Medical Courier",
+      "firm": "Third-party courier for Dynacare",
+      "location": "Ottawa, ON",
+      "period": "December 2025 to present",
+      "contributions": [
+        "Delivered medical specimens while maintaining strict schedules, efficient routing and professional service.",
+        "Handled daily deliveries, client communication and vehicle organization, demonstrating reliability, punctuality and close attention to detail in high-responsibility work."
+      ]
+    },
+    {
+      "role": "Commercial Courier",
+      "firm": "Third-party courier for FedEx",
+      "location": "Ottawa, ON",
+      "period": "November to December 2025",
+      "contributions": [
+        "Delivered time-sensitive commercial packages while maintaining strict schedules, efficient routing and professional service.",
+        "Handled daily deliveries, client communication and vehicle organization."
       ]
     },
     {
       "role": "Senior Chef",
       "firm": "Cafe Cristal",
       "location": "Ottawa, ON",
-      "period": "2020 to 2024",
-      "onHome": true,
+      "period": "February 2020 to May 2024",
       "contributions": [
-        "Managed culinary operations, overseeing staff and ensuring food quality and presentation.",
-        "Developed innovative menu items, enhancing customer dining experiences and workflow efficiencies."
-      ]
-    },
-    {
-      "role": "Construction Labourer",
-      "firm": "Keep Clean, 2020. JA Renos, 2021 to present",
-      "location": "Ottawa, ON",
-      "period": "2020 to present",
-      "onHome": true,
-      "contributions": [
-        "Worked on construction sites in Barrhaven, Riverside South, Orleans and Kanata.",
-        "Supported residential construction tasks including site preparation, landscaping, painting, caulking and installations, while maintaining safety and workmanship standards."
+        "Managed culinary operations, overseeing staff while ensuring consistent food quality, presentation standards and efficient kitchen workflow.",
+        "Developed innovative menu items that enhanced customer dining experiences, improved service efficiency and supported high-volume operations."
       ]
     }
   ],
-
   "education": [
     {
       "credential": "Bachelor of Architectural Studies (Honours), Urbanism Major",
@@ -78,25 +111,34 @@
     },
     {
       "credential": "International Baccalaureate (IB) Program",
-      "institution": "Omer Deslauriers Public High School",
+      "institution": "Omer Deslauriers High School",
       "year": "",
       "note": ""
     }
   ],
-
   "skillGroups": [
     {
       "label": "Software",
       "items": [
         "SketchUp",
         "D5 Render",
-        "Adobe Illustrator",
-        "Adobe Photoshop",
-        "Adobe InDesign",
+        "Illustrator",
+        "Photoshop",
+        "InDesign",
         "AutoCAD",
         "Rhino",
         "Revit",
         "ArcGIS Pro"
+      ]
+    },
+    {
+      "label": "Construction",
+      "items": [
+        "Safety protocols",
+        "Hands-on labour",
+        "Equipment operations",
+        "Material handling",
+        "Adaptability"
       ]
     },
     {
@@ -117,20 +159,8 @@
       ]
     },
     {
-      "label": "Construction",
-      "items": [
-        "Safety protocols",
-        "Hands-on labour",
-        "Equipment operations",
-        "Material handling",
-        "Adaptability"
-      ]
-    },
-    {
       "label": "Culinary",
       "items": [
-        "Chef",
-        "Management",
         "Menu development",
         "Food preparation",
         "Presentation",
@@ -139,25 +169,41 @@
       ]
     }
   ],
-
   "languages": [
     "English, fluent",
     "French, fluent",
     "Arabic, fluent",
     "Spanish, intermediate"
   ],
-
   "volunteering": [
-    { "title": "Scouts Leader", "detail": "ABCCO Community Centre", "year": "2025 to present" },
-    { "title": "Admin, Youth Program", "detail": "ABCCO Community Centre", "year": "2025 to present" },
-    { "title": "Viva Retirement Home", "detail": "Barrhaven, assisting the elderly", "year": "" },
-    { "title": "Shepherds of Good Hope", "detail": "Raised donations and provided food", "year": "" },
-    { "title": "Boys and Girls Club", "detail": "Organized youth events and outreach", "year": "" }
+    {
+      "title": "Scouts Leader",
+      "detail": "ABCCO Community Centre",
+      "year": "2025 to present"
+    },
+    {
+      "title": "Admin, Youth Program",
+      "detail": "ABCCO Community Centre",
+      "year": "2025 to present"
+    },
+    {
+      "title": "Viva Retirement Home",
+      "detail": "Barrhaven, assisting the elderly",
+      "year": ""
+    },
+    {
+      "title": "Shepherds of Good Hope",
+      "detail": "Raised donations and provided food",
+      "year": ""
+    },
+    {
+      "title": "Boys and Girls Club",
+      "detail": "Organized youth events and outreach",
+      "year": ""
+    }
   ],
-
   "awards": [],
   "publications": [],
   "exhibitions": [],
-
   "references": "Available upon request"
 }

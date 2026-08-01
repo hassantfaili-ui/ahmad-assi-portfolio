@@ -241,7 +241,6 @@ export default config({
             firm: fields.text({ label: 'Firm' }),
             location: fields.text({ label: 'Location' }),
             period: fields.text({ label: 'Period', description: 'For example 2021 to present.' }),
-            onHome: fields.checkbox({ label: 'Show on the cover sheet', defaultValue: true }),
             contributions: fields.array(fields.text({ label: 'Contribution', multiline: true }), {
               label: 'Contributions',
               itemLabel: (props) => (props.value || '').slice(0, 48) || 'Contribution',
