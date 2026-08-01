@@ -3,7 +3,8 @@
  *  1. the elevation readout at the waterline
  *  2. the hero film
  *  3. the filmstrip: arrows, drag, and the wheel
- *  4. scroll reveals
+ *  4. project expansions
+ *  5. scroll reveals
  */
 
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -161,7 +162,77 @@ document.querySelectorAll<HTMLElement>('[data-strip-wrap]').forEach((wrap) => {
   );
 });
 
-/* ---------------------------------------------------------- 4. reveals --- */
+/* ------------------------------------------------------- 4. expansions --- */
+/* Clicking a tile expands its project under the rail instead of navigating.
+   The tile stays a real link, so this is an enhancement: with no JavaScript, or
+   on a modified click (new tab, download), the link is left alone. */
+
+const panels = Array.from(document.querySelectorAll<HTMLElement>('[data-panel]'));
+const triggers = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-expand]'));
+
+if (panels.length && triggers.length) {
+  const stripEl = document.querySelector<HTMLElement>('[data-strip]');
+
+  function closeAll() {
+    panels.forEach((p) => p.setAttribute('hidden', ''));
+    triggers.forEach((t) => {
+      t.setAttribute('aria-expanded', 'false');
+      t.closest('.tile')?.classList.remove('is-open');
+    });
+    stripEl?.classList.remove('has-open');
+  }
+
+  function open(id: string, focus: boolean) {
+    const panel = panels.find((p) => p.dataset.panel === id);
+    const trigger = triggers.find((t) => t.dataset.expand === id);
+    if (!panel || !trigger) return;
+    const already = trigger.getAttribute('aria-expanded') === 'true';
+    closeAll();
+    if (already) return; // clicking the open one closes it
+
+    panel.removeAttribute('hidden');
+    trigger.setAttribute('aria-expanded', 'true');
+    trigger.closest('.tile')?.classList.add('is-open');
+    stripEl?.classList.add('has-open');
+
+    if (focus) {
+      // move focus to the heading so a keyboard reader lands inside the panel
+      panel.querySelector<HTMLElement>('.panel-title')?.focus({ preventScroll: true });
+      panel.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' });
+    }
+  }
+
+  triggers.forEach((t) => {
+    t.addEventListener('click', (e) => {
+      // let people open the real page in a new tab or window
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || (e as MouseEvent).button !== 0) return;
+      e.preventDefault();
+      open(t.dataset.expand || '', true);
+    });
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('[data-panel-close]').forEach((b) => {
+    b.addEventListener('click', () => {
+      const id = b.closest<HTMLElement>('[data-panel]')?.dataset.panel;
+      closeAll();
+      triggers.find((t) => t.dataset.expand === id)?.focus();
+    });
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const openTrigger = triggers.find((t) => t.getAttribute('aria-expanded') === 'true');
+    if (!openTrigger) return;
+    closeAll();
+    openTrigger.focus();
+  });
+
+  // deep link: /architecture#panel-lincoln-beach-center opens that project
+  const hash = location.hash.replace('#panel-', '');
+  if (hash && panels.some((p) => p.dataset.panel === hash)) open(hash, false);
+}
+
+/* ---------------------------------------------------------- 5. reveals --- */
 
 const reveals = document.querySelectorAll<HTMLElement>('.reveal');
 if (reduced || !('IntersectionObserver' in window)) {

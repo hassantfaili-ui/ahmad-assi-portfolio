@@ -606,6 +606,147 @@ body::after {
   right: 0.5rem;
 }
 
+/* ---------------------------------------------------------------- panels --- */
+/* A project expands in place under the rail rather than navigating away. The
+   open tile is marked so it stays legible as the thing you chose. */
+
+.panels {
+  padding: 0 var(--pad);
+  margin: 0 auto clamp(2rem, 6vw, 4rem);
+  max-width: 78rem;
+}
+
+.panel {
+  border-top: 1px solid var(--mark);
+  background: linear-gradient(180deg, rgba(237, 242, 239, 0.045) 0%, transparent 100%);
+}
+.panel[hidden] {
+  display: none;
+}
+
+.panel-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: start;
+  padding: clamp(1.5rem, 4vw, 2.5rem) 0;
+}
+
+.panel-media img,
+.panel-media svg {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+}
+
+.panel-title {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(1.9rem, 4.5vw, 3rem);
+  line-height: 0.92;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  margin: 0.4rem 0 0;
+}
+.panel-title:focus {
+  outline: none;
+}
+.panel-title:focus-visible {
+  outline: 2px solid var(--mark);
+  outline-offset: 4px;
+}
+
+.panel-summary {
+  margin: 1rem 0 0;
+  color: var(--ink-2);
+  font-size: var(--t-lead);
+  line-height: 1.55;
+  max-width: 46ch;
+}
+
+.panel-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 1.1rem 1.5rem;
+  margin: 1.75rem 0 0;
+}
+.panel-facts dt {
+  font-family: var(--data);
+  font-size: var(--t-data);
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.4rem;
+  border-bottom: 1px solid var(--line);
+}
+.panel-facts dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin: 1.9rem 0 0;
+}
+.panel-close {
+  font-family: var(--data);
+  font-size: var(--t-data);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border-bottom: 1px solid transparent;
+  transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+.panel-close:hover {
+  color: var(--mark);
+  border-bottom-color: var(--mark);
+}
+
+/* the tile whose panel is open */
+.tile.is-open::before,
+.tile.is-open::after {
+  opacity: 1;
+}
+.tile.is-open img,
+.tile.is-open svg {
+  filter: saturate(1) contrast(1);
+}
+.js .tile.is-open .tile-label {
+  opacity: 1;
+  transform: none;
+}
+/* everything else recedes while one is open */
+.js .strip.has-open .tile:not(.is-open) img,
+.js .strip.has-open .tile:not(.is-open) svg {
+  opacity: 0.42;
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.js .panel:not([hidden]) {
+  animation: panel-in 0.45s var(--ease) both;
+}
+
+@media (max-width: 880px) {
+  .panel-inner {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ---------------------------------------------------------------- bands --- */
 
 .band {
