@@ -3,9 +3,19 @@
 A portfolio website that works as an online resume first and a project gallery second.
 Static output, no server to run, no monthly cost.
 
-> **All content is Ahmad's own.** His introduction, CV and contact details come from his
-> existing site. Three projects carry his own renders, drawings and film: Lincoln Beach
-> Center, La Casa Aranas and the Media Wall Cabinets.
+> **All content is Ahmad's own or is credited.** His introduction, CV and contact details
+> come from his existing site. Fifteen projects span professional work, independent
+> commissions and coursework from first through fourth year.
+>
+> **Crediting is deliberate and specific.** Much of the academic work is group work, and
+> each page names the collaborators: Kyle Mo on Renewal Square (where Building B is his and
+> is not published here), Kyle Mok on Building Systems, Awj on River's View, Amos and Awj on
+> City Building Blocks, Team 1 on the Earl Armstrong plan, Group A4G4 on the Jacobs House
+> delineation, Group 1 on Core and Shell, Group 9 on the Coach House, and a six person group
+> on the Schindler study. Sts. Peter and Paul Church is a Muzaiko Architecture project,
+> included with permission and credited to them, with his contribution given as the
+> visualisation. The Jacobs House and Schindler pages are studies of other architects'
+> buildings and say so.
 >
 > Nothing on the site is stock. The six images that were on his old Wix portfolio page
 > were untouched template demos, a skincare bottle and a jewellery magazine cover, so they
