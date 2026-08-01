@@ -15,8 +15,12 @@ import keystatic from '@keystatic/astro';
 const editing = process.env.npm_lifecycle_event === 'dev';
 
 export default defineConfig({
-  site: 'https://ahmadassi.ca',
+  // GitHub Pages project site. Point `site` at a custom domain and set `base`
+  // back to '/' when ahmadassi.ca is ready; src/lib/url.ts handles the rest.
+  site: 'https://hassantfaili-ui.github.io',
+  base: '/ahmad-assi-portfolio',
   output: 'static',
+  trailingSlash: 'ignore',
   build: { inlineStylesheets: 'auto' },
   devToolbar: { enabled: false },
   integrations: editing ? [react(), keystatic()] : [],

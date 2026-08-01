@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import Datum from '../layouts/Datum.astro';
 import Filmstrip from '../components/Filmstrip.astro';
 import resume from '../data/resume.json';
+import { url } from '../lib/url';
 
 const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
 ---

@@ -4,6 +4,7 @@ import Datum from '../layouts/Datum.astro';
 import Filmstrip from '../components/Filmstrip.astro';
 import HeroFilm from '../components/HeroFilm.astro';
 import resume from '../data/resume.json';
+import { url } from '../lib/url';
 
 const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
 
@@ -35,7 +36,7 @@ const intro =
       {resume.longBio.map((p) => <p>{p}</p>)}
     </div>
     <p class="centre" style="margin-top:2.5rem">
-      <a class="btn" href="/resume">
+      <a class="btn" href={url("/resume")}>
         Resume <span class="i" aria-hidden="true">&rarr;</span>
       </a>
     </p>

@@ -1,6 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import Drawing from './Drawing.astro';
+import { url } from '../lib/url';
 
 interface Props {
   projects: CollectionEntry<'projects'>[];
@@ -23,10 +24,10 @@ const { projects } = Astro.props;
     {
       projects.map((p) => (
         <li class="tile">
-          <a href={`/work/${p.id}`}>
+          <a href={url(`/work/${p.id}`)}>
             {p.data.leadImage.src?.startsWith('/') ? (
               <img
-                src={p.data.leadImage.src}
+                src={url(p.data.leadImage.src)}
                 alt={p.data.leadImage.alt}
                 loading="lazy"
                 decoding="async"

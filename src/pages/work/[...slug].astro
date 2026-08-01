@@ -2,6 +2,7 @@
 import { getCollection, render } from 'astro:content';
 import Datum from '../../layouts/Datum.astro';
 import Drawing from '../../components/Drawing.astro';
+import { url } from '../../lib/url';
 
 export async function getStaticPaths() {
   const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
@@ -70,8 +71,8 @@ const gallery = d.imageGroups.flatMap((g) =>
             controls
             preload="none"
             playsinline
-            poster={d.film.poster}
-            src={d.film.src}
+            poster={url(d.film.poster)}
+            src={url(d.film.src)}
           />
           {d.film.caption && <figcaption>{d.film.caption}</figcaption>}
         </figure>
@@ -83,7 +84,7 @@ const gallery = d.imageGroups.flatMap((g) =>
     <figure class="reveal">
       {
         isFile(d.leadImage.src) ? (
-          <img src={d.leadImage.src} alt={d.leadImage.alt} loading="lazy" decoding="async" />
+          <img src={url(d.leadImage.src)} alt={d.leadImage.alt} loading="lazy" decoding="async" />
         ) : (
           <Drawing kind={d.leadImage.kind} seed={d.leadImage.seed} alt={d.leadImage.alt} reg={false} />
         )
@@ -93,7 +94,7 @@ const gallery = d.imageGroups.flatMap((g) =>
       gallery.map((img) => (
         <figure class="reveal">
           {isFile(img.src) ? (
-            <img src={img.src} alt={img.alt} loading="lazy" decoding="async" />
+            <img src={url(img.src)} alt={img.alt} loading="lazy" decoding="async" />
           ) : (
             <Drawing kind={img.kind} seed={img.seed} alt={img.alt} reg={false} />
           )}
@@ -111,7 +112,7 @@ const gallery = d.imageGroups.flatMap((g) =>
           {d.drawings.map((dr) => (
             <figure class="reveal">
               {isFile(dr.src) ? (
-                <img src={dr.src} alt={dr.alt} loading="lazy" decoding="async" />
+                <img src={url(dr.src)} alt={dr.alt} loading="lazy" decoding="async" />
               ) : (
                 <Drawing kind={dr.kind} seed={dr.seed} alt={dr.alt} reg={false} />
               )}
@@ -124,10 +125,10 @@ const gallery = d.imageGroups.flatMap((g) =>
   }
 
   <nav class="pager" aria-label="Other projects">
-    <a href={`/work/${prev.id}`}>
+    <a href={url(`/work/${prev.id}`)}>
       <span aria-hidden="true">&#8249;</span> Previous
     </a>
-    <a href={`/work/${next.id}`}>
+    <a href={url(`/work/${next.id}`)}>
       Next <span aria-hidden="true">&#8250;</span>
     </a>
   </nav>

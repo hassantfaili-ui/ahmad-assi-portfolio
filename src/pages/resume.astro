@@ -1,6 +1,7 @@
 ---
 import Datum from '../layouts/Datum.astro';
 import resume from '../data/resume.json';
+import { url } from '../lib/url';
 ---
 
 <Datum
@@ -19,7 +20,7 @@ import resume from '../data/resume.json';
     {
       resume.cvFile && (
         <p style="--i:3; margin-top:2.5rem">
-          <a class="btn" href={resume.cvFile} download>
+          <a class="btn" href={url(resume.cvFile)} download>
             Download PDF
           </a>
         </p>

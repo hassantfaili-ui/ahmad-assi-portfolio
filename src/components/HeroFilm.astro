@@ -21,6 +21,8 @@ interface Props {
   ctaHref: string;
 }
 
+import { url } from '../lib/url';
+
 const { eyebrow, name, surname, intro, ctaLabel, ctaHref } = Astro.props;
 ---
 
@@ -28,8 +30,8 @@ const { eyebrow, name, surname, intro, ctaLabel, ctaHref } = Astro.props;
   <video
     class="film-media"
     data-hero
-    data-src="/media/hero.mp4"
-    poster="/media/hero-poster.jpg"
+    data-src={url("/media/hero.mp4")}
+    poster={url("/media/hero-poster.jpg")}
     muted
     loop
     playsinline
@@ -49,7 +51,7 @@ const { eyebrow, name, surname, intro, ctaLabel, ctaHref } = Astro.props;
     </h1>
     <p class="film-intro" style="--i:2">{intro}</p>
     <p style="--i:3; margin:2.25rem 0 0">
-      <a class="btn" href={ctaHref}>
+      <a class="btn" href={url(ctaHref)}>
         {ctaLabel} <span class="i" aria-hidden="true">&rarr;</span>
       </a>
     </p>

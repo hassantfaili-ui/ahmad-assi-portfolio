@@ -1,5 +1,6 @@
 ---
 import { drawingSvg, type DrawingKind } from '../lib/drawing';
+import { url } from '../lib/url';
 
 interface Props {
   kind?: DrawingKind;
@@ -40,7 +41,7 @@ const Tag = zoomable ? 'button' : 'div';
 >
   {
     isFile ? (
-      <img src={src} alt={alt} loading="lazy" decoding="async" />
+      <img src={url(src)} alt={alt} loading="lazy" decoding="async" />
     ) : (
       <svg viewBox={viewBox} role="img" aria-label={alt} set:html={body} />
     )

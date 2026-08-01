@@ -1,5 +1,6 @@
 ---
 import Datum from '../layouts/Datum.astro';
+import { url } from '../lib/url';
 ---
 
 <Datum pageTitle="Page not found, Ahmad Assi" description="That page does not exist.">
@@ -8,7 +9,7 @@ import Datum from '../layouts/Datum.astro';
     <h1 class="page-title" style="--i:1">Off the map</h1>
     <p class="sub" style="--i:2">That page does not exist, or it has moved.</p>
     <p style="--i:3; margin-top:2.5rem">
-      <a class="btn" href="/architecture">View the portfolio</a>
+      <a class="btn" href={url("/architecture")}>View the portfolio</a>
     </p>
   </section>
 </Datum>
