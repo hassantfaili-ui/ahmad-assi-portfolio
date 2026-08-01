@@ -27,7 +27,14 @@ const projects = defineCollection({
     location: z.string(),
     buildingType: z.string(),
     area: z.string().optional(),
-    status: z.enum(['Built', 'Under construction', 'Unbuilt', 'Competition', 'Academic']),
+    status: z.enum([
+      'Built',
+      'Under construction',
+      'Design development',
+      'Unbuilt',
+      'Competition',
+      'Academic',
+    ]),
     // Kept separate from the description on purpose: on team projects this is the
     // difference between an honest portfolio and a misleading one.
     role: z.string(),

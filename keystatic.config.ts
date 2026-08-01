@@ -94,6 +94,7 @@ export default config({
           options: [
             { label: 'Built', value: 'Built' },
             { label: 'Under construction', value: 'Under construction' },
+            { label: 'Design development', value: 'Design development' },
             { label: 'Unbuilt', value: 'Unbuilt' },
             { label: 'Competition', value: 'Competition' },
             { label: 'Academic', value: 'Academic' },
