@@ -11,10 +11,10 @@ role: Designer, independent commission
 contribution: The whole project, from site analysis and massing through the floor plans, the roof assembly and the drawings being built from. An independent commission carried out under my own name.
 summary: An elevated house on a village lot, with the living accommodation raised a full storey above parking, a mechanical room and a rental suite.
 leadImage:
-  src: /media/dave-axo-1.jpg
+  src: /media/dave-axo-crop.jpg
   kind: axonometric
   seed: 4
-  alt: Exploded axonometric of La Casa Aranas in three parts, the offset dual-skillion roof above, the elevated main floor in the middle, and the ground floor with parking and suite below, each annotated
+  alt: Exploded axonometric of La Casa Aranas in three parts, the offset dual-skillion roof above, the elevated main floor in the middle, and the ground floor with parking and suite below
 imageGroups:
   - layout: pair
     caption: Main floor, 112 square metres. The open kitchen, dining and living space holds the centre, with the guest suite and washroom to the left and the master suite, walk-in closet and washroom to the right.
