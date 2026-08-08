@@ -1,6 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
-import Datum from '../layouts/Datum.astro';
+import Site from '../layouts/Site.astro';
 import Filmstrip from '../components/Filmstrip.astro';
 import HeroFilm from '../components/HeroFilm.astro';
 import resume from '../data/resume.json';
@@ -15,7 +15,7 @@ const intro =
   'and drawings on one side, construction and built interiors on the other.';
 ---
 
-<Datum pageTitle={`${resume.name}, ${resume.discipline}`} description={resume.positioning}>
+<Site pageTitle={`${resume.name}, ${resume.discipline}`} description={resume.positioning}>
   <HeroFilm
     eyebrow={`${resume.discipline} \u00a0/\u00a0 ${resume.location}`}
     name="Ahmad"
@@ -26,7 +26,7 @@ const intro =
   />
 
   <section aria-labelledby="works">
-    <h2 class="section-title" id="works">Curated <em>Works</em></h2>
+    <h2 class="section-title" id="works">Selected <em>Works</em></h2>
     <Filmstrip projects={projects} />
   </section>
 
@@ -41,4 +41,4 @@ const intro =
       </a>
     </p>
   </section>
-</Datum>
+</Site>

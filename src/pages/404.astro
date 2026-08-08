@@ -1,9 +1,9 @@
 ---
-import Datum from '../layouts/Datum.astro';
+import Site from '../layouts/Site.astro';
 import { url } from '../lib/url';
 ---
 
-<Datum pageTitle="Page not found, Ahmad Assi" description="That page does not exist.">
+<Site pageTitle="Page not found, Ahmad Assi" description="That page does not exist.">
   <section class="hero load">
     <p class="eyebrow" style="--i:0">Error &nbsp;/&nbsp; <em>404</em></p>
     <h1 class="page-title" style="--i:1">Off the map</h1>
@@ -12,4 +12,4 @@ import { url } from '../lib/url';
       <a class="btn" href={url("/architecture")}>View the portfolio</a>
     </p>
   </section>
-</Datum>
+</Site>

@@ -1,12 +1,12 @@
 ---
-import Datum from '../layouts/Datum.astro';
+import Site from '../layouts/Site.astro';
 import resume from '../data/resume.json';
 
 /** Set to the host's form handler once hosting is chosen. See the README. */
 const FORM_ENDPOINT = '';
 ---
 
-<Datum
+<Site
   pageTitle={`Contact, ${resume.name}`}
   description={`Get in touch with ${resume.name} in ${resume.location}.`}
 >
@@ -75,7 +75,7 @@ const FORM_ENDPOINT = '';
       <p class="notice" data-notice role="status" hidden></p>
     </form>
   </section>
-</Datum>
+</Site>
 
 <script>
   const form = document.querySelector<HTMLFormElement>('[data-contact]');

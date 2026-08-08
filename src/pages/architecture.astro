@@ -1,6 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
-import Datum from '../layouts/Datum.astro';
+import Site from '../layouts/Site.astro';
 import Filmstrip from '../components/Filmstrip.astro';
 import resume from '../data/resume.json';
 import { url } from '../lib/url';
@@ -8,7 +8,7 @@ import { url } from '../lib/url';
 const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
 ---
 
-<Datum
+<Site
   pageTitle={`Architecture, ${resume.name}`}
   description="Architectural and urbanism work by Ahmad Assi, including the Lincoln Beach Center and La Casa Aranas."
 >
@@ -16,11 +16,11 @@ const projects = (await getCollection('projects')).sort((a, b) => a.data.order -
     <p class="eyebrow" style="--i:0">
       {projects.length} projects &nbsp;/&nbsp; <em>Architecture and urbanism</em>
     </p>
-    <h1 class="page-title" style="--i:1">Curated <span class="thin">Works</span></h1>
+    <h1 class="page-title" style="--i:1">Selected <span class="thin">Works</span></h1>
     <p class="sub" style="--i:2">
       A selection of my work. Explore the projects to learn more about what I do.
     </p>
   </section>
 
   <Filmstrip projects={projects} />
-</Datum>
+</Site>

@@ -1,6 +1,6 @@
 ---
 import { getCollection, render } from 'astro:content';
-import Datum from '../../layouts/Datum.astro';
+import Site from '../../layouts/Site.astro';
 import Drawing from '../../components/Drawing.astro';
 import { url } from '../../lib/url';
 
@@ -36,7 +36,7 @@ const gallery = d.imageGroups.flatMap((g) =>
 );
 ---
 
-<Datum pageTitle={`${d.title}, Ahmad Assi`} description={d.summary}>
+<Site pageTitle={`${d.title}, Ahmad Assi`} description={d.summary}>
   <section class="hero load">
     <p class="eyebrow" style="--i:0">
       {d.category} &nbsp;/&nbsp; <em>{d.year}</em>
@@ -132,4 +132,4 @@ const gallery = d.imageGroups.flatMap((g) =>
       Next <span aria-hidden="true">&#8250;</span>
     </a>
   </nav>
-</Datum>
+</Site>

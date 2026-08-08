@@ -1,5 +1,5 @@
 ---
-import '../styles/datum.css';
+import '../styles/site.css';
 import resume from '../data/resume.json';
 import { url, isCurrent } from '../lib/url';
 
@@ -37,42 +37,24 @@ const PHONE_ICON =
     <meta name="theme-color" content="#071417" />
     <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site).href} />
     <script is:inline>
-      document.documentElement.classList.add('js');
+      // Set the theme before first paint so the page never flashes the wrong one.
+      (function () {
+        var root = document.documentElement;
+        root.classList.add('js');
+        try {
+          var saved = localStorage.getItem('theme');
+          if (saved === 'dark' || saved === 'light') root.dataset.theme = saved;
+        } catch (e) {}
+      })();
     </script>
   </head>
 
   <body>
     <a class="skip" href="#main">Skip to content</a>
 
-    <!--
-      The datum. A waterline fixed across the viewport, with an elevation that
-      falls as you scroll down the page: the top of the page is the high point,
-      the foot of it is the water. Decorative to a screen reader, so hidden.
-    -->
-    <div class="datum" aria-hidden="true">
-      <i></i>
-      <b><span>EL</span><output data-elev>+0.00</output></b>
-      <i></i>
-    </div>
 
     <header class="top">
       <a class="wordmark" href={url("/")}>{resume.name}</a>
-
-      <ul class="social">
-        <li>
-          <a href={`mailto:${resume.email}`} aria-label={`Email ${resume.name}`}>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d={MAIL_ICON}></path></svg>
-          </a>
-        </li>
-        <li>
-          <a
-            href={`tel:${resume.phone.replace(/[^\d+]/g, '')}`}
-            aria-label={`Telephone ${resume.phone}`}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d={PHONE_ICON}></path></svg>
-          </a>
-        </li>
-      </ul>
 
       <nav aria-label="Pages">
         <ul class="pages">
@@ -88,6 +70,9 @@ const PHONE_ICON =
         </ul>
       </nav>
 
+      <button class="theme" type="button" data-theme-toggle aria-pressed="false">
+        <span data-theme-label>Dark</span>
+      </button>
     </header>
 
     <main id="main">
@@ -95,30 +80,39 @@ const PHONE_ICON =
     </main>
 
     <footer class="foot">
-      <a class="wordmark" href={url("/")}>{resume.name}</a>
-      <ul class="social">
-        <li>
-          <a href={`mailto:${resume.email}`} aria-label={`Email ${resume.name}`}>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d={MAIL_ICON}></path></svg>
-          </a>
-        </li>
-        <li>
-          <a
-            href={`tel:${resume.phone.replace(/[^\d+]/g, '')}`}
-            aria-label={`Telephone ${resume.phone}`}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d={PHONE_ICON}></path></svg>
-          </a>
-        </li>
-      </ul>
-      <small>
-        {resume.location} &nbsp;/&nbsp; {resume.phone}<br />
-        <a class="inline" href={`mailto:${resume.email}`}>{resume.email}</a>
-      </small>
+      <div class="foot-cta">
+        <p class="foot-kicker">Interested in collaborating?</p>
+        <h2 class="foot-title">Get in touch</h2>
+        <p class="foot-links">
+          <a class="inline" href={`mailto:${resume.email}`}>{resume.email}</a>
+          <a class="inline" href={`tel:${resume.phone.replace(/[^\d+]/g, '')}`}>{resume.phone}</a>
+          <a class="inline" href={url('/contact')}>Contact page</a>
+        </p>
+      </div>
+
+      <div class="foot-base">
+        <a class="wordmark" href={url('/')}>{resume.name}</a>
+        <p class="foot-meta">{resume.discipline} &nbsp;/&nbsp; {resume.location}</p>
+        <ul class="social">
+          <li>
+            <a href={`mailto:${resume.email}`} aria-label={`Email ${resume.name}`}>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d={MAIL_ICON}></path></svg>
+            </a>
+          </li>
+          <li>
+            <a
+              href={`tel:${resume.phone.replace(/[^\d+]/g, '')}`}
+              aria-label={`Telephone ${resume.phone}`}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d={PHONE_ICON}></path></svg>
+            </a>
+          </li>
+        </ul>
+      </div>
     </footer>
 
     <script>
-      import '../scripts/datum';
+      import '../scripts/site';
     </script>
   </body>
 </html>

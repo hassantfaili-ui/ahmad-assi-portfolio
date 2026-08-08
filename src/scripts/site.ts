@@ -1,6 +1,6 @@
 /**
  * Datum behaviour.
- *  1. the elevation readout at the waterline
+ *  1. theme switch
  *  2. the hero film
  *  3. the filmstrip: arrows, drag, and the wheel
  *  4. project expansions
@@ -9,35 +9,34 @@
 
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/* ------------------------------------------------------- 1. elevation --- */
-/* The top of the page is the high point and the foot of it is the water, so the
-   number falls as you descend. Height is derived from the page's own length, so
-   a short page reads a smaller range than a long one and it always ends at zero. */
+/* ---------------------------------------------------------- 1. theme --- */
+/* Light by default. The choice persists so a visitor who prefers one keeps it. */
 
-const readout = document.querySelector<HTMLOutputElement>('[data-elev]');
+const root = document.documentElement;
 
-if (readout) {
-  const format = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(2)}`;
-  let frame = 0;
-
-  function update() {
-    frame = 0;
-    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-    // roughly three metres per screen of content, rounded to something plausible
-    const top = Math.max(3, Math.round((scrollable / window.innerHeight) * 3.4 * 10) / 10);
-    const progress = scrollable > 0 ? Math.min(1, Math.max(0, window.scrollY / scrollable)) : 1;
-    readout!.textContent = format(top * (1 - progress));
+function applyTheme(next: 'light' | 'dark') {
+  root.dataset.theme = next;
+  try {
+    localStorage.setItem('theme', next);
+  } catch {
+    /* private browsing: the choice simply does not persist */
   }
-
-  function schedule() {
-    if (frame) return;
-    frame = requestAnimationFrame(update);
-  }
-
-  update();
-  window.addEventListener('scroll', schedule, { passive: true });
-  window.addEventListener('resize', schedule);
+  document.querySelectorAll<HTMLElement>('[data-theme-label]').forEach((el) => {
+    el.textContent = next === 'dark' ? 'Light' : 'Dark';
+  });
+  document.querySelectorAll<HTMLElement>('[data-theme-toggle]').forEach((b) => {
+    b.setAttribute('aria-pressed', String(next === 'dark'));
+    b.setAttribute('aria-label', next === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
+  });
 }
+
+applyTheme(root.dataset.theme === 'dark' ? 'dark' : 'light');
+
+document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]').forEach((b) => {
+  b.addEventListener('click', () =>
+    applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'),
+  );
+});
 
 /* --------------------------------------------------------- 2. hero film --- */
 /* The source is attached here rather than in the markup so a narrow screen or a
