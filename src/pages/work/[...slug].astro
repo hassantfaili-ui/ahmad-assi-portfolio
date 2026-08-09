@@ -2,6 +2,7 @@
 import { getCollection, render } from 'astro:content';
 import Site from '../../layouts/Site.astro';
 import Drawing from '../../components/Drawing.astro';
+import Film from '../../components/Film.astro';
 import { url } from '../../lib/url';
 
 export async function getStaticPaths() {
@@ -66,16 +67,12 @@ const gallery = d.imageGroups.flatMap((g) =>
     d.film && (
       <section class="band" aria-labelledby="film">
         <h2 class="section-title" id="film">Walkthrough</h2>
-        <figure class="film-frame reveal">
-          <video
-            controls
-            preload="none"
-            playsinline
-            poster={url(d.film.poster)}
-            src={url(d.film.src)}
-          />
-          {d.film.caption && <figcaption>{d.film.caption}</figcaption>}
-        </figure>
+        <Film
+          src={d.film.src}
+          youtube={d.film.youtube}
+          poster={d.film.poster}
+          caption={d.film.caption}
+        />
       </section>
     )
   }

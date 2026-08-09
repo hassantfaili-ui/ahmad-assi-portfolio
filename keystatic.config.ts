@@ -152,9 +152,15 @@ export default config({
           {
             false: fields.empty(),
             true: fields.object({
+              youtube: fields.text({
+                label: 'YouTube id or link',
+                description:
+                  'Preferred for anything long or high resolution. Unlisted is fine. Paste the id or the whole link. Leave empty to use a file instead.',
+              }),
               src: fields.text({
                 label: 'Film file',
-                description: 'A path under /media, for example /media/lincoln-beach-film.mp4',
+                description:
+                  'Only if there is no YouTube id. A path under /media, for example /media/lincoln-beach-film.mp4. Keep files under 100MB or GitHub will reject them.',
               }),
               poster: fields.text({
                 label: 'Poster frame',

@@ -4,7 +4,8 @@
  *  2. the hero film
  *  3. the filmstrip: arrows, drag, and the wheel
  *  4. project expansions
- *  5. scroll reveals
+ *  5. the walkthrough film
+ *  6. scroll reveals
  */
 
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -251,7 +252,30 @@ if (panels.length && triggers.length) {
   if (hash && panels.some((p) => p.dataset.panel === hash)) open(hash, false);
 }
 
-/* ---------------------------------------------------------- 5. reveals --- */
+/* ------------------------------------------------------------- 5. film --- */
+/* Swap the poster for the real player only when asked. Until then nothing has
+   been requested from Google and no cookie has been set. */
+
+document.querySelectorAll<HTMLButtonElement>('[data-youtube]').forEach((facade) => {
+  facade.addEventListener('click', () => {
+    const id = facade.dataset.youtube;
+    if (!id) return;
+    const frame = document.createElement('iframe');
+    frame.src =
+      `https://www.youtube-nocookie.com/embed/${id}` +
+      '?autoplay=1&rel=0&modestbranding=1&playsinline=1';
+    frame.title = 'Project walkthrough';
+    frame.allow = 'accelerometer; autoplay; encrypted-media; picture-in-picture; fullscreen';
+    frame.allowFullscreen = true;
+    frame.loading = 'lazy';
+    frame.referrerPolicy = 'strict-origin-when-cross-origin';
+    frame.style.cssText = 'width:100%;aspect-ratio:16/9;border:0;display:block';
+    facade.replaceWith(frame);
+    frame.focus();
+  });
+});
+
+/* ---------------------------------------------------------- 6. reveals --- */
 
 const reveals = document.querySelectorAll<HTMLElement>('.reveal');
 if (reduced || !('IntersectionObserver' in window)) {

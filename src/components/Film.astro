@@ -1,0 +1,112 @@
+---
+import { url } from '../lib/url';
+
+/**
+ * A project walkthrough, from either a file in this repo or YouTube.
+ *
+ * The YouTube path deliberately does NOT drop an iframe into the page. A live
+ * embed pulls over a megabyte of script and sets tracking cookies on load, even
+ * for a visitor who never presses play. Instead the poster frame is shown with a
+ * play control, and the iframe is created only on click. That keeps the page
+ * fast and means nothing is sent to Google until the visitor asks for it.
+ *
+ * youtube-nocookie.com is used for the same reason.
+ */
+interface Props {
+  src?: string;
+  youtube?: string;
+  poster: string;
+  caption?: string;
+}
+
+const { src, youtube, poster, caption } = Astro.props;
+
+/** Accepts a bare id, a watch URL, a youtu.be link or an embed URL. */
+function youtubeId(raw: string): string {
+  const s = raw.trim();
+  const m =
+    s.match(/[?&]v=([\w-]{6,})/) ||
+    s.match(/youtu\.be\/([\w-]{6,})/) ||
+    s.match(/\/embed\/([\w-]{6,})/) ||
+    s.match(/^([\w-]{6,})$/);
+  return m ? m[1] : s;
+}
+
+const id = youtube ? youtubeId(youtube) : null;
+---
+
+{
+  id ? (
+    <div class="film-frame reveal">
+      <button class="film-facade" type="button" data-youtube={id} aria-label="Play the walkthrough film">
+        <img src={url(poster)} alt="" loading="lazy" decoding="async" />
+        <span class="film-play" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+        </span>
+      </button>
+      {caption && <p class="film-caption">{caption}</p>}
+      <p class="film-note">Plays from YouTube. Nothing is loaded from Google until you press play.</p>
+    </div>
+  ) : (
+    src && (
+      <figure class="film-frame reveal">
+        <video controls preload="none" playsinline poster={url(poster)} src={url(src)} />
+        {caption && <figcaption>{caption}</figcaption>}
+      </figure>
+    )
+  )
+}
+
+<style>
+  .film-facade {
+    position: relative;
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    cursor: pointer;
+    background: var(--paper-2);
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+  }
+  .film-facade img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s var(--ease);
+  }
+  .film-facade:hover img {
+    transform: scale(1.02);
+  }
+
+  .film-play {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+  }
+  .film-play svg {
+    width: 4.5rem;
+    height: 4.5rem;
+    padding: 1.1rem;
+    fill: var(--invert-ink);
+    background: var(--ink);
+    border-radius: 50%;
+    transition: transform 0.3s var(--ease);
+  }
+  .film-facade:hover .film-play svg {
+    transform: scale(1.08);
+  }
+
+  .film-note {
+    margin: 0.6rem 0 0;
+    font-family: var(--data);
+    font-size: var(--t-data);
+    letter-spacing: 0.08em;
+    color: var(--ink-3);
+  }
+  .film-caption {
+    margin: 0.9rem 0 0;
+    color: var(--ink-2);
+  }
+</style>

@@ -54,11 +54,17 @@ const projects = defineCollection({
       .array(image.extend({ drawingType: z.string() }))
       .default([]),
     /** An optional walkthrough or flythrough for this project. */
+    /* Either a file in this repo or a YouTube id. A 4K walkthrough is far too
+       large to commit, so YouTube carries those and the repo stays light. */
     film: z
       .object({
-        src: z.string(),
+        src: z.string().optional(),
+        youtube: z.string().optional(),
         poster: z.string(),
         caption: z.string().optional(),
+      })
+      .refine((f) => Boolean(f.src || f.youtube), {
+        message: 'A film needs either a file (src) or a YouTube id',
       })
       .optional(),
     featured: z.boolean().default(false),
