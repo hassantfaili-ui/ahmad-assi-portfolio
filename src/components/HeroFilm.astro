@@ -43,6 +43,18 @@ const { eyebrow, name, surname, intro, ctaLabel, ctaHref } = Astro.props;
 
   <div class="film-scrim" aria-hidden="true"></div>
 
+  <!--
+    Shown only when the film did not start on its own: reduced motion, a narrow
+    screen, or a browser that blocked autoplay. Without it the hero looks broken
+    to anyone with "Reduce motion" switched on, since they just see a still.
+  -->
+  <button class="film-start" type="button" data-film-start hidden>
+    <span class="film-start-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+    </span>
+    Play film
+  </button>
+
   <div class="film-body load">
     <p class="eyebrow" style="--i:0">{eyebrow}</p>
     <h1 style="--i:1">

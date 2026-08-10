@@ -44,19 +44,30 @@ document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]').forEach((b) 
    reduced-motion preference never downloads it. Those cases keep the poster. */
 
 const film = document.querySelector<HTMLVideoElement>('[data-hero]');
+const filmStart = document.querySelector<HTMLButtonElement>('[data-film-start]');
+
 if (film) {
-  const wide = window.matchMedia('(min-width: 700px)').matches;
   const src = film.dataset.src;
+  const wide = window.matchMedia('(min-width: 700px)').matches;
+
+  /** Attach the source only when it is actually wanted, then play. */
+  function run(): Promise<void> {
+    if (!film || !src) return Promise.reject();
+    if (!film.getAttribute('src')) film.src = src;
+    return film.play();
+  }
+
+  function offerManualStart() {
+    filmStart?.removeAttribute('hidden');
+  }
+
   if (src && wide && !reduced) {
-    film.src = src;
-    film.play().catch(() => {
-      /* a browser that blocks autoplay simply shows the poster */
-    });
-    // stop it while off screen rather than decoding video nobody can see
+    run().catch(offerManualStart); // autoplay blocked by the browser
     if ('IntersectionObserver' in window) {
       new IntersectionObserver(
         (entries) => {
           entries.forEach((e) => {
+            if (!film.getAttribute('src')) return; // never started, leave it alone
             if (e.isIntersecting) film.play().catch(() => {});
             else film.pause();
           });
@@ -64,7 +75,20 @@ if (film) {
         { threshold: 0.05 },
       ).observe(film);
     }
+  } else if (src) {
+    /* Reduced motion or a narrow screen. Nothing moves and nothing downloads
+       until the visitor asks for it, which is the point of the preference, but
+       the option is visible rather than silently withheld. */
+    offerManualStart();
   }
+
+  filmStart?.addEventListener('click', () => {
+    filmStart.setAttribute('hidden', '');
+    film.controls = true;
+    run().catch(() => {
+      film.controls = true;
+    });
+  });
 }
 
 /* -------------------------------------------------------- 3. filmstrip --- */
