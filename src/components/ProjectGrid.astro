@@ -10,13 +10,13 @@ interface Props {
 
 const { projects } = Astro.props;
 
-/* The three marked as lead sit large at the top. Everything else runs on in a
-   single strip below, at one size. Order and lead status are both set in the
-   editor, so the sequence is Ahmad's rather than the code's. If fewer than
-   three are marked, the top of the order fills in. */
-const marked = projects.filter((p) => p.data.featured).slice(0, 3);
-const leads = marked.length ? marked : projects.slice(0, 3);
-const rest = projects.filter((p) => !leads.includes(p));
+/* Three tiers, all set in the editor, with Ahmad's order kept inside each one.
+   Leads are the large cards, the set is the strip, and the index is a short list
+   for the thin coursework: it stays on the site and stays clickable, but it does
+   not sit at the same size as the work that should be looked at first. */
+const leads = projects.filter((p) => p.data.tier === 'lead').slice(0, 3);
+const set = projects.filter((p) => p.data.tier === 'set');
+const index = projects.filter((p) => p.data.tier === 'index');
 
 const isFile = (s?: string) => Boolean(s && s.startsWith('/'));
 
@@ -38,10 +38,10 @@ function facts(d: CollectionEntry<'projects'>['data']) {
   </ul>
 
   {
-    rest.length > 0 && (
+    set.length > 0 && (
       <div class="rail-head">
         <p class="rail-label">
-          The rest of the set <span class="rail-count">{rest.length}</span>
+          The rest of the set <span class="rail-count">{set.length}</span>
         </p>
         <div class="rail-nav">
           <button type="button" class="rail-btn" data-rail-prev aria-label="Scroll projects left">
@@ -60,17 +60,44 @@ function facts(d: CollectionEntry<'projects'>['data']) {
   }
 
   <ul class="rail" data-rail>
-    {rest.map((p) => <ProjectCard project={p} />)}
+    {set.map((p) => <ProjectCard project={p} />)}
   </ul>
+
+  {/* Coursework and case studies. Kept, named, credited and clickable, but not
+      given the same room as the work a reviewer should look at first. */}
+  {
+    index.length > 0 && (
+      <div class="index-block">
+        <p class="rail-label index-head">
+          Also in the archive <span class="rail-count">{index.length}</span>
+        </p>
+        <ul class="index-list">
+          {index.map((p) => (
+            <li>
+              <a href={url(`/work/${p.id}`)}>
+                <span class="index-year">{p.data.year}</span>
+                <span class="index-title">{p.data.title}</span>
+                <span class="index-kind">{p.data.buildingType}</span>
+                <span class="index-credit">{p.data.credit}</span>
+                <span class="index-go" aria-hidden="true">&rarr;</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
 </div>
 
 <!--
   The expansions. Rendered server side and closed, so a reader with no
   JavaScript still gets the content, and the browser can reuse the card images.
+  Only cards expand; the index links straight through to the project page, so
+  building panels for those would be markup nothing can reach.
 -->
 <div class="panels" data-panels>
   {
-    projects.map((p) => (
+    [...leads, ...set].map((p) => (
       <section
         class="panel"
         id={`panel-${p.id}`}

@@ -51,7 +51,8 @@ drawings:
     seed: 7
     alt: Window sill detail drawn at large scale on a titled sheet, showing the sill flashing, the sealant joint and the layers of the wall behind it
     drawingType: Window sill detail
-featured: false
+tier: set
+credit: Group of five
 order: 7
 ---
 

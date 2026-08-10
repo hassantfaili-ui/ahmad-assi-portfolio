@@ -67,7 +67,21 @@ const projects = defineCollection({
         message: 'A film needs either a file (src) or a YouTube id',
       })
       .optional(),
-    featured: z.boolean().default(false),
+    /**
+     * Where the project sits on the home page.
+     * lead  three large cards at the top
+     * set   the strip of substantial projects
+     * index a compact line in the list below, for thin coursework
+     * Order is respected inside each tier, so the sequence stays Ahmad's.
+     */
+    tier: z.enum(['lead', 'set', 'index']).default('set'),
+    /**
+     * The short version of who did the work, for the card. Required, because a
+     * portfolio that does not say which projects were group work is misleading,
+     * and a reviewer assumes the worst when it is left out. The full account
+     * stays in `contribution`.
+     */
+    credit: z.string().min(1, 'Every project has to say who did the work'),
     order: z.number().int().default(99),
   }),
 });

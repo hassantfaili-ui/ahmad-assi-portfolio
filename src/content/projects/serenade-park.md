@@ -96,7 +96,8 @@ drawings:
     seed: 16
     alt: Second sheet of the Earl Armstrong team plan, setting out the analysis behind the block pattern
     drawingType: Earl Armstrong area plan, sheet two
-featured: false
+tier: set
+credit: Sole author
 order: 5
 ---
 

@@ -1,9 +1,27 @@
 ---
 import Site from '../layouts/Site.astro';
 import resume from '../data/resume.json';
+import { url } from '../lib/url';
 
-/** Set to the host's form handler once hosting is chosen. See the README. */
-const FORM_ENDPOINT = '';
+/**
+ * No form.
+ *
+ * The site is static on GitHub Pages, so a form needs a third party handler to
+ * post to. There wasn't one, and the form said so after you had already typed
+ * your message, which is worse than not offering a form at all. A practice
+ * writing to a graduate is going to attach a brief or a job description anyway,
+ * and no form field takes an attachment.
+ *
+ * If a handler is ever wired up, that is the moment to add a form back, not
+ * before.
+ */
+/* Empty in the data today, so TypeScript infers never[]. Typed here so the block
+   below starts working the moment a link is added in the editor. */
+const social = resume.social as { label: string; href: string }[];
+
+const tel = resume.phone.replace(/[^\d+]/g, '');
+const subject = encodeURIComponent('Enquiry from your portfolio');
+const mailto = `mailto:${resume.email}?subject=${subject}`;
 ---
 
 <Site
@@ -17,114 +35,68 @@ const FORM_ENDPOINT = '';
   </section>
 
   <section class="band">
-    <dl class="meta reveal" style="padding-bottom:3rem">
-      <div>
-        <dt>Email</dt>
-        <dd>
-          <a href={`mailto:${resume.email}`} class="inline">
-            {resume.email}
+    <div class="contact-grid">
+      <div class="reveal">
+        <h2 class="closing-heading">Write to me</h2>
+        <p class="closing-prose" style="margin-top:1rem">
+          Email is best, and it reaches me directly. Attach the brief, the job
+          description or the drawing set and I will reply with whatever is useful,
+          including work that is not on this site.
+        </p>
+        <p style="margin-top:2rem">
+          <a class="btn" href={mailto}>
+            {resume.email} <span class="i" aria-hidden="true">&rarr;</span>
           </a>
-        </dd>
-      </div>
-      <div>
-        <dt>Phone</dt>
-        <dd>
-          <a href={`tel:${resume.phone.replace(/[^\d+]/g, '')}`}>{resume.phone}</a>
-        </dd>
-      </div>
-      <div>
-        <dt>Based in</dt>
-        <dd>{resume.location}</dd>
-      </div>
-    </dl>
-
-    <form
-      class="form reveal"
-      method="post"
-      action={FORM_ENDPOINT || undefined}
-      novalidate
-      data-contact
-      data-endpoint={FORM_ENDPOINT}
-      style="max-width:34rem;margin:0 auto"
-    >
-      <div class="field">
-        <label for="name">Name</label>
-        <input id="name" name="name" type="text" autocomplete="name" required />
-        <span class="err" data-err-for="name" hidden></span>
+        </p>
       </div>
 
-      <div class="field">
-        <label for="email">Email</label>
-        <input id="email" name="email" type="email" autocomplete="email" required />
-        <span class="err" data-err-for="email" hidden></span>
-      </div>
+      <div class="reveal">
+        <dl class="contact-facts">
+          <div>
+            <dt>Email</dt>
+            <dd><a class="inline" href={`mailto:${resume.email}`}>{resume.email}</a></dd>
+          </div>
+          <div>
+            <dt>Phone</dt>
+            <dd><a class="inline" href={`tel:${tel}`}>{resume.phone}</a></dd>
+          </div>
+          <div>
+            <dt>Based in</dt>
+            <dd>{resume.location}</dd>
+          </div>
+          {
+            social.length > 0 && (
+              <div>
+                <dt>Elsewhere</dt>
+                <dd>
+                  {social.map((s) => (
+                    <a class="inline" href={s.href} style="display:block">
+                      {s.label}
+                    </a>
+                  ))}
+                </dd>
+              </div>
+            )
+          }
+        </dl>
 
-      <div class="field">
-        <label for="message">Message</label>
-        <textarea id="message" name="message" required></textarea>
-        <span class="err" data-err-for="message" hidden></span>
+        {
+          (resume.cvFile || resume.portfolioFile) && (
+            <p class="contact-files">
+              {resume.portfolioFile && (
+                <a class="btn" href={url(resume.portfolioFile)} download>
+                  Portfolio PDF <span class="i" aria-hidden="true">&darr;</span>
+                </a>
+              )}
+              {resume.cvFile && (
+                <a class="btn" href={url(resume.cvFile)} download>
+                  Resume PDF <span class="i" aria-hidden="true">&darr;</span>
+                </a>
+              )}
+            </p>
+          )
+        }
       </div>
-
-      <!-- honeypot instead of a CAPTCHA -->
-      <div aria-hidden="true" style="position:absolute;left:-9999px">
-        <label for="company">Company</label>
-        <input id="company" name="company" type="text" tabindex="-1" autocomplete="off" />
-      </div>
-
-      <button class="btn" type="submit">Send message</button>
-      <p class="notice" data-notice role="status" hidden></p>
-    </form>
+    </div>
   </section>
 </Site>
-
-<script>
-  const form = document.querySelector<HTMLFormElement>('[data-contact]');
-  const notice = document.querySelector<HTMLElement>('[data-notice]');
-
-  function setError(name: string, message: string | null) {
-    const err = document.querySelector<HTMLElement>(`[data-err-for="${name}"]`);
-    const input = form?.elements.namedItem(name) as HTMLInputElement | null;
-    if (!err || !input) return;
-    err.textContent = message ?? '';
-    err.hidden = !message;
-    input.setAttribute('aria-invalid', message ? 'true' : 'false');
-  }
-
-  const RULES: Record<string, (v: string) => string | null> = {
-    name: (v) => (v.trim() ? null : 'Add your name so Ahmad knows who is writing.'),
-    email: (v) => (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? null : 'Check the email address.'),
-    message: (v) => (v.trim().length >= 12 ? null : 'A little more detail, at least a sentence.'),
-  };
-
-  form?.addEventListener('submit', (e) => {
-    let firstBad: HTMLInputElement | null = null;
-    for (const [name, rule] of Object.entries(RULES)) {
-      const input = form.elements.namedItem(name) as HTMLInputElement | null;
-      if (!input) continue;
-      const message = rule(input.value);
-      setError(name, message);
-      if (message && !firstBad) firstBad = input;
-    }
-    if (firstBad) {
-      e.preventDefault();
-      firstBad.focus();
-      return;
-    }
-    // Not connected to a handler yet: say so rather than fake a success.
-    if (!form.dataset.endpoint) {
-      e.preventDefault();
-      if (notice) {
-        notice.hidden = false;
-        notice.innerHTML =
-          'The form is not connected to a handler yet, so nothing was sent. Email <a href="mailto:ahmadassi2003@hotmail.com">ahmadassi2003@hotmail.com</a> in the meantime.';
-      }
-    }
-  });
-
-  form?.querySelectorAll<HTMLInputElement>('input, textarea').forEach((input) => {
-    input.addEventListener('blur', () => {
-      const rule = RULES[input.name];
-      if (rule) setError(input.name, rule(input.value));
-    });
-  });
-</script>

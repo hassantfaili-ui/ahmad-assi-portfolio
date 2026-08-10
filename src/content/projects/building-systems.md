@@ -39,7 +39,8 @@ imageGroups:
         seed: 5
         alt: Title sheet of Exercise 5, building systems for multi-unit residential buildings at 2100 Bank Street
 drawings: []
-featured: false
+tier: index
+credit: With Kyle Mok
 order: 13
 ---
 

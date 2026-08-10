@@ -94,7 +94,8 @@ drawings:
     seed: 16
     alt: Third circulation study comparing the proposed routes with the earlier diagrams
     drawingType: Circulation study
-featured: false
+tier: set
+credit: With Awj
 order: 8
 ---
 

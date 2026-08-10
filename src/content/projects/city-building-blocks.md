@@ -39,7 +39,8 @@ imageGroups:
         seed: 5
         alt: Contents page of the City Building Blocks inventory, listing single family detached, row housing, stacked towns, mid-rise blocks, high-rise, corners and office types
 drawings: []
-featured: false
+tier: index
+credit: With Amos and Awj
 order: 15
 ---
 

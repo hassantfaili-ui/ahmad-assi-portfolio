@@ -1,0 +1,408 @@
+/* ==========================================================================
+   Portfolio PDF.
+
+   A separate stylesheet from the site on purpose. The site's rules are built for
+   a scrolling viewport with hover states and reveal animations, none of which
+   mean anything on paper, and inheriting them would mean fighting them. This
+   file describes sheets.
+
+   297 by 210 millimetres, landscape, no page margin. Every .sheet is exactly one
+   page, and content is positioned inside it rather than flowed, so a page can
+   never break in the wrong place.
+   ========================================================================== */
+
+@import '@fontsource-variable/big-shoulders-display/wght';
+@import '@fontsource-variable/archivo/wdth.css';
+
+:root {
+  --ink: #0b0b0b;
+  --ink-2: #4a4a4a;
+  --ink-3: #7d7d7d;
+  --paper: #ffffff;
+  --paper-2: #f4f4f2;
+  --rule: rgba(11, 11, 11, 0.16);
+  --display: 'Big Shoulders Display Variable', sans-serif;
+  --prose: 'Archivo Variable', sans-serif;
+  --pw: 297mm;
+  --ph: 210mm;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--prose);
+}
+
+@page {
+  size: A4 landscape;
+  margin: 0;
+}
+
+.sheet {
+  position: relative;
+  width: var(--pw);
+  height: var(--ph);
+  overflow: hidden;
+  background: var(--paper);
+  break-after: page;
+  page-break-after: always;
+}
+.sheet:last-child {
+  break-after: auto;
+  page-break-after: auto;
+}
+
+/* Screen preview only. On paper the sheets butt together. */
+@media screen {
+  body {
+    background: #999;
+    padding: 12mm 0;
+  }
+  .sheet {
+    margin: 0 auto 8mm;
+    box-shadow: 0 2mm 8mm rgba(0, 0, 0, 0.35);
+  }
+}
+
+img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* --- shared type ---------------------------------------------------------- */
+
+.p-label {
+  font-family: var(--prose);
+  font-size: 6.4pt;
+  letter-spacing: 0.19em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0;
+}
+.p-title {
+  font-family: var(--display);
+  font-weight: 500;
+  text-transform: uppercase;
+  line-height: 0.94;
+  letter-spacing: 0.01em;
+  margin: 0;
+}
+.p-body {
+  font-size: 8.2pt;
+  line-height: 1.55;
+  color: var(--ink-2);
+  margin: 0;
+}
+.p-body + .p-body {
+  margin-top: 0.7em;
+}
+
+/* --- cover ---------------------------------------------------------------- */
+
+.cover-img {
+  position: absolute;
+  inset: 0;
+}
+.cover-plate {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  padding: 12mm 16mm 11mm;
+  min-width: 118mm;
+  background: var(--ink);
+  color: var(--paper);
+}
+.cover-plate .p-label {
+  color: rgba(255, 255, 255, 0.62);
+}
+.cover-name {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 44pt;
+  line-height: 0.88;
+  text-transform: uppercase;
+  letter-spacing: 0.005em;
+  margin: 3mm 0 4mm;
+}
+.cover-meta {
+  display: flex;
+  gap: 8mm;
+  font-size: 7.4pt;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+/* --- a project hero page -------------------------------------------------- */
+
+.hero-img {
+  position: absolute;
+  inset: 0;
+}
+.hero-plate {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  max-width: 150mm;
+  padding: 9mm 13mm 8mm;
+  background: var(--paper);
+}
+.hero-plate .p-title {
+  font-size: 27pt;
+  margin: 2.5mm 0 3mm;
+}
+.hero-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5mm 7mm;
+  font-size: 7pt;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.hero-facts b {
+  font-weight: 400;
+  color: var(--ink);
+}
+.sheet-no {
+  position: absolute;
+  right: 11mm;
+  bottom: 8mm;
+  font-size: 6.4pt;
+  letter-spacing: 0.2em;
+  color: var(--ink-3);
+}
+
+/* --- a project detail page ------------------------------------------------ */
+
+.detail {
+  display: grid;
+  grid-template-columns: 62mm 1fr;
+  height: 100%;
+}
+.detail-text {
+  padding: 13mm 9mm 12mm 13mm;
+  display: flex;
+  flex-direction: column;
+}
+.detail-text .p-title {
+  font-size: 17pt;
+  margin: 2mm 0 4mm;
+}
+.detail-credit {
+  margin-top: auto;
+  padding-top: 4mm;
+  border-top: 0.4mm solid var(--rule);
+  font-size: 7pt;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 2mm;
+  padding: 2mm 2mm 2mm 0;
+}
+.detail-grid figure {
+  margin: 0;
+  overflow: hidden;
+  background: var(--paper-2);
+}
+.detail-grid.is-three {
+  grid-template-rows: 1.25fr 1fr;
+}
+.detail-grid.is-three figure:first-child {
+  grid-column: span 2;
+}
+
+/* --- one page project ----------------------------------------------------- */
+
+/* The main image is a landscape band across the top rather than a full height
+   column. A column that tall is nearly portrait, and object-fit: cover then
+   crops a 3:2 render down to its middle third, which turned a street view into
+   a close up of one tree. */
+.single {
+  display: grid;
+  grid-template-rows: 116mm 1fr;
+  height: 100%;
+}
+.single-main {
+  overflow: hidden;
+  background: var(--paper-2);
+}
+.single-foot {
+  display: grid;
+  grid-template-columns: 1fr 104mm;
+  min-height: 0;
+}
+.single-text {
+  padding: 8mm 9mm 7mm 13mm;
+}
+.single-text .p-title {
+  font-size: 19pt;
+  margin: 2mm 0 3.5mm;
+}
+.single-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2mm;
+  padding: 2mm 2mm 2mm 0;
+  min-height: 0;
+}
+.single-strip figure {
+  margin: 0;
+  overflow: hidden;
+  background: var(--paper-2);
+}
+
+/* --- the index and the plain sheets --------------------------------------- */
+
+.plain {
+  padding: 16mm 18mm 14mm;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.plain > .p-title {
+  font-size: 26pt;
+  margin: 3mm 0 9mm;
+}
+.idx {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.idx li {
+  display: grid;
+  grid-template-columns: 16mm 1fr 62mm 46mm;
+  gap: 6mm;
+  align-items: baseline;
+  padding: 4.5mm 0;
+  border-bottom: 0.3mm solid var(--rule);
+}
+.idx .y,
+.idx .k,
+.idx .c {
+  font-size: 7pt;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.idx .t {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 13pt;
+  text-transform: uppercase;
+  line-height: 1;
+}
+.idx .c {
+  color: var(--ink-2);
+  text-align: right;
+}
+
+/* --- resume --------------------------------------------------------------- */
+
+.cv {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10mm 14mm;
+  margin-top: 2mm;
+}
+.cv section {
+  break-inside: avoid;
+}
+.cv h3 {
+  font-family: var(--prose);
+  font-size: 6.6pt;
+  letter-spacing: 0.19em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0 0 3mm;
+  padding-bottom: 2mm;
+  border-bottom: 0.3mm solid var(--rule);
+}
+.cv-item {
+  margin-bottom: 4.5mm;
+}
+.cv-item b {
+  display: block;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 11.5pt;
+  text-transform: uppercase;
+  line-height: 1.02;
+}
+.cv-item .w {
+  font-size: 7pt;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 1mm 0 1.5mm;
+}
+.cv-item ul {
+  margin: 1.5mm 0 0;
+  padding-left: 3.5mm;
+}
+.cv-item li {
+  font-size: 7.6pt;
+  line-height: 1.5;
+  color: var(--ink-2);
+  margin-bottom: 0.8mm;
+}
+.cv-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.4mm;
+}
+.cv-tags span {
+  font-size: 6.8pt;
+  letter-spacing: 0.07em;
+  padding: 1.2mm 2.4mm;
+  border: 0.3mm solid var(--rule);
+  color: var(--ink-2);
+}
+
+/* --- closing -------------------------------------------------------------- */
+
+.end {
+  height: 100%;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 20mm 18mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.end .p-title {
+  font-size: 34pt;
+  max-width: 190mm;
+}
+.end .p-label {
+  color: rgba(255, 255, 255, 0.6);
+}
+.end-rows {
+  display: flex;
+  gap: 16mm;
+  font-size: 8.4pt;
+  letter-spacing: 0.05em;
+}
+.end-rows div span {
+  display: block;
+  font-size: 6.4pt;
+  letter-spacing: 0.19em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 1.5mm;
+}

@@ -48,7 +48,8 @@ drawings:
     seed: 7
     alt: Presentation board for Building A showing the circulation diagram, the construction details and material assemblies, unit interior renders, the recreation room, the public gym, the rooftop community garden and a residential terrace
     drawingType: Board 4, Building A circulation, assemblies and interiors
-featured: true
+tier: lead
+credit: With Kyle Mo
 order: 2
 ---
 

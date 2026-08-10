@@ -48,7 +48,8 @@ drawings:
     seed: 7
     alt: Title sheet of the rendered outdoor scenes presentation showing the grounds with the canopy, the event tents and the church
     drawingType: Outdoor scenes presentation, title sheet
-featured: false
+tier: set
+credit: Visualisation for Muzaiko
 order: 6
 ---
 

@@ -113,18 +113,23 @@ the site is organised around a datum.
 - **Type does the work colour usually does.** Big Shoulders Display for condensed civic
   lettering, Spectral for prose, Martian Mono for anything numeric. All self hosted, so no
   request leaves the visitor's browser.
-- **The front film.** A 14 second excerpt of Ahmad's own Lincoln Beach walkthrough runs
-  behind his introduction. It is never downloaded on a narrow screen or when reduced
-  motion is requested; those cases keep the poster frame. The full 67 second film sits on
-  the Lincoln Beach project page as click to play, with `preload="none"` so an 11MB file
-  is only fetched by someone who asks for it. `scripts/build-hero-film.sh` still exists
-  for building a pan-and-crossfade loop out of stills if there is ever no video.
-- **The works move.** The filmstrip can be grabbed and dragged, nudged with the arrows,
-  scrolled with a vertical wheel, swiped on touch, or tabbed through. It is a native
-  scroll container underneath, so it still works with no JavaScript. A drag past a few
-  pixels suppresses the click, so moving the works never opens a project by accident.
-  Note the arrows and dragging only come into play once there are enough projects to
-  overflow the rail; with two, everything fits and they stay dormant.
+- **The front film.** Ahmad's Lincoln Beach walkthrough runs behind his introduction,
+  muted and looping. `scripts/build-hero.sh` makes it from the 4K master: the first seven
+  seconds are cut because the film carries its own title card, which would sit on top of
+  his name, and a two pass encode caps it near 9MB so a page that autoplays on every
+  visit stays light. It is never downloaded on a narrow screen or when reduced motion is
+  requested; those cases keep the poster frame. The full quality version is on YouTube,
+  reached from the Lincoln Beach project page through a click to load facade, so nothing
+  is requested from Google unless a visitor asks for it.
+- **Projects are in three tiers**, all set in the editor, with Ahmad's order kept inside
+  each one. Three leads take large cards, the set runs in a horizontal strip, and thin
+  coursework sits in a ruled index below. The strip is a native scroll container, so
+  trackpad, touch and keyboard work with no JavaScript; the two buttons are for a mouse
+  with no horizontal wheel. There is deliberately no drag to scroll, because capturing
+  the pointer to fake dragging is what once stopped the cards being clickable at all.
+- **Every card says who did the work.** `credit` is required on every project, because a
+  portfolio that does not distinguish solo work from group work is misleading, and a
+  reviewer assumes the worst when it is missing.
 - **Motion is one orchestrated page load**, then near silence, with reveals on scroll. All
   of it respects `prefers-reduced-motion`.
 
@@ -132,13 +137,18 @@ the site is organised around a datum.
 
 | Path | What it is |
 | --- | --- |
-| `src/styles/datum.css` | The whole design system. Every colour and size is a token here. |
-| `src/layouts/Datum.astro` | The page shell: header menu, waterline, footer. |
+| `src/styles/site.css` | The whole design system. Every colour and size is a token here. |
+| `src/styles/print.css` | The portfolio PDF. Sheets, not a scrolling page. |
+| `src/layouts/Site.astro` | The page shell: header menu, theme switch, footer. |
 | `src/components/HeroFilm.astro` | The front film and the introduction over it. |
-| `src/components/Filmstrip.astro` | The works rail. |
+| `src/components/ProjectGrid.astro` | The three tiers: leads, the strip, the index. |
+| `src/components/ProjectCard.astro` | One project card, at either size. |
+| `src/components/SkillIcon.astro` | The drawn marks for the software list. |
+| `src/lib/url.ts` | Prefixes internal links with the Pages base path. |
 | `src/lib/drawing.ts` | Generated line work, used for any image slot with no real file. |
-| `src/scripts/datum.ts` | All client behaviour, no framework. |
-| `scripts/build-hero-film.sh` | Rebuilds the front film from the renders. |
+| `src/scripts/site.ts` | All client behaviour, no framework. |
+| `scripts/build-hero.sh` | Rebuilds the front film from a full quality walkthrough. |
+| `scripts/build-portfolio.sh` | Renders the portfolio PDF from the site itself. |
 | `src/content/projects/` | One markdown file per project. |
 | `src/data/resume.json` | The resume record. |
 | `keystatic.config.ts` | The editor's schemas. |

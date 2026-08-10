@@ -216,7 +216,8 @@ drawings:
     seed: 39
     alt: Aerial site map with a dashed catchment circle, the approach road marked in red and the neighbouring building footprints outlined
     drawingType: Site map
-featured: true
+tier: lead
+credit: Sole author, commissioned
 order: 3
 ---
 

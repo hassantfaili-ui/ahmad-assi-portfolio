@@ -135,7 +135,8 @@ drawings:
     seed: 23
     alt: Long north south section running from the lake across the levee and through the site to the housing beyond
     drawingType: Section, north to south
-featured: true
+tier: lead
+credit: Sole author
 order: 1
 ---
 

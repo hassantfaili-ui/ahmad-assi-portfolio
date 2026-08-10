@@ -34,7 +34,8 @@ drawings:
     seed: 15
     alt: The same exploded axonometric dimensioned in feet and inches for the build
     drawingType: Exploded assembly, imperial
-featured: false
+tier: set
+credit: Designed and built
 order: 12
 ---
 

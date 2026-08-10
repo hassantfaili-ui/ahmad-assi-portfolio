@@ -170,10 +170,28 @@ export default config({
             }),
           },
         ),
-        featured: fields.checkbox({
-          label: 'Show on the cover sheet',
-          description: 'The home page shows up to six featured projects.',
-          defaultValue: true,
+        credit: fields.text({
+          label: 'Credit, short',
+          description:
+            'Who did the work, in a few words, for the project card. For example ' +
+            'Sole author, With Kyle Mo, Group of five. Required: a portfolio that ' +
+            'does not say which projects were group work is misleading, and a ' +
+            'reviewer assumes the worst when it is missing.',
+          validation: { isRequired: true },
+        }),
+        tier: fields.select({
+          label: 'Where it sits on the home page',
+          description:
+            'Lead projects are the large cards at the top, and there should be three. ' +
+            'The set is the strip below them. The index is the short list at the ' +
+            'bottom, for thin coursework that should stay on the site without ' +
+            'competing with the strong work.',
+          options: [
+            { label: 'Lead, large card at the top', value: 'lead' },
+            { label: 'The set, in the strip', value: 'set' },
+            { label: 'The index, a line in the list', value: 'index' },
+          ],
+          defaultValue: 'set',
         }),
         order: fields.integer({
           label: 'Order in the set',
@@ -220,6 +238,13 @@ export default config({
           label: 'CV PDF path',
           description:
             'Put the PDF in public/cv/ and enter its path, for example /cv/ahmad-assi-cv.pdf. Leave empty to hide the download button.',
+        }),
+        portfolioFile: fields.text({
+          label: 'Portfolio PDF path',
+          description:
+            'Generated from this site by npm run portfolio, so the PDF and the ' +
+            'link always show the same projects in the same order. Leave empty to ' +
+            'hide the download button.',
         }),
         email: fields.text({ label: 'Email' }),
         phone: fields.text({ label: 'Phone' }),

@@ -40,7 +40,8 @@ drawings:
     seed: 5
     alt: The full presentation sheet for Site 3, carrying the written strategy, context axonometrics, the site plans before and after, massing views and street level renders
     drawingType: Presentation sheet
-featured: false
+tier: set
+credit: Sole author
 order: 10
 ---
 

@@ -76,7 +76,8 @@ drawings:
     seed: 12
     alt: Site programming diagram allocating the courtyard to garden, gathering, seating and circulation
     drawingType: Site programming
-featured: false
+tier: set
+credit: Sole author
 order: 4
 ---
 

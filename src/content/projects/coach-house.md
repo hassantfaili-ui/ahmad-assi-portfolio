@@ -43,7 +43,8 @@ imageGroups:
         seed: 6
         alt: Detail sheet from the coach house set
 drawings: []
-featured: false
+tier: index
+credit: Group of five
 order: 9
 ---
 
