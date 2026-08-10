@@ -402,6 +402,22 @@ button {
 .tile > a {
   display: block;
   cursor: pointer;
+  height: 100%;
+}
+
+/* A featured project takes a two by two cell. Scale is the whole hierarchy;
+   there is no badge, no border, no colour doing the work. */
+.tile-lead {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+.tile-lead .tile-media {
+  aspect-ratio: auto;
+  height: calc(100% - 4.25rem);
+  min-height: 22rem;
+}
+.tile-lead .tile-caption b {
+  font-size: clamp(1.5rem, 2vw, 2rem);
 }
 
 .tile-media {
@@ -470,10 +486,24 @@ button {
   .grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  /* At two columns a double-wide tile would fill the row and stop reading as
+     emphasis, so featured tiles keep the extra height only. */
+  .tile-lead {
+    grid-column: span 2;
+    grid-row: span 1;
+  }
+  .tile-lead .tile-media {
+    aspect-ratio: 16 / 9;
+    height: auto;
+    min-height: 0;
+  }
 }
 @media (max-width: 460px) {
   .grid {
     grid-template-columns: 1fr;
+  }
+  .tile-lead {
+    grid-column: span 1;
   }
 }
 

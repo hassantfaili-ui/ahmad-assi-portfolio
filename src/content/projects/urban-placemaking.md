@@ -43,7 +43,7 @@ imageGroups:
         seed: 6
         alt: Cover sheet of the Exercise 3.2 urban placemaking review by Ahmad and Awj
 drawings: []
-featured: true
+featured: false
 order: 10
 ---
 

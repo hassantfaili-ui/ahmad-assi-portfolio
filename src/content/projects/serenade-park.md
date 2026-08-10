@@ -49,7 +49,7 @@ drawings:
     seed: 7
     alt: Second sheet of the Earl Armstrong team plan
     drawingType: Earl Armstrong area plan, sheet two
-featured: true
+featured: false
 order: 7
 ---
 

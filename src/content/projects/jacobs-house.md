@@ -43,7 +43,7 @@ imageGroups:
         seed: 6
         alt: Title sheet of Assignment 01 Delineation, listing group A4G4 and the date
 drawings: []
-featured: true
+featured: false
 order: 11
 ---
 

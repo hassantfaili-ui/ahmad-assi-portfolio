@@ -28,13 +28,18 @@ function facts(d: CollectionEntry<'projects'>['data']) {
   behind a scroll, and each carries its name, so the page reads as an index
   rather than a strip of unlabelled pictures.
 
+  Hierarchy comes from scale within the same grid: a project marked Featured
+  claims a two by two cell, the rest take one. Nothing is hidden and the grid
+  stays a grid, but the eye is given somewhere to land first. Which projects are
+  large, and in what order, is set in the editor.
+
   Each tile is still a real link to its project page. With JavaScript the click
   is intercepted and the project expands below the grid instead.
 -->
 <ul class="grid" data-grid>
   {
     projects.map((p) => (
-      <li class="tile" data-tile={p.id}>
+      <li class:list={["tile", p.data.featured && "tile-lead"]} data-tile={p.id}>
         <a
           href={url(`/work/${p.id}`)}
           data-expand={p.id}

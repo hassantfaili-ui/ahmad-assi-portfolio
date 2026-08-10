@@ -43,7 +43,7 @@ imageGroups:
         seed: 6
         alt: Title sheet of the core and shell submission with the group members and the north arrows
 drawings: []
-featured: true
+featured: false
 order: 14
 ---
 

@@ -43,7 +43,7 @@ imageGroups:
         seed: 6
         alt: Detail sheet from the coach house set
 drawings: []
-featured: true
+featured: false
 order: 9
 ---
 

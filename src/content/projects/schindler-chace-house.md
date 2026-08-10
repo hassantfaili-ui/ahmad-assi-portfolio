@@ -53,7 +53,7 @@ drawings:
     seed: 8
     alt: Analytical design sheet developing the study of the house
     drawingType: Analytical design
-featured: true
+featured: false
 order: 13
 ---
 
