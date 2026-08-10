@@ -1,5 +1,6 @@
 ---
 import Site from '../layouts/Site.astro';
+import SkillIcon from '../components/SkillIcon.astro';
 import resume from '../data/resume.json';
 import { url } from '../lib/url';
 ---
@@ -136,11 +137,24 @@ import { url } from '../lib/url';
       resume.skillGroups.map((g) => (
         <div class="reveal" style="margin-bottom:2.75rem">
           <p class="group-label">{g.label}</p>
-          <div class="tags">
-            {g.items.map((i) => (
-              <span class="tag">{i}</span>
-            ))}
-          </div>
+          {/* Software is a set of tools, so it is drawn rather than listed. The
+              rest are things he does, which only words describe. */}
+          {g.label.toLowerCase() === 'software' ? (
+            <ul class="software">
+              {g.items.map((i) => (
+                <li>
+                  <SkillIcon name={i} />
+                  <span>{i}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div class="tags">
+              {g.items.map((i) => (
+                <span class="tag">{i}</span>
+              ))}
+            </div>
+          )}
         </div>
       ))
     }
