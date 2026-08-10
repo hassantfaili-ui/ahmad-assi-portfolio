@@ -1387,3 +1387,75 @@ button {
 .atglance-item li:last-child {
   border-bottom: 0;
 }
+
+/* --------------------------------------------------------------- closing --- */
+/* About and the invitation share one row and are left aligned, so the page ends
+   on a single gesture rather than two stacked centred blocks. */
+
+.closing-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: clamp(2.5rem, 7vw, 6rem);
+  align-items: start;
+  max-width: 78rem;
+  margin: 0 auto;
+}
+
+.closing-heading {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(2rem, 4.5vw, 3.25rem);
+  line-height: 0.92;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  text-align: left;
+  margin: 0 0 1.5rem;
+}
+
+.closing-about,
+.closing-contact {
+  text-align: left;
+  border-top: 2px solid var(--ink);
+  padding-top: 1.5rem;
+}
+
+.closing-prose {
+  color: var(--ink-2);
+  max-width: 52ch;
+}
+.closing-prose p {
+  margin: 0 0 1.1rem;
+}
+.closing-prose p:last-child {
+  margin-bottom: 0;
+}
+
+.closing-contact .foot-kicker {
+  margin-bottom: 0.9rem;
+}
+
+.closing-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--t-lead);
+}
+.closing-links li {
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--rule-2);
+}
+.closing-links li:last-child {
+  border-bottom: 0;
+}
+
+/* The projects heading needs air above it, coming off a full height film. */
+#works {
+  margin-top: clamp(4rem, 10vw, 8rem);
+}
+
+@media (max-width: 880px) {
+  .closing-grid {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+}

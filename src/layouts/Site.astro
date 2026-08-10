@@ -6,9 +6,11 @@ import { url, isCurrent } from '../lib/url';
 interface Props {
   pageTitle: string;
   description: string;
+  /** The home page pairs About with Get in touch, so the footer would repeat it. */
+  hideFooterCta?: boolean;
 }
 
-const { pageTitle, description } = Astro.props;
+const { pageTitle, description, hideFooterCta = false } = Astro.props;
 const path = Astro.url.pathname;
 
 const PAGES = [
@@ -80,6 +82,7 @@ const PHONE_ICON =
     </main>
 
     <footer class="foot">
+      {!hideFooterCta && (
       <div class="foot-cta">
         <p class="foot-kicker">Interested in collaborating?</p>
         <h2 class="foot-title">Get in touch</h2>
@@ -89,6 +92,7 @@ const PHONE_ICON =
           <a class="inline" href={url('/contact')}>Contact page</a>
         </p>
       </div>
+      )}
 
       <div class="foot-base">
         <a class="wordmark" href={url('/')}>{resume.name}</a>

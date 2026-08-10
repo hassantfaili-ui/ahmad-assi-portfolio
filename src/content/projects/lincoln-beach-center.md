@@ -16,7 +16,7 @@ leadImage:
   seed: 1
   alt: Render of the Lincoln Beach Center scheme, the restaurant and museum framing the planted courtyard
 film:
-  src: /media/lincoln-beach-film.mp4
+  youtube: https://youtu.be/6e88kUbZFSA
   poster: /media/lincoln-beach-film-poster.jpg
   caption: Walkthrough of the completed scheme, moving from the boulevard through the courtyard to the lookout.
 imageGroups:
