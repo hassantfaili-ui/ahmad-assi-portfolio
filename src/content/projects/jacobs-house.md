@@ -11,10 +11,10 @@ role: Group A4G4, with Emma Belliveau, Noah Parenteau and Dylan Sinn
 contribution: Group drafting exercise. The building is Frank Lloyd Wright's, not ours; the drawings are our redrawing of it.
 summary: A redrawing of Frank Lloyd Wright's Jacobs House at 1 to 100, plan, section and elevation, each integrating a studied drafting precedent.
 leadImage:
-  src: /media/jacob-02.jpg
-  kind: section
+  src: /media/jacob-03.jpg
+  kind: axonometric
   seed: 1
-  alt: South section of the Jacobs House redrawn at 1 to 100 with dimensions marked, integrating a studied drafting precedent
+  alt: Three axonometric views of the Jacobs House redrawn from the original, showing the L-shaped plan wrapping the garden court
 imageGroups:
   - layout: pair
     caption: Section and elevation, each drawn in the manner of a different studied precedent.

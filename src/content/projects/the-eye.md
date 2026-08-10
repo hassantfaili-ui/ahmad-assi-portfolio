@@ -76,8 +76,8 @@ drawings:
     seed: 12
     alt: Site programming diagram allocating the courtyard to garden, gathering, seating and circulation
     drawingType: Site programming
-featured: true
-order: 5
+featured: false
+order: 4
 ---
 
 The courtyard is a leftover: a rectangle of paving between two campus buildings that people crossed rather than used. The proposal gives it a single figure to be organised by, a lens set into the paving, with a circular water feature at the centre where the two curves are widest.

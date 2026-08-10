@@ -1,0 +1,64 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import Drawing from './Drawing.astro';
+import { url } from '../lib/url';
+
+/**
+ * One project card, built on the Foster + Partners pattern: the image sits
+ * flush at the top of a panel, and the panel carries the title, a round arrow
+ * and a single line of year and place. Nothing overlays the image, which is
+ * what keeps a wall of these readable.
+ *
+ * The same card serves the three lead projects and the twelve in the rail. Only
+ * scale changes between them, which is the whole hierarchy.
+ */
+interface Props {
+  project: CollectionEntry<'projects'>;
+  lead?: boolean;
+}
+
+const { project: p, lead = false } = Astro.props;
+const d = p.data;
+const isFile = (s?: string) => Boolean(s && s.startsWith('/'));
+
+/* The card wants the place, not the postal address. A first part beginning with
+   a street number is dropped, so "13904 Hayne Boulevard, New Orleans, Louisiana"
+   reads as "New Orleans, Louisiana" here and stays complete on the project page. */
+const place = d.location.replace(/^\s*\d+[^,]*,\s*/, '');
+---
+
+<li class:list={['card', lead && 'card-lead']} data-tile={p.id}>
+  <a
+    href={url(`/work/${p.id}`)}
+    data-expand={p.id}
+    aria-expanded="false"
+    aria-controls={`panel-${p.id}`}
+  >
+    <span class="card-media">
+      {
+        isFile(d.leadImage.src) ? (
+          <img
+            src={url(d.leadImage.src)}
+            alt={d.leadImage.alt}
+            loading={lead ? 'eager' : 'lazy'}
+            decoding="async"
+          />
+        ) : (
+          <Drawing kind={d.leadImage.kind} seed={d.leadImage.seed} alt={d.leadImage.alt} reg={false} />
+        )
+      }
+    </span>
+
+    <span class="card-body">
+      <span class="card-head">
+        <b class="card-title">{d.title}</b>
+        <span class="card-go" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M5 12h13M12 5.5 18.5 12 12 18.5" />
+          </svg>
+        </span>
+      </span>
+      <span class="card-meta">{d.year} &nbsp;&middot;&nbsp; {place}</span>
+    </span>
+  </a>
+</li>

@@ -40,7 +40,7 @@ imageGroups:
         alt: Title sheet of Exercise 5, building systems for multi-unit residential buildings at 2100 Bank Street
 drawings: []
 featured: false
-order: 15
+order: 13
 ---
 
 This is the same site as Renewal Square, 2100 Bank Street, taken from a different direction: not what the housing looks like, but what has to happen above the ceiling for it to work.

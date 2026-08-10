@@ -11,10 +11,10 @@ role: Group case study, with Ashleigh, JiYoung, Nitike, Salma and Jhil
 contribution: Group study of an existing building, plus my own analytical design drawings.
 summary: A first year study of R.M. Schindler's 1922 Kings Road house, built for two couples on a tiny budget and generally taken as the first house in the modernist style.
 leadImage:
-  src: /media/schindler-02.jpg
+  src: /media/schindler-05.jpg
   kind: plan
   seed: 1
-  alt: Analytical drawing of the Schindler Chace House showing the pinwheel arrangement of studios and their relationship to the gardens
+  alt: Redrawn plans of the Schindler Chace House, the four studios and their paired terraces set around the shared cores
 imageGroups:
   - layout: pair
     caption: The house analysed. Four studios, two open sleeping terraces, two shared washrooms and a single utility room.
@@ -54,7 +54,7 @@ drawings:
     alt: Analytical design sheet developing the study of the house
     drawingType: Analytical design
 featured: false
-order: 13
+order: 14
 ---
 
 R.M. Schindler built the Kings Road house in West Hollywood in 1922 as a cooperative dwelling for himself, his wife and the Chaces: four individual studios, two open terraces for sleeping, two shared washrooms, one utility room combining kitchen, sewing and laundry, and a guest apartment. The budget was 12,550 dollars.

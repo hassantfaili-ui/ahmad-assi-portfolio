@@ -100,7 +100,7 @@ if (panels.length && triggers.length) {
     panels.forEach((p) => p.setAttribute('hidden', ''));
     triggers.forEach((t) => {
       t.setAttribute('aria-expanded', 'false');
-      t.closest('.tile')?.classList.remove('is-open');
+      t.closest('.card')?.classList.remove('is-open');
     });
     gridEl?.classList.remove('has-open');
   }
@@ -115,7 +115,7 @@ if (panels.length && triggers.length) {
 
     panel.removeAttribute('hidden');
     trigger.setAttribute('aria-expanded', 'true');
-    trigger.closest('.tile')?.classList.add('is-open');
+    trigger.closest('.card')?.classList.add('is-open');
     gridEl?.classList.add('has-open');
 
     if (focus) {
@@ -153,6 +153,42 @@ if (panels.length && triggers.length) {
   // deep link: /architecture#panel-lincoln-beach-center opens that project
   const hash = location.hash.replace('#panel-', '');
   if (hash && panels.some((p) => p.dataset.panel === hash)) open(hash, false);
+}
+
+/* ---------------------------------------------------------- 3b. the rail --- */
+/* The strip of remaining projects scrolls natively, so a trackpad, a touch
+   screen and a keyboard all work without any of this. The two buttons are for
+   a mouse with no horizontal wheel, and they disable themselves at each end.
+   Deliberately no drag-to-scroll: capturing the pointer to fake dragging is
+   what stopped the cards being clickable the last time this was a rail. */
+
+const rail = document.querySelector<HTMLElement>('[data-rail]');
+if (rail) {
+  const prev = document.querySelector<HTMLButtonElement>('[data-rail-prev]');
+  const next = document.querySelector<HTMLButtonElement>('[data-rail-next]');
+
+  /* One card plus its gap, so a press advances by whole cards. */
+  const step = () => {
+    const card = rail.querySelector<HTMLElement>('.card');
+    if (!card) return rail.clientWidth * 0.8;
+    const gap = parseFloat(getComputedStyle(rail).columnGap || '0') || 0;
+    return Math.max(1, Math.round(card.getBoundingClientRect().width + gap));
+  };
+
+  const sync = () => {
+    const max = rail.scrollWidth - rail.clientWidth;
+    if (prev) prev.disabled = rail.scrollLeft <= 1;
+    if (next) next.disabled = rail.scrollLeft >= max - 1;
+  };
+
+  const nudge = (dir: number) =>
+    rail.scrollBy({ left: dir * step(), behavior: reduced ? 'auto' : 'smooth' });
+
+  prev?.addEventListener('click', () => nudge(-1));
+  next?.addEventListener('click', () => nudge(1));
+  rail.addEventListener('scroll', sync, { passive: true });
+  window.addEventListener('resize', sync, { passive: true });
+  sync();
 }
 
 /* ------------------------------------------------------------- 4. film --- */

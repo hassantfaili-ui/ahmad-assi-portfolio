@@ -11,10 +11,10 @@ role: Group 9, ARCC 2202
 contribution: Part of a five person group. The submission is the group's shared work.
 summary: A documentation set for a four storey coach house, drawn at 1 to 100 with elevations and levels set out from a common datum.
 leadImage:
-  src: /media/coach-01.jpg
-  kind: elevation
+  src: /media/coach-05.jpg
+  kind: axonometric
   seed: 1
-  alt: East and north elevations of the coach house at 1 to 100, with the levels marked from Level 0 up to Level 4 against a common datum
+  alt: Timber framing axonometric of the coach house, every stud, plate and rafter drawn individually above the floor slab
 imageGroups:
   - layout: pair
     caption: Elevations and sections through the four levels.

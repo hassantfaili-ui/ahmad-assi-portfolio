@@ -49,7 +49,7 @@ drawings:
     alt: Presentation board for Building A showing the circulation diagram, the construction details and material assemblies, unit interior renders, the recreation room, the public gym, the rooftop community garden and a residential terrace
     drawingType: Board 4, Building A circulation, assemblies and interiors
 featured: true
-order: 4
+order: 2
 ---
 
 Garden Heights Phase 3 is a mixed-use quarter on a 3.8 hectare site at 2100 Bank Street, planned around the fact that the site is already well served by transit. The brief we set ourselves was affordability first: housing reachable by people from a range of backgrounds, with the amenities that make a neighbourhood work rather than just a collection of buildings.

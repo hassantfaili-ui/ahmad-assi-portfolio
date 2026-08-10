@@ -40,7 +40,7 @@ imageGroups:
         alt: Contents page of the City Building Blocks inventory, listing single family detached, row housing, stacked towns, mid-rise blocks, high-rise, corners and office types
 drawings: []
 featured: false
-order: 12
+order: 15
 ---
 
 An inventory rather than a design. Nineteen block types are drawn to the same convention and tabulated the same way: single family detached on 7.5 and 10 metre lots, row housing sorted by orientation and garage position, back-to-back, stacked towns, mid-rise blocks with and without commercial at grade, high rise freestanding and high rise sitting on a mid-rise base, corner conditions, and office buildings.

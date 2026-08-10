@@ -1,6 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import Drawing from './Drawing.astro';
+import ProjectCard from './ProjectCard.astro';
 import { url } from '../lib/url';
 
 interface Props {
@@ -8,6 +9,14 @@ interface Props {
 }
 
 const { projects } = Astro.props;
+
+/* The three marked as lead sit large at the top. Everything else runs on in a
+   single strip below, at one size. Order and lead status are both set in the
+   editor, so the sequence is Ahmad's rather than the code's. If fewer than
+   three are marked, the top of the order fills in. */
+const marked = projects.filter((p) => p.data.featured).slice(0, 3);
+const leads = marked.length ? marked : projects.slice(0, 3);
+const rest = projects.filter((p) => !leads.includes(p));
 
 const isFile = (s?: string) => Boolean(s && s.startsWith('/'));
 
@@ -23,59 +32,41 @@ function facts(d: CollectionEntry<'projects'>['data']) {
 }
 ---
 
-<!--
-  A grid rather than a rail. Every project is visible at once instead of hidden
-  behind a scroll, and each carries its name, so the page reads as an index
-  rather than a strip of unlabelled pictures.
+<div class="works" data-grid>
+  <ul class="leads">
+    {leads.map((p) => <ProjectCard project={p} lead />)}
+  </ul>
 
-  Hierarchy comes from scale within the same grid: a project marked Featured
-  claims a two by two cell, the rest take one. Nothing is hidden and the grid
-  stays a grid, but the eye is given somewhere to land first. Which projects are
-  large, and in what order, is set in the editor.
-
-  Each tile is still a real link to its project page. With JavaScript the click
-  is intercepted and the project expands below the grid instead.
--->
-<ul class="grid" data-grid>
   {
-    projects.map((p) => (
-      <li class:list={["tile", p.data.featured && "tile-lead"]} data-tile={p.id}>
-        <a
-          href={url(`/work/${p.id}`)}
-          data-expand={p.id}
-          aria-expanded="false"
-          aria-controls={`panel-${p.id}`}
-        >
-          <span class="tile-media">
-            {isFile(p.data.leadImage.src) ? (
-              <img
-                src={url(p.data.leadImage.src)}
-                alt={p.data.leadImage.alt}
-                loading="lazy"
-                decoding="async"
-              />
-            ) : (
-              <Drawing
-                kind={p.data.leadImage.kind}
-                seed={p.data.leadImage.seed}
-                alt={p.data.leadImage.alt}
-                reg={false}
-              />
-            )}
-          </span>
-          <span class="tile-caption">
-            <b>{p.data.title}</b>
-            <span>{p.data.category} &nbsp;/&nbsp; {p.data.year}</span>
-          </span>
-        </a>
-      </li>
-    ))
+    rest.length > 0 && (
+      <div class="rail-head">
+        <p class="rail-label">
+          The rest of the set <span class="rail-count">{rest.length}</span>
+        </p>
+        <div class="rail-nav">
+          <button type="button" class="rail-btn" data-rail-prev aria-label="Scroll projects left">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M19 12H6M13 5.5 6.5 12 13 18.5" />
+            </svg>
+          </button>
+          <button type="button" class="rail-btn" data-rail-next aria-label="Scroll projects right">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M5 12h13M12 5.5 18.5 12 12 18.5" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    )
   }
-</ul>
+
+  <ul class="rail" data-rail>
+    {rest.map((p) => <ProjectCard project={p} />)}
+  </ul>
+</div>
 
 <!--
   The expansions. Rendered server side and closed, so a reader with no
-  JavaScript still gets the content, and the browser can reuse the tile images.
+  JavaScript still gets the content, and the browser can reuse the card images.
 -->
 <div class="panels" data-panels>
   {

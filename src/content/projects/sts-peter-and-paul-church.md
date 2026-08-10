@@ -49,7 +49,7 @@ drawings:
     alt: Title sheet of the rendered outdoor scenes presentation showing the grounds with the canopy, the event tents and the church
     drawingType: Outdoor scenes presentation, title sheet
 featured: false
-order: 8
+order: 6
 ---
 
 The grounds of a Coptic church in Ottawa, where the outdoor space has to do several jobs across a year: an everyday forecourt, a place for a stage, and a plaza that takes marquees for feasts and community events without being permanently occupied by them.

@@ -11,40 +11,48 @@ role: Group 1, ARCC 2203, tutor Jay Lim
 contribution: Part of a five person group with Keya Purohit, Pluto Kaneria, Mitchell Holmes and Audrey Johnston. The set is the group's shared work.
 summary: A technical set documenting how a building actually keeps water and heat where they belong, drawn assembly by assembly with the thermal values worked out.
 leadImage:
-  src: /media/shell-02.jpg
-  kind: section
+  src: /media/shell-03.jpg
+  kind: axonometric
   seed: 1
-  alt: Wall assembly detail showing flashing, a pressure treated wall plate and a gasket at the junction between wall and foundation
+  alt: Mechanical systems axonometric of the building, the duct runs and risers drawn in colour over the structural frame on a titled sheet
 imageGroups:
   - layout: pair
-    caption: Assemblies drawn in detail, with the thermal resistance calculated rather than assumed.
+    caption: The envelope. A long section through the building, and the assemblies cut out of it at detail scale.
     images:
-      - src: /media/shell-03.jpg
-        kind: section
-        seed: 2
-        alt: Further assembly detail from the core and shell set
-      - src: /media/shell-04.jpg
-        kind: section
-        seed: 3
-        alt: Further assembly detail from the core and shell set
-  - layout: triptych
-    caption: Remaining sheets from the submission.
-    images:
-      - src: /media/shell-05.jpg
-        kind: section
-        seed: 4
-        alt: Further sheet from the core and shell set
-      - src: /media/shell-06.jpg
-        kind: section
-        seed: 5
-        alt: Further sheet from the core and shell set
       - src: /media/shell-01.jpg
         kind: section
+        seed: 2
+        alt: Sheet carrying the building longitudinal section alongside foundation, curtain wall, masonry, parapet and window details
+      - src: /media/shell-02.jpg
+        kind: section
+        seed: 3
+        alt: Wall assembly detail showing the flashing, the pressure treated wall plate and the gasket at the junction between wall and foundation
+  - layout: pair
+    caption: Services, drawn as axonometrics so the runs can be followed through the building rather than guessed at from plans.
+    images:
+      - src: /media/shell-04.jpg
+        kind: axonometric
+        seed: 4
+        alt: Electrical systems axonometric with the distribution drawn floor by floor over the structural frame
+      - src: /media/shell-05.jpg
+        kind: plan
+        seed: 5
+        alt: Plumbing systems sheet with the supply and waste runs set out against the ground floor plan
+  - layout: full
+    caption: The specification, which is where the assemblies stop being drawings and become products with numbers attached.
+    images:
+      - src: /media/shell-06.jpg
+        kind: section
         seed: 6
-        alt: Title sheet of the core and shell submission with the group members and the north arrows
-drawings: []
+        alt: Outline specification listing the divisions from concrete and masonry through thermal and moisture protection to openings and finishes
+drawings:
+  - src: /media/shell-window-sill.jpg
+    kind: section
+    seed: 7
+    alt: Window sill detail drawn at large scale on a titled sheet, showing the sill flashing, the sealant joint and the layers of the wall behind it
+    drawingType: Window sill detail
 featured: false
-order: 14
+order: 7
 ---
 
 The unglamorous half of architecture, and the half that decides whether a building lasts. The set works through the envelope assembly by assembly: flashing, pressure treated wall plates, gaskets at the junctions, and the thermal resistance of each layer calculated rather than assumed, including the concrete.

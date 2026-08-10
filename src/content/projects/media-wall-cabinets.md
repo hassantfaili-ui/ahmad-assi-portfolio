@@ -35,7 +35,7 @@ drawings:
     alt: The same exploded axonometric dimensioned in feet and inches for the build
     drawingType: Exploded assembly, imperial
 featured: false
-order: 3
+order: 12
 ---
 
 The unit is 2.05 metres long and hung off the wall, so the floor stays clear underneath it. Everything above the television, the floating shelf and the two small wall shelves, is the same 50 millimetre thickness, which keeps the horizontals reading as one family.

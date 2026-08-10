@@ -385,124 +385,255 @@ button {
   }
 }
 
-/* ------------------------------------------------------------------ grid --- */
-/* Four across on a desktop, stepping down with the viewport. Every project is
-   visible at once and every tile is named. */
+/* ----------------------------------------------------------------- cards --- */
+/* The projects section, built on the Foster + Partners studio pattern: an image
+   flush at the top of a panel, then the title, a round arrow and one line of
+   year and place. Nothing is laid over the image, which is what lets a wall of
+   these stay readable.
 
-.grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: clamp(1.25rem, 2.5vw, 2.25rem) clamp(1rem, 2vw, 1.75rem);
-  list-style: none;
+   Three lead projects sit large across the top. The remaining twelve run on in
+   a single strip at one size, so the hierarchy is carried entirely by scale. */
+
+.works {
   margin: 0 auto;
   padding: 0 var(--pad);
   max-width: 110rem;
 }
 
-.tile > a {
-  display: block;
-  cursor: pointer;
+.leads {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(1rem, 1.8vw, 1.75rem);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(16rem, 21rem);
+  gap: clamp(1rem, 1.8vw, 1.75rem);
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0.75rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule) transparent;
+}
+.rail > .card {
+  scroll-snap-align: start;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .rail {
+    scroll-behavior: smooth;
+  }
+}
+
+/* --- the card ------------------------------------------------------------ */
+
+.card > a {
+  display: flex;
+  flex-direction: column;
   height: 100%;
+  background: var(--paper-2);
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
 }
 
-/* A featured project takes a two by two cell. Scale is the whole hierarchy;
-   there is no badge, no border, no colour doing the work. */
-.tile-lead {
-  grid-column: span 2;
-  grid-row: span 2;
-}
-.tile-lead .tile-media {
-  aspect-ratio: auto;
-  height: calc(100% - 4.25rem);
-  min-height: 22rem;
-}
-.tile-lead .tile-caption b {
-  font-size: clamp(1.5rem, 2vw, 2rem);
-}
-
-.tile-media {
+.card-media {
   display: block;
   position: relative;
   aspect-ratio: 4 / 3;
   overflow: hidden;
   background: var(--paper-2);
 }
-.tile-media img,
-.tile-media svg {
+.card-media img,
+.card-media svg {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 0.7s var(--ease), opacity 0.4s var(--ease);
 }
-.tile > a:hover .tile-media img,
-.tile > a:hover .tile-media svg {
+.card > a:hover .card-media img,
+.card > a:hover .card-media svg {
   transform: scale(1.03);
 }
 
-.tile-caption {
+.card-body {
   display: block;
-  padding-top: 0.85rem;
+  flex: 1;
+  padding: 0.95rem 1.05rem 1.1rem;
 }
-.tile-caption b {
-  display: block;
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.9rem;
+}
+.card-title {
   font-family: var(--display);
   font-weight: 500;
-  font-size: 1.25rem;
-  line-height: 1.05;
+  font-size: 1.3rem;
+  line-height: 1.02;
   letter-spacing: 0.015em;
   text-transform: uppercase;
 }
-.tile-caption > span {
+.card-go {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  transition: background 0.3s var(--ease), color 0.3s var(--ease),
+    border-color 0.3s var(--ease);
+}
+.card-go svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+.card > a:hover .card-go {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--invert-ink);
+}
+.card-meta {
   display: block;
-  margin-top: 0.3rem;
+  margin-top: 0.55rem;
   font-family: var(--data);
   font-size: var(--t-data);
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink-3);
 }
-.tile > a:hover .tile-caption b {
+
+/* --- the three leads ----------------------------------------------------- */
+
+.card-lead .card-media {
+  aspect-ratio: 5 / 4;
+}
+.card-lead .card-body {
+  padding: 1.15rem 1.3rem 1.4rem;
+}
+.card-lead .card-title {
+  font-size: clamp(1.5rem, 2.1vw, 2.1rem);
+}
+.card-lead .card-go {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+.card-lead .card-go svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+/* --- the rail heading and its controls ----------------------------------- */
+
+.rail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: clamp(2.5rem, 4vw, 4rem) 0 1.15rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--rule);
+}
+.rail-label {
+  margin: 0;
+  font-family: var(--data);
+  font-size: var(--t-data);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.rail-count {
+  margin-left: 0.6rem;
+  color: var(--ink-3);
+}
+.rail-nav {
+  display: flex;
+  gap: 0.5rem;
+}
+.rail-btn {
+  display: grid;
+  place-items: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.3s var(--ease), color 0.3s var(--ease),
+    border-color 0.3s var(--ease), opacity 0.3s var(--ease);
+}
+.rail-btn svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+.rail-btn:hover {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--invert-ink);
+}
+.rail-btn[disabled] {
+  opacity: 0.28;
+  cursor: default;
+}
+.rail-btn[disabled]:hover {
+  background: none;
+  border-color: var(--rule);
+  color: var(--ink);
+}
+
+/* the open project stays lit while the rest recede */
+.js .works.has-open .card:not(.is-open) .card-media img,
+.js .works.has-open .card:not(.is-open) .card-media svg {
+  opacity: 0.45;
+}
+.card.is-open .card-title {
+  text-decoration: underline;
+  text-underline-offset: 0.28em;
+  text-decoration-thickness: 1px;
+}
+.card > a:hover .card-title {
   text-decoration: underline;
   text-underline-offset: 0.28em;
   text-decoration-thickness: 1px;
 }
 
-/* the open project stays lit while the rest recede */
-.js .grid.has-open .tile:not(.is-open) .tile-media img,
-.js .grid.has-open .tile:not(.is-open) .tile-media svg {
-  opacity: 0.45;
-}
-.tile.is-open .tile-caption b {
-  text-decoration: underline;
-  text-underline-offset: 0.28em;
-}
-
-@media (max-width: 1180px) {
-  .grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-@media (max-width: 820px) {
-  .grid {
+@media (max-width: 900px) {
+  /* At two columns the first lead keeps the full width, so the order still
+     reads as an order rather than a grid of equals. */
+  .leads {
     grid-template-columns: repeat(2, 1fr);
   }
-  /* At two columns a double-wide tile would fill the row and stop reading as
-     emphasis, so featured tiles keep the extra height only. */
-  .tile-lead {
+  .leads > .card:first-child {
     grid-column: span 2;
-    grid-row: span 1;
   }
-  .tile-lead .tile-media {
+  .leads > .card:first-child .card-media {
     aspect-ratio: 16 / 9;
-    height: auto;
-    min-height: 0;
   }
 }
-@media (max-width: 460px) {
-  .grid {
+@media (max-width: 700px) {
+  .rail-nav {
+    display: none;
+  }
+  .rail {
+    grid-auto-columns: minmax(14rem, 72vw);
+  }
+}
+@media (max-width: 560px) {
+  .leads {
     grid-template-columns: 1fr;
   }
-  .tile-lead {
+  .leads > .card:first-child {
     grid-column: span 1;
   }
 }
@@ -607,21 +738,6 @@ button {
 .panel-close:hover {
   color: var(--mark);
   border-bottom-color: var(--mark);
-}
-
-/* the tile whose panel is open */
-.tile.is-open::before,
-.tile.is-open::after {
-  opacity: 1;
-}
-.tile.is-open img,
-.tile.is-open svg {
-  filter: saturate(1) contrast(1);
-}
-.js .tile.is-open /* everything else recedes while one is open */
-.js .grid.has-open .tile:not(.is-open) img,
-.js .grid.has-open .tile:not(.is-open) svg {
-  opacity: 0.42;
 }
 
 @keyframes panel-in {

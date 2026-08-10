@@ -41,7 +41,7 @@ drawings:
     alt: The full presentation sheet for Site 3, carrying the written strategy, context axonometrics, the site plans before and after, massing views and street level renders
     drawingType: Presentation sheet
 featured: false
-order: 6
+order: 10
 ---
 
 Site 3 of Confederation Heights was the piece of the studio I took on alone. The strategy is about connection first: roads and pedestrian routes, including bridges, tied into the contextual elements around the site rather than stopping at its boundary.
