@@ -1,7 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import Site from '../layouts/Site.astro';
-import Filmstrip from '../components/Filmstrip.astro';
+import ProjectGrid from '../components/ProjectGrid.astro';
 import resume from '../data/resume.json';
 import { url } from '../lib/url';
 
@@ -22,5 +22,5 @@ Architecture and urbanism &nbsp;/&nbsp; <em>{projects.length} projects</em>
     </p>
   </section>
 
-  <Filmstrip projects={projects} />
+  <ProjectGrid projects={projects} />
 </Site>

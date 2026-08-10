@@ -24,30 +24,24 @@ function facts(d: CollectionEntry<'projects'>['data']) {
 ---
 
 <!--
-  The filmstrip, on the reference's geometry: 300px squares, 10px gaps, scrolled
-  horizontally. Native scroll does the work, so it functions with no JavaScript;
-  the arrows only add a nicer way to drive it.
+  A grid rather than a rail. Every project is visible at once instead of hidden
+  behind a scroll, and each carries its name, so the page reads as an index
+  rather than a strip of unlabelled pictures.
 
-  Each tile is a real link to its project page. With JavaScript available the
-  click is intercepted and the project expands in place below the rail instead,
-  with the full sheet still one click away. Without JavaScript the link simply
-  works, which is also what a search engine follows.
+  Each tile is still a real link to its project page. With JavaScript the click
+  is intercepted and the project expands below the grid instead.
 -->
-<div class="strip-wrap" data-strip-wrap>
-  <button class="arrow arrow-prev" type="button" data-strip-prev aria-label="Previous projects" hidden>
-    &#8249;
-  </button>
-
-  <ul class="strip" data-strip>
-    {
-      projects.map((p) => (
-        <li class="tile" data-tile={p.id}>
-          <a
-            href={url(`/work/${p.id}`)}
-            data-expand={p.id}
-            aria-expanded="false"
-            aria-controls={`panel-${p.id}`}
-          >
+<ul class="grid" data-grid>
+  {
+    projects.map((p) => (
+      <li class="tile" data-tile={p.id}>
+        <a
+          href={url(`/work/${p.id}`)}
+          data-expand={p.id}
+          aria-expanded="false"
+          aria-controls={`panel-${p.id}`}
+        >
+          <span class="tile-media">
             {isFile(p.data.leadImage.src) ? (
               <img
                 src={url(p.data.leadImage.src)}
@@ -63,20 +57,16 @@ function facts(d: CollectionEntry<'projects'>['data']) {
                 reg={false}
               />
             )}
-            <span class="tile-label">
-              <b>{p.data.title}</b>
-              <span>{p.data.category} &nbsp;/&nbsp; {p.data.status}</span>
-            </span>
-          </a>
-        </li>
-      ))
-    }
-  </ul>
-
-  <button class="arrow arrow-next" type="button" data-strip-next aria-label="More projects" hidden>
-    &#8250;
-  </button>
-</div>
+          </span>
+          <span class="tile-caption">
+            <b>{p.data.title}</b>
+            <span>{p.data.category} &nbsp;/&nbsp; {p.data.year}</span>
+          </span>
+        </a>
+      </li>
+    ))
+  }
+</ul>
 
 <!--
   The expansions. Rendered server side and closed, so a reader with no
