@@ -42,21 +42,17 @@ imageGroups:
         kind: photo
         seed: 6
         alt: The kitchen under the mezzanine soffit, looking through to the hall beyond
-      - src: /media/coach-r19.jpg
+      - src: /media/coach-frame-revit.jpg
         kind: axonometric
         seed: 7
-        alt: Revit model render of the timber post and beam frame with the roof structure exposed above the slab
-  - layout: pair
-    caption: The report ran past the drawings into how the building would perform, which is the half of the exercise most easily skipped.
+        alt: Revit model render of the timber post and beam frame standing on the blockwork base, every member drawn
+  - layout: full
+    caption: The massing studies from the sustainability chapter, cut open so the section can be read against the argument for the materials.
     images:
-      - src: /media/coach-r11.jpg
+      - src: /media/coach-massing.jpg
         kind: axonometric
         seed: 8
-        alt: Sustainability page showing two massing studies of the coach house alongside the written case for its materials
-      - src: /media/coach-r12.jpg
-        kind: section
-        seed: 9
-        alt: Diagram of passive heating and cooling, tracing the natural ventilation path through the section
+        alt: Two cut-away massing studies of the coach house, the dark roof and timber cladding shown with the floors visible inside
 drawings:
   - src: /media/coach-02.jpg
     kind: plan
