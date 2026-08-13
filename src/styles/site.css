@@ -1264,6 +1264,30 @@ button {
   border-color: var(--mark);
 }
 
+/* The contact form sits under the email button as the secondary route, so it is
+   introduced by a rule and a quiet line rather than a heading competing with
+   "Write to me". */
+.form-or {
+  margin: 2.5rem 0 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+  font-family: var(--data);
+  font-size: var(--t-data);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* Honeypot. Off-screen rather than display:none, because some bots skip fields
+   that are not rendered at all. */
+.hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
 .field {
   margin-bottom: 1.25rem;
   text-align: left;

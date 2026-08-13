@@ -4,7 +4,7 @@ A portfolio website that works as an online resume first and a project gallery s
 Static output, no server to run, no monthly cost.
 
 > **All content is Ahmad's own or is credited.** His introduction, CV and contact details
-> come from his existing site. Fifteen projects span professional work, independent
+> come from his existing site. Sixteen projects span professional work, independent
 > commissions and coursework from first through fourth year.
 >
 > **Crediting is deliberate and specific.** Much of the academic work is group work, and
@@ -24,19 +24,30 @@ Static output, no server to run, no monthly cost.
 
 ## Live site
 
-**https://hassantfaili-ui.github.io/ahmad-assi-portfolio/**
+Netlify is the host. The Netlify build is the canonical one.
 
-Deployed by GitHub Actions on every push to `main`
-(`.github/workflows/deploy.yml`): checkout, `npm ci`, `astro check`, build,
-publish. The type check runs in CI, so a build with type errors cannot publish.
+`netlify.toml` sets the build command, the publish directory and Node 20, and
+caches the film, the PDF and the hashed assets hard while leaving HTML
+revalidating.
 
-Because this is a project repo, Pages serves it from a subfolder rather than the
-domain root. That is why `astro.config.mjs` sets `base` and why every internal
-link and asset goes through `url()` in `src/lib/url.ts`. Content files keep clean
-paths like `/media/hero.mp4`; the prefix is added at render time. To move to a
-custom domain such as ahmadassi.ca, set `site` to the domain, set `base` back to
-`'/'`, add a `CNAME` file in `public/`, and point the DNS at GitHub. Nothing else
-changes.
+`.github/workflows/deploy.yml` still exists and still works, but it is
+`workflow_dispatch` only: two hosts building the same commit means two URLs for
+one site, which splits search ranking and gives two places to check when
+something looks wrong. It is kept rather than deleted so Pages can be brought
+back with one click.
+
+**The base path is the only thing that differs between hosts.** Pages serves a
+project repo from a subfolder; Netlify serves from the root of its own domain.
+Carrying the Pages prefix onto Netlify would 404 every stylesheet, script and
+image while the page itself still loaded, which reads as a broken site rather
+than a misconfigured one. So `astro.config.mjs` reads `NETLIFY`, which Netlify
+sets on every build, and picks the right `base` and `site` automatically. Neither
+host needs the config edited by hand, and a custom domain needs no change at all:
+Netlify updates `URL` once the domain is attached.
+
+Every internal link and asset goes through `url()` in `src/lib/url.ts`. Content
+files keep clean paths like `/media/hero.mp4`, which is what the editor shows and
+what a person would expect to type; the prefix is added at render time.
 
 The Keystatic editor never reaches the deployed site: it is mounted only when
 `npm_lifecycle_event` is `dev`, and CI runs `build`.
@@ -96,23 +107,19 @@ cannot ship without a description.
 
 ## The design
 
-The direction is **"Datum"**. Layout follows the reference portfolio the client supplied:
-centred display type, square tiles in a horizontal filmstrip, staggered project images,
-minimal chrome. The aesthetic comes from Ahmad's own subject instead.
+Black and white only. No accent colour: emphasis comes from weight, scale, rule and
+inversion, which is how the practices this was measured against hold a page together.
+Colour belongs to the photographs, and Ahmad's renders bring plenty of it. Light is the
+default because architectural imagery reads best on white; dark is one click away.
 
-Both of his projects are about getting above water. Lincoln Beach Center puts a lookout
-over the levee that doubles as a flood platform; La Casa Aranas is an elevated house. So
-the site is organised around a datum.
+Two typefaces, both self hosted so no request leaves the visitor's browser: Big Shoulders
+Display for condensed display lettering, Archivo for prose and for anything that behaves
+like data.
 
-- **The waterline.** A line fixed across the viewport with a live elevation that falls as
-  you scroll, from a high point at the top of the page to `+0.00` at the foot of it. The
-  range is derived from the page's own length. It reaches in from the margins and leaves
-  the centre clear, because a rule straight across struck through the centred text.
-- **One dominant deep water tone** over a fixed depth gradient, with a single sharp survey
-  orange for ticks, elevations, hovers and errors. There is no second accent.
-- **Type does the work colour usually does.** Big Shoulders Display for condensed civic
-  lettering, Spectral for prose, Martian Mono for anything numeric. All self hosted, so no
-  request leaves the visitor's browser.
+- **The projects section follows the Foster + Partners studio pattern.** The image sits
+  flush at the top of a panel and the panel carries the title, a round arrow and one line
+  of year and place. Nothing is laid over the image, which is what lets a wall of these
+  stay readable.
 - **The front film.** Ahmad's Lincoln Beach walkthrough runs behind his introduction,
   muted and looping. `scripts/build-hero.sh` makes it from the 4K master: the first seven
   seconds are cut because the film carries its own title card, which would sit on top of
@@ -144,7 +151,7 @@ the site is organised around a datum.
 | `src/components/ProjectGrid.astro` | The three tiers: leads, the strip, the index. |
 | `src/components/ProjectCard.astro` | One project card, at either size. |
 | `src/components/SkillIcon.astro` | The drawn marks for the software list. |
-| `src/lib/url.ts` | Prefixes internal links with the Pages base path. |
+| `src/lib/url.ts` | Prefixes internal links with the host base path. |
 | `src/lib/drawing.ts` | Generated line work, used for any image slot with no real file. |
 | `src/scripts/site.ts` | All client behaviour, no framework. |
 | `scripts/build-hero.sh` | Rebuilds the front film from a full quality walkthrough. |
@@ -160,19 +167,16 @@ the site is organised around a datum.
 These are known and deliberate, not oversights:
 
 1. **Confirm the inferred project details.** See below.
-2. **Connect the contact form.** GitHub Pages is static only, so it cannot receive a
-   form post at all. `src/pages/contact.astro` has a `FORM_ENDPOINT` constant; until it
-   is set the form validates and then says plainly that it is not connected, and gives
-   the email address. It never pretends to have sent anything. To make it work, point
-   `FORM_ENDPOINT` at a third party handler such as Formspree, or drop the form and keep
-   the email and phone, which are already the fastest way to reach him.
+2. **Watch the first form submissions.** The contact form posts through Netlify Forms
+   and is rendered only in a Netlify build, so it cannot appear on a host that has
+   nothing to receive it. Submissions arrive in the Netlify dashboard; turn on email
+   notifications there so they are not missed. Email is still the primary route on the
+   page, because an attachment will not fit through a form.
 3. **Add the CV PDF.** Put it in `public/cv/` and set `cvFile` in the editor. Until then
    the resume page simply omits the download button rather than offering a broken one.
-4. **Choose hosting and a domain.** The build is portable: Cloudflare Pages, Netlify and
-   GitHub Pages all serve it as is.
+4. **Attach a domain.** Netlify handles the certificate. Nothing in the config changes.
 5. **Put the editor online** if Ahmad should edit without running a terminal.
-6. **Add tests.** No Playwright coverage is written yet: the routes, the drag on the
-   works rail, form validation, keyboard navigation and the empty states all deserve it.
+6. **Add tests.** No Playwright coverage is written yet: the routes, the projects strip, form validation, keyboard navigation and the empty states all deserve it.
 7. **Register accounts in Ahmad's own name.** The host, the domain and any CMS account
    should be his, so keeping the site online never depends on anyone else.
 

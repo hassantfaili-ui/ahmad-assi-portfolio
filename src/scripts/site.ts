@@ -1,5 +1,5 @@
 /**
- * Datum behaviour.
+ * Client behaviour.
  *  1. theme switch
  *  2. the hero film
  *  3. project expansions

@@ -1,13 +1,20 @@
 name: Deploy to GitHub Pages
 
-# Builds the static site and publishes it to Pages on every push to main.
+# Builds the static site and publishes it to Pages.
 # The build is plain `npm run build`, which is deliberately the same command used
 # locally: the Keystatic editor is mounted only when npm_lifecycle_event is
 # "dev", so CI produces a purely static site with no admin routes.
+#
+# MANUAL ONLY. Netlify is the live host now, so this no longer runs on push: two
+# hosts building the same commit means two URLs for one site, which splits search
+# ranking and gives two places to check when something looks wrong. The workflow
+# is kept rather than deleted so Pages can be brought back with one click if
+# Netlify is ever dropped.
+#
+# Note the Pages site stays online at its last deployed state until Pages itself
+# is turned off in the repository settings.
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
