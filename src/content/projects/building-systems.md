@@ -11,7 +11,7 @@ role: With Kyle Mok, Exercise 5
 contribution: Joint exercise with Kyle Mok, on the same Bank Street site as Renewal Square.
 summary: The services study behind the Bank Street housing, working out where ceilings drop, where the ducts run, and where the light fittings land once both are resolved.
 leadImage:
-  src: /media/systems-services-4.jpg
+  src: /media/building-systems/systems-services-4.jpg
   kind: plan
   seed: 1
   alt: The coordinated plan with the dropped ceiling zones washed in, the bulkheads outlined and the duct and sprinkler runs drawn over the top
@@ -19,63 +19,63 @@ imageGroups:
   - layout: pair
     caption: The point of departure. The plan as designed, and the same plan with the furniture in, because where a bed goes decides where a duct cannot.
     images:
-      - src: /media/systems-plan-base.jpg
+      - src: /media/building-systems/systems-plan-base.jpg
         kind: plan
         seed: 2
         alt: The bare floor plate drawn in outline with the partitions and openings only
-      - src: /media/systems-plan-furniture.jpg
+      - src: /media/building-systems/systems-plan-furniture.jpg
         kind: plan
         seed: 3
         alt: The same plate with the furniture layout in place across both units
   - layout: pair
     caption: Where the ceiling has to drop. Washed in so the extent is arguable rather than assumed.
     images:
-      - src: /media/systems-zones-1.jpg
+      - src: /media/building-systems/systems-zones-1.jpg
         kind: plan
         seed: 4
         alt: First pass at the dropped ceiling zones, washed over the corridor and the wet rooms
-      - src: /media/systems-zones-2.jpg
+      - src: /media/building-systems/systems-zones-2.jpg
         kind: plan
         seed: 5
         alt: The zones extended, with the ceiling diffusers marked within them
   - layout: pair
     caption: The bulkheads that follow from those zones, drawn as a continuous run rather than as separate pieces.
     images:
-      - src: /media/systems-bulkhead-1.jpg
+      - src: /media/building-systems/systems-bulkhead-1.jpg
         kind: plan
         seed: 6
         alt: The bulkhead traced as a single outline around the living space
-      - src: /media/systems-bulkhead-4.jpg
+      - src: /media/building-systems/systems-bulkhead-4.jpg
         kind: plan
         seed: 7
         alt: The bulkhead resolved and thickened, closing the loop back to the risers
   - layout: triptych
     caption: Then the services themselves, and only then the light fittings. A lighting layout drawn before the ducts are resolved is a lighting layout that will be moved.
     images:
-      - src: /media/systems-services-1.jpg
+      - src: /media/building-systems/systems-services-1.jpg
         kind: plan
         seed: 8
         alt: Supply and waste runs drawn in blue against the washed ceiling zones
-      - src: /media/systems-services-2.jpg
+      - src: /media/building-systems/systems-services-2.jpg
         kind: plan
         seed: 9
         alt: The full services layout with sprinkler heads in red and pipe runs in blue across both units
-      - src: /media/systems-sprinkler-axo.jpg
+      - src: /media/building-systems/systems-sprinkler-axo.jpg
         kind: axonometric
         seed: 10
         alt: Axonometric of the sprinkler system with the risers and branch lines drawn clear of the slab
 drawings:
-  - src: /media/systems-bulkhead-2.jpg
+  - src: /media/building-systems/systems-bulkhead-2.jpg
     kind: plan
     seed: 11
     alt: Intermediate bulkhead study, the run extended along the corridor wall
     drawingType: Bulkhead, second pass
-  - src: /media/systems-bulkhead-3.jpg
+  - src: /media/building-systems/systems-bulkhead-3.jpg
     kind: plan
     seed: 12
     alt: Third bulkhead study, resolving the junction at the bathroom wall
     drawingType: Bulkhead, third pass
-  - src: /media/systems-services-3.jpg
+  - src: /media/building-systems/systems-services-3.jpg
     kind: plan
     seed: 13
     alt: Services layout with the electrical and sprinkler runs separated for clarity

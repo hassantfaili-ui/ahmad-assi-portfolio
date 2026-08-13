@@ -11,7 +11,7 @@ role: Visualisation, with Muzaiko Architecture as project architect
 contribution: The rendered outdoor scenes shown here. The building and grounds are a Muzaiko Architecture project, and the design development drawing set is theirs. Included with permission.
 summary: Rendered outdoor scenes for the grounds of a Melkite Greek Catholic church in Ottawa, covering the open air structure, the stage and the event tents that share the plaza.
 leadImage:
-  src: /media/church-birdseye-1.jpg
+  src: /media/sts-peter-and-paul-church/church-birdseye-1.jpg
   kind: photo
   seed: 1
   alt: Aerial render of the church grounds showing the long open air structure, the event tents on the plaza and the domed church beyond
@@ -19,31 +19,31 @@ imageGroups:
   - layout: pair
     caption: The grounds from above. The plaza is planned to take marquees and crowds without being given over to them permanently.
     images:
-      - src: /media/church-birdseye-2.jpg
+      - src: /media/sts-peter-and-paul-church/church-birdseye-2.jpg
         kind: photo
         seed: 2
         alt: Second aerial render of the grounds from the opposite side, showing the plaza, the canopy and the surrounding trees
-      - src: /media/church-open-air.jpg
+      - src: /media/sts-peter-and-paul-church/church-open-air.jpg
         kind: photo
         seed: 3
         alt: Render of the open air structure, a long steel framed canopy over a paved terrace with seating beneath it
   - layout: triptych
     caption: The event set up. Stage, food tent and shisha tent, each rendered in place on the plaza.
     images:
-      - src: /media/church-stage.jpg
+      - src: /media/sts-peter-and-paul-church/church-stage.jpg
         kind: photo
         seed: 4
         alt: Render of the outdoor stage set up on the plaza with seating in front of it
-      - src: /media/church-food-tent.jpg
+      - src: /media/sts-peter-and-paul-church/church-food-tent.jpg
         kind: photo
         seed: 5
         alt: Render of the food tent with tables and servery on the plaza
-      - src: /media/church-shisha-tent.jpg
+      - src: /media/sts-peter-and-paul-church/church-shisha-tent.jpg
         kind: photo
         seed: 6
         alt: Render of the shisha tent with lounge seating under a marquee
 drawings:
-  - src: /media/church-sheet-01.jpg
+  - src: /media/sts-peter-and-paul-church/church-sheet-01.jpg
     kind: site
     seed: 7
     alt: Title sheet of the rendered outdoor scenes presentation showing the grounds with the canopy, the event tents and the church

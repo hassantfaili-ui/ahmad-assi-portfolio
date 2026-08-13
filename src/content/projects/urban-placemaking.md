@@ -11,7 +11,7 @@ role: Sole author, Exercise 3.2
 contribution: The whole project. The parti, all four drawn layers, the block pattern, the model and every view.
 summary: A placemaking proposal for a site at Tunney's Pasture, organised around the relationship between public and private ground on both axes, and built up as four drawn layers.
 leadImage:
-  src: /media/rv-model-oval-1.jpg
+  src: /media/urban-placemaking/rv-model-oval-1.jpg
   kind: photo
   seed: 1
   alt: Aerial along the oval path with the planted central strip running between the blocks and the water edge beyond
@@ -19,118 +19,118 @@ imageGroups:
   - layout: pair
     caption: The district as a whole. The blocks are massing; the ground between them is the project.
     images:
-      - src: /media/rv-model-final.jpg
+      - src: /media/urban-placemaking/rv-model-final.jpg
         kind: photo
         seed: 2
         alt: Aerial of the whole proposal with the buildings in white massing, the green open space threaded through it and the towers marking the centre
-      - src: /media/rv-model-bev-2.jpg
+      - src: /media/urban-placemaking/rv-model-bev-2.jpg
         kind: photo
         seed: 3
         alt: Bird's eye view across the district with the taller blocks to one side and the green corridor running past them
   - layout: pair
     caption: Two more angles on the massing, because a scheme this long reads differently from each end.
     images:
-      - src: /media/rv-model-bev-1.jpg
+      - src: /media/urban-placemaking/rv-model-bev-1.jpg
         kind: photo
         seed: 4
         alt: Aerial from the north with the street grid, the courtyard blocks and the planted courts between them
-      - src: /media/rv-model-bev-3.jpg
+      - src: /media/urban-placemaking/rv-model-bev-3.jpg
         kind: photo
         seed: 5
         alt: Aerial from the opposite corner showing the green courtyards stepping through the block pattern
   - layout: pair
     caption: The oval path, which is the device that makes the central green a route rather than a gap.
     images:
-      - src: /media/rv-model-oval-2.jpg
+      - src: /media/urban-placemaking/rv-model-oval-2.jpg
         kind: photo
         seed: 6
         alt: The oval path from above with the tree rows along it and the blocks either side
-      - src: /media/rv-park-aerial.jpg
+      - src: /media/urban-placemaking/rv-park-aerial.jpg
         kind: photo
         seed: 7
         alt: Aerial of the central park with paths crossing the green between the blocks
   - layout: triptych
     caption: At eye level, taken from the three positions marked on the key plan below.
     images:
-      - src: /media/rv-model-eye-1.jpg
+      - src: /media/urban-placemaking/rv-model-eye-1.jpg
         kind: photo
         seed: 8
         alt: Eye level view along a paved path under mature trees, with figures walking and the water edge behind
-      - src: /media/rv-model-eye-2.jpg
+      - src: /media/urban-placemaking/rv-model-eye-2.jpg
         kind: photo
         seed: 9
         alt: Eye level view across an open plaza with the massing blocks around it and the water strip beyond
-      - src: /media/rv-model-eye-3.jpg
+      - src: /media/urban-placemaking/rv-model-eye-3.jpg
         kind: photo
         seed: 10
         alt: Eye level view down the tree lined avenue with the paving running out toward the water
   - layout: triptych
     caption: The canopy structures and the set pieces placed along the route.
     images:
-      - src: /media/rv-walk-canopy.jpg
+      - src: /media/urban-placemaking/rv-walk-canopy.jpg
         kind: photo
         seed: 11
         alt: A paved walk under branching canopy structures with trees planted along both sides
-      - src: /media/rv-walk-autumn.jpg
+      - src: /media/urban-placemaking/rv-walk-autumn.jpg
         kind: photo
         seed: 12
         alt: The same walk in autumn with people crossing it and the trees turning
-      - src: /media/rv-canopy-trees.jpg
+      - src: /media/urban-placemaking/rv-canopy-trees.jpg
         kind: photo
         seed: 13
         alt: The canopy structures among red autumn planting on the open ground
   - layout: triptych
     caption: Things to walk toward. A route this long needs destinations along it, not just at the ends.
     images:
-      - src: /media/rv-pavilion.jpg
+      - src: /media/urban-placemaking/rv-pavilion.jpg
         kind: photo
         seed: 14
         alt: A dome pavilion on the lawn with a path curving past it
-      - src: /media/rv-water-basin.jpg
+      - src: /media/urban-placemaking/rv-water-basin.jpg
         kind: photo
         seed: 15
         alt: A shallow water basin edged with hexagonal paving and planting
-      - src: /media/rv-brick-building.jpg
+      - src: /media/urban-placemaking/rv-brick-building.jpg
         kind: photo
         seed: 16
         alt: The brick community building on the corner of the site, two storeys with a deep window rhythm
 drawings:
-  - src: /media/rv-plan-final.jpg
+  - src: /media/urban-placemaking/rv-plan-final.jpg
     kind: plan
     seed: 17
     alt: Final ground plan of the district drawn as line work, the block pattern and the open space set out across the whole site
     drawingType: Ground plan
-  - src: /media/rv-plan-colour.jpg
+  - src: /media/urban-placemaking/rv-plan-colour.jpg
     kind: plan
     seed: 18
     alt: The ground plan in colour with the public open space filled in green against the built form
     drawingType: Ground plan, coloured
-  - src: /media/tunney-03.jpg
+  - src: /media/urban-placemaking/tunney-03.jpg
     kind: site
     seed: 19
     alt: Parti diagram, four green squares divided by a green cross, setting out the relationship between public and private ground on both axes
     drawingType: Layer 1, parti
-  - src: /media/rv-layer-2-land-use.jpg
+  - src: /media/urban-placemaking/rv-layer-2-land-use.jpg
     kind: site
     seed: 20
     alt: Land use layer with the site boundary dashed and the blocks coloured by use, from residential through commercial to institutional
     drawingType: Layer 2, land use
-  - src: /media/rv-layer-3-parks.jpg
+  - src: /media/urban-placemaking/rv-layer-3-parks.jpg
     kind: site
     seed: 21
     alt: Parks layer with every piece of public green picked out against the grey of the built form
     drawingType: Layer 3, parks
-  - src: /media/rv-layer-4-circulation.jpg
+  - src: /media/urban-placemaking/rv-layer-4-circulation.jpg
     kind: site
     seed: 22
     alt: Circulation layer with the vehicle network in red and the main pedestrian desire lines drawn over it as arrows
     drawingType: Layer 4, circulation
-  - src: /media/rv-view-key-1.jpg
+  - src: /media/urban-placemaking/rv-view-key-1.jpg
     kind: site
     seed: 23
     alt: Top view of the proposal used as the key for the eye level views, the green roofs and open space picked out
     drawingType: View key
-  - src: /media/rv-view-key-2.jpg
+  - src: /media/urban-placemaking/rv-view-key-2.jpg
     kind: site
     seed: 24
     alt: Second top view key covering the remaining eye level positions

@@ -78,22 +78,39 @@ serves that output locally, and `npm run check` type checks the project.
 
 ## Editing content
 
-Run `npm run dev` and open **http://localhost:4321/keystatic**. Two things to edit:
+Ahmad edits the site in a browser at **/keystatic**. Saving commits to this
+repository, Netlify rebuilds, and the change is live in about a minute. Every edit
+is an ordinary reviewable commit rather than something that happened invisibly
+inside a database.
 
-- **Projects**, one entry per project. Add, reorder, or delete them freely.
-- **Resume**, a single record holding the name, biography, experience, education, skills
-  and everything in the title block.
+Two things to edit:
 
-Saving writes directly to the files in this repository, so every content change is a
-normal reviewable change rather than something that happened invisibly in a database.
+- **Projects**, one entry per project. Add, reorder or delete them freely.
+- **Resume**, a single record holding the name, biography, experience, education,
+  skills and everything in the title block.
 
-Two things worth knowing about the editor:
+Photos are upload fields, not paths to type. Choosing a file writes it into
+`public/media/<project-slug>/` and stores the path, and Remove takes it off the
+page. **Each project's images live in its own folder for exactly this reason:**
+Keystatic scopes a collection's uploads to the entry slug, so with everything in
+one flat folder the editor showed every image field as empty and would have
+blanked them all on the first save.
 
-- It keeps unsaved work in the browser. If a form opens **empty with an "Unsaved" badge
-  and a "Restored draft" message**, that is a stale draft, not lost content: use the `...`
-  menu to reset the entry and it reloads from the file.
-- The editor only runs during `npm run dev`. Getting it online is described under
-  [Putting the editor online](#putting-the-editor-online).
+`npm run dev` runs the same editor against the files on this machine instead,
+which is the way to make bulk changes without a hundred commits.
+
+Two things worth knowing:
+
+- The editor keeps unsaved work in the browser. If a form opens **empty with an
+  "Unsaved" badge and a "Restored draft" message**, that is a stale draft, not lost
+  content: use the `...` menu to reset the entry and it reloads from the file.
+- Only the two `/keystatic` routes run on a server. Every page of the portfolio
+  itself is still a plain prerendered file.
+
+### Turning the editor on
+
+The code is in place; what is left needs a GitHub account and cannot be done for
+you. See [Putting the editor online](#putting-the-editor-online).
 
 ## Images and drawings
 
@@ -213,15 +230,43 @@ Work through the editor rather than the files.
 
 ### Putting the editor online
 
-The editor needs server rendered routes, which a static build cannot produce, so it is
-mounted during `npm run dev` only (see the comment in `astro.config.mjs`). To host it:
+The code is done. What remains needs a GitHub account and secrets, so it is not
+something that can be set up on Ahmad's behalf.
 
-1. Add the host's Astro adapter.
-2. Include `keystatic()` unconditionally instead of only in dev.
-3. Change `storage` in `keystatic.config.ts` from `{ kind: 'local' }` to GitHub mode.
+**1. Give Ahmad write access to this repository.** He needs a GitHub account, and
+that account should eventually own the repository outright.
 
-Step 3 needs a GitHub account and an OAuth app registered against it. That should be
-Ahmad's own account, which is why it has been left rather than set up on his behalf.
+**2. Create a GitHub App** at
+https://github.com/settings/apps/new. The only fields that matter:
+
+| Field | Value |
+| --- | --- |
+| Homepage URL | `https://ahmadassi.netlify.app` |
+| Callback URL | `https://ahmadassi.netlify.app/api/keystatic/github/oauth/callback` |
+| Request user authorization (OAuth) during installation | tick |
+| Webhook | untick Active |
+| Repository permissions | Contents: **Read and write**, Metadata: Read-only |
+
+Generate a client secret on the same page, then install the App on this
+repository.
+
+**3. Add four environment variables in Netlify**, under Site configuration →
+Environment variables. Nothing works until all four are set, and the editor is not
+built at all if the first is missing:
+
+| Variable | Where it comes from |
+| --- | --- |
+| `PUBLIC_KEYSTATIC_GITHUB_REPO` | `hassantfaili-ui/ahmad-assi-portfolio` |
+| `PUBLIC_KEYSTATIC_GITHUB_APP_SLUG` | the App's URL slug |
+| `KEYSTATIC_GITHUB_CLIENT_ID` | the App's client ID |
+| `KEYSTATIC_GITHUB_CLIENT_SECRET` | the secret generated in step 2 |
+| `KEYSTATIC_SECRET` | any long random string, e.g. `openssl rand -hex 32` |
+
+**4. Redeploy.** Then open `/keystatic`, sign in with GitHub, and check that saving
+a small change produces a commit.
+
+Until `PUBLIC_KEYSTATIC_GITHUB_REPO` is set, the site builds exactly as it does
+now: pure static files, no adapter, no editor routes, nothing that can half work.
 
 ## Accessibility and performance
 

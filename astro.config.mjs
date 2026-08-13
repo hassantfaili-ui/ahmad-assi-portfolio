@@ -1,46 +1,49 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import keystatic from '@keystatic/astro';
+import netlify from '@astrojs/netlify';
 
 /**
- * Keystatic's admin UI needs server rendered routes, which a purely static
- * build cannot produce. So it is mounted during `npm run dev` only: Ahmad edits
- * content at http://localhost:4321/keystatic, and `npm run build` stays fully
- * static with nothing to host but files.
+ * The editor.
  *
- * To put the editor online later, add the host's adapter and include
- * keystatic() unconditionally with storage set to GitHub mode. That step needs
- * Ahmad's own GitHub account, so it is deliberately left for him.
+ * Keystatic's admin UI and its API need to run on a server, so the Netlify
+ * adapter is here to give them somewhere to run. Everything else stays static:
+ * `output: 'static'` is unchanged, and only the two Keystatic routes opt out of
+ * prerendering. A visitor to any page of the portfolio is still served a plain
+ * file, exactly as before.
+ *
+ * It is mounted whenever a GitHub repo is configured for it, and always during
+ * `npm run dev` so it can be used locally against the files on disk. If the
+ * GitHub credentials are missing the editor simply is not built, rather than
+ * shipping a login page that cannot work.
  */
 const editing = process.env.npm_lifecycle_event === 'dev';
+const editorOnline = Boolean(process.env.PUBLIC_KEYSTATIC_GITHUB_REPO);
 
 /**
- * Two hosts, one build.
+ * Served from the root of its own domain.
  *
- * GitHub Pages serves this out of a project subpath, so `base` has to be
- * /ahmad-assi-portfolio there. Netlify serves it from the root of its own
- * domain, where that same prefix would make every stylesheet, script and image
- * 404 while the page itself still loaded, which looks like a broken site rather
- * than a misconfigured one.
+ * This used to switch between a root base for Netlify and a /ahmad-assi-portfolio
+ * subpath for GitHub Pages. Pages is retired, and keeping the subpath for a host
+ * nothing deploys to had a cost: Keystatic's admin UI routes itself from the site
+ * root, so under a base path the editor loaded its shell and then 404'd on every
+ * screen inside it.
  *
- * Netlify sets NETLIFY and URL during a build, so the right pair is chosen
- * automatically and neither host needs the config edited by hand. Everything
- * internal goes through src/lib/url.ts, which handles a root base correctly.
+ * Everything internal still goes through src/lib/url.ts. It is a passthrough at
+ * a root base, and it is what would make a subpath host work again if one is ever
+ * needed, without touching a single link or asset path.
  *
- * For a custom domain on Netlify, nothing here changes: Netlify updates URL to
- * the domain once it is attached. On Pages, set `site` to the domain and `base`
- * to '/'.
+ * A custom domain needs no change here: Netlify updates URL once it is attached.
  */
-const onNetlify = process.env.NETLIFY === 'true';
-
 export default defineConfig({
-  site: onNetlify
-    ? process.env.URL || 'https://ahmad-assi.netlify.app'
-    : 'https://hassantfaili-ui.github.io',
-  base: onNetlify ? '/' : '/ahmad-assi-portfolio',
+  site: process.env.URL || 'https://ahmadassi.netlify.app',
   output: 'static',
   trailingSlash: 'ignore',
   build: { inlineStylesheets: 'auto' },
   devToolbar: { enabled: false },
-  integrations: editing ? [react(), keystatic()] : [],
+  /* The adapter is only needed when the editor is being built, and adding it
+     unconditionally would turn a pure file deploy into one with functions
+     attached for no reason. */
+  ...(editorOnline ? { adapter: netlify() } : {}),
+  integrations: editing || editorOnline ? [react(), keystatic()] : [],
 });

@@ -9,13 +9,25 @@ import { config, fields, collection, singleton } from '@keystatic/core';
  * online editor with no other change.
  */
 
-/** One image or drawing slot. */
+/**
+ * One image or drawing slot.
+ *
+ * `src` is a real upload field, not a path to type. Choosing a file writes it
+ * into public/media and stores /media/<name>, which is the same string the site
+ * already expects, so nothing else had to change. Removing an image in the
+ * editor removes it from the page.
+ *
+ * It is required on purpose: an entry saved with no image would fail the content
+ * schema at build time and stop the site deploying, which is a bad way to find
+ * out. Better that the editor refuses to save it.
+ */
 const imageSlot = {
-  src: fields.text({
-    label: 'Image file',
-    description:
-      'A path under /media once there is a real file, for example /media/riverlot-01.jpg. Leave as "generated" to use placeholder line work.',
-    defaultValue: 'generated',
+  src: fields.image({
+    label: 'Image',
+    description: 'Choose a file, or drag one in. It is stored with the site.',
+    directory: 'public/media',
+    publicPath: '/media/',
+    validation: { isRequired: true },
   }),
   alt: fields.text({
     label: 'Alt text',
@@ -52,8 +64,28 @@ const dated = (label: string) =>
     { label, itemLabel: (props) => props.fields.title.value || 'Untitled' },
   );
 
+/**
+ * Where saving writes to.
+ *
+ * With PUBLIC_KEYSTATIC_GITHUB_REPO set, the editor commits straight to the
+ * repository over GitHub, Netlify rebuilds, and the change is live in about a
+ * minute. Without it, saving writes to the files on this machine, which is what
+ * `npm run dev` does.
+ *
+ * Either way every edit is an ordinary, reviewable commit rather than something
+ * that happened invisibly inside a database.
+ *
+ * This file is loaded in the browser as well as on the server, so the value has
+ * to come from import.meta.env, which Vite replaces at build time. Reading
+ * process.env here throws "process is not defined" and the whole editor fails to
+ * hydrate.
+ */
+const repo = import.meta.env.PUBLIC_KEYSTATIC_GITHUB_REPO;
+
 export default config({
-  storage: { kind: 'local' },
+  storage: repo
+    ? { kind: 'github', repo: repo as `${string}/${string}` }
+    : { kind: 'local' },
   ui: {
     brand: { name: 'Ahmad Assi, architect' },
     navigation: { Content: ['projects', 'resume'] },

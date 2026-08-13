@@ -66,10 +66,18 @@ names = sorted(set(re.findall(r'/print/([^"\'?\s>]+\.(?:jpg|jpeg|png))', html.re
 src_dir, out_dir = pathlib.Path('public/media'), pathlib.Path('public/print')
 out_dir.mkdir(exist_ok=True)
 
+# Each project's images live in public/media/<slug>/ so the editor can upload
+# into them, but the print page refers to images by basename alone. Index the
+# tree once and look up by name; basenames are unique across the library.
+index = {}
+for f in src_dir.rglob('*'):
+    if f.is_file():
+        index.setdefault(f.name, f)
+
 made = missing = 0
 for n in names:
-    src = src_dir / n
-    if not src.exists():
+    src = index.get(n)
+    if src is None:
         print(f'   !! no source for {n}')
         missing += 1
         continue
