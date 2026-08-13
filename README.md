@@ -24,17 +24,21 @@ Static output, no server to run, no monthly cost.
 
 ## Live site
 
-Netlify is the host. The Netlify build is the canonical one.
+**https://ahmadassi.netlify.app/**
 
-`netlify.toml` sets the build command, the publish directory and Node 20, and
-caches the film, the PDF and the hashed assets hard while leaving HTML
-revalidating.
+Netlify builds from `main` on every push. `netlify.toml` sets the build command,
+the publish directory and the Node version, and caches the film, the PDF and the
+hashed assets hard while leaving HTML revalidating.
 
-`.github/workflows/deploy.yml` still exists and still works, but it is
-`workflow_dispatch` only: two hosts building the same commit means two URLs for
-one site, which splits search ranking and gives two places to check when
-something looks wrong. It is kept rather than deleted so Pages can be brought
-back with one click.
+**Node 22 or newer is required.** Astro 7 needs `>=22.12.0` and Netlify's default
+image ships Node 20, which fails before emitting a single page. The version is
+pinned in `netlify.toml` and the requirement is declared in `package.json`
+engines. Do not lower either.
+
+GitHub Pages was the original host and has been unpublished. The workflow is
+deleted. Nothing in the code assumes one host over the other, so Pages or any
+other subpath host would still work: `astro.config.mjs` reads `NETLIFY` and picks
+the base accordingly.
 
 **The base path is the only thing that differs between hosts.** Pages serves a
 project repo from a subfolder; Netlify serves from the root of its own domain.
