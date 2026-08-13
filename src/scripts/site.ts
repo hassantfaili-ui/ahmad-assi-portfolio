@@ -58,7 +58,17 @@ if (film) {
 
   const thrifty =
     conn?.saveData === true || /(^|-)2g$/.test(conn?.effectiveType ?? '');
-  const painted = window.innerWidth * (window.devicePixelRatio || 1);
+
+  /* innerWidth can be 0 when this runs in a tab that has never been fronted,
+     and 0 would silently hand the small file to every desktop visitor. Take the
+     widest of the three measures so there is always something real to judge by;
+     screen.width is populated even when the layout viewport is not. */
+  const vw = Math.max(
+    window.innerWidth || 0,
+    document.documentElement?.clientWidth || 0,
+    window.screen?.width || 0,
+  );
+  const painted = vw * (window.devicePixelRatio || 1);
 
   const src =
     thrifty || painted < 1600
