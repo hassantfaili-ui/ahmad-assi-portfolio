@@ -6,9 +6,9 @@ year: 2022
 location: Tunney's Pasture, Ottawa, Ontario
 buildingType: Urban placemaking proposal
 area: Site study
-status: Unbuilt
-role: With Awj, Exercise 3.2
-contribution: Joint work with Awj. The concept, the layered diagrams, the model and the views are shared.
+status: Academic
+role: Sole author, Exercise 3.2
+contribution: The whole project. The parti, all four drawn layers, the block pattern, the model and every view.
 summary: A placemaking proposal for a site at Tunney's Pasture, organised around the relationship between public and private ground on both axes, and built up as four drawn layers.
 leadImage:
   src: /media/rv-model-oval-1.jpg
@@ -136,7 +136,7 @@ drawings:
     alt: Second top view key covering the remaining eye level positions
     drawingType: View key, second sheet
 tier: set
-credit: With Awj
+credit: Sole author
 order: 8
 ---
 
@@ -146,4 +146,3 @@ The proposal is built as four layers, each drawn on the same plan. The parti set
 
 What holds the long central route together is the oval path and the canopy structures along it. A green strip that length is otherwise just a gap between buildings, and people cut across it rather than walk it. The canopies give the route a rhythm and a reason, and the pavilion, the water basin and the community building are placed along it as things to walk toward.
 
-Joint work with Awj for Exercise 3.2.

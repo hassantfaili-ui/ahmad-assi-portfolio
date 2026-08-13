@@ -9,7 +9,7 @@ area: Outdoor grounds and pavilion
 status: Design development
 role: Visualisation, with Muzaiko Architecture as project architect
 contribution: The rendered outdoor scenes shown here. The building and grounds are a Muzaiko Architecture project, and the design development drawing set is theirs. Included with permission.
-summary: Rendered outdoor scenes for the grounds of a Coptic church in Ottawa, covering the open air structure, the stage and the event tents that share the plaza.
+summary: Rendered outdoor scenes for the grounds of a Melkite Greek Catholic church in Ottawa, covering the open air structure, the stage and the event tents that share the plaza.
 leadImage:
   src: /media/church-birdseye-1.jpg
   kind: photo
@@ -53,7 +53,7 @@ credit: Visualisation for Muzaiko
 order: 6
 ---
 
-The grounds of a Coptic church in Ottawa, where the outdoor space has to do several jobs across a year: an everyday forecourt, a place for a stage, and a plaza that takes marquees for feasts and community events without being permanently occupied by them.
+The grounds of Sts. Peter and Paul, a Melkite Greek Catholic church in Ottawa, where the outdoor space has to do several jobs across a year: an everyday forecourt, a place for a stage, and a plaza that takes marquees for feasts and community events without being permanently occupied by them.
 
 The long open air structure is the fixed piece. A steel frame carries a shallow roof over a paved terrace, deep enough to shelter a crowd and open enough that it does not read as a building. Everything else is arranged around it and can be struck down: the stage, the food tent, the shisha tent, each rendered in place so the church could see how the plaza works when it is full rather than only when it is empty.
 

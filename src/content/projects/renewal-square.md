@@ -7,9 +7,9 @@ location: 2100 Bank Street, Ottawa, Ontario
 buildingType: Mixed-use masterplan, residential, commercial and public realm
 area: 38,000 sq.m site, 3.8 hectares, FSI 1.4
 status: Academic
-role: Masterplan with Kyle Mo. Building A is mine.
-contribution: The masterplan, phasing and public realm were developed jointly with Kyle Mo under our studio name AM Architects. Building A, shown here in full, is my own, covering massing, plans from the parking level to the roof, elevations, sections, unit layouts, construction assemblies and every interior render. Kyle designed Building B, which is his work and is not included here.
-summary: Garden Heights Phase 3, a mixed-use quarter on Bank Street built around affordability, transit and an elevated public realm of rooftop gardens and greenhouses.
+role: Sole author, ARCS 4105 comprehensive studio
+contribution: The whole project. The masterplan, the phasing and the public realm for the site, and Garden Heights taken all the way to a full building, covering massing, plans from the parking level to the roof, three elevations, two sections, unit layouts, construction assemblies and every interior render.
+summary: A mixed-use masterplan for a 3.8 hectare site on Bank Street, built around affordability, transit and an elevated public realm of rooftop gardens and greenhouses. Garden Heights is one of its buildings, taken here to full development.
 leadImage:
   src: /media/gh-bev-3.jpg
   kind: photo
@@ -224,11 +224,11 @@ drawings:
     alt: Construction details and materials for Building A, the wall assemblies called out from the massing with the metal panel, brick veneer and concrete specified
     drawingType: Construction details and materials
 tier: lead
-credit: With Kyle Mo
+credit: Sole author
 order: 2
 ---
 
-Garden Heights Phase 3 is a mixed-use quarter on a 3.8 hectare site at 2100 Bank Street, planned around the fact that the site is already well served by transit. The brief we set ourselves was affordability first: housing reachable by people from a range of backgrounds, with the amenities that make a neighbourhood work rather than just a collection of buildings.
+Renewal Square is a mixed-use quarter on a 3.8 hectare site at 2100 Bank Street, planned around the fact that the site is already well served by transit. The brief was affordability first: housing reachable by people from a range of backgrounds, with the amenities that make a neighbourhood work rather than just a collection of buildings.
 
 The masterplan puts commercial space at grade and lifts the communal programme above it. Rooftop garden terraces, greenhouses, restaurants and study space form a second, elevated public realm connected across the site, so the ground stays busy while the roofs do something other than shed water. Between the blocks sit landscaped parks, sports fields, a library, a gym and a kindergarten. Green roofs and energy efficiency were requirements of the scheme, not additions to it.
 
@@ -236,4 +236,4 @@ Verdant Way is the internal street that holds it together. The branching canopie
 
 The work came in three phases. Phase one establishes the road hierarchy, the stormwater and noise mitigation, and the survey that sets the residential and commercial boundaries. Phase two builds the first residential and mixed-use blocks and connects them to utilities and transit. Phase three completes the buildings, the pathway network and the public realm.
 
-**Building A** is my building within the plan. Ten residential levels over a commercial ground floor and a parking level below, with two typical plate arrangements alternating up the building: one-bedroom units at 46 and 52 square metres, two-bedroom at 80, three-bedroom at 118. The ground floor carries restaurants, a public gym and retail alongside the residential lobby, mail room and a recreation room. The roof is given over to a community garden, a gathering space and a barbeque area, which is the part of the brief I most wanted to get right: the amenity that residents actually share is the one on top of their own building.
+**Garden Heights** is the building on the site taken furthest, drawn as Building A on the sheets. Where the masterplan sets the block, this is the block resolved: ten residential levels over a commercial ground floor and a parking level below, with two typical plate arrangements alternating up the building: one-bedroom units at 46 and 52 square metres, two-bedroom at 80, three-bedroom at 118. The ground floor carries restaurants, a public gym and retail alongside the residential lobby, mail room and a recreation room. The roof is given over to a community garden, a gathering space and a barbeque area, which is the part of the brief I most wanted to get right: the amenity that residents actually share is the one on top of their own building.

@@ -6,7 +6,7 @@ year: 2024
 location: Carleton University, Ottawa, Ontario
 buildingType: Courtyard landscape proposal
 area: Campus courtyard between existing buildings
-status: Unbuilt
+status: Academic
 role: Sole author, ARCH 4105 final design assignment
 contribution: Site inventory, programming, the plan geometry, planting, structures and all renders.
 summary: A courtyard on the Carleton campus reorganised as a single lens, with a circular water feature at its centre and everything else arranged around that one figure.

@@ -1,44 +1,85 @@
 ---
 title: Building Systems
-sheet: A-115
+sheet: A-113
 category: Academic
 year: 2024
 location: 2100 Bank Street, Ottawa, Ontario
-buildingType: Systems coordination for multi-unit residential
-area: Ceiling voids, lighting and duct routes
+buildingType: Services coordination study
+area: One residential floor plate
 status: Academic
 role: With Kyle Mok, Exercise 5
 contribution: Joint exercise with Kyle Mok, on the same Bank Street site as Renewal Square.
 summary: The services study behind the Bank Street housing, working out where ceilings drop, where the ducts run, and where the light fittings land once both are resolved.
 leadImage:
-  src: /media/systems-02.jpg
+  src: /media/systems-services-4.jpg
   kind: plan
   seed: 1
-  alt: Systems drawing identifying the areas where the ceiling has to be dropped to carry services
+  alt: The coordinated plan with the dropped ceiling zones washed in, the bulkheads outlined and the duct and sprinkler runs drawn over the top
 imageGroups:
   - layout: pair
-    caption: Ducts and fittings, resolved against each other rather than drawn separately.
+    caption: The point of departure. The plan as designed, and the same plan with the furniture in, because where a bed goes decides where a duct cannot.
     images:
-      - src: /media/systems-03.jpg
+      - src: /media/systems-plan-base.jpg
         kind: plan
         seed: 2
-        alt: Drawing showing the light fixture layout
-      - src: /media/systems-04.jpg
+        alt: The bare floor plate drawn in outline with the partitions and openings only
+      - src: /media/systems-plan-furniture.jpg
         kind: plan
         seed: 3
-        alt: Drawing showing the HVAC duct routes through the floor plate
+        alt: The same plate with the furniture layout in place across both units
   - layout: pair
-    caption: The exercise start and finish.
+    caption: Where the ceiling has to drop. Washed in so the extent is arguable rather than assumed.
     images:
-      - src: /media/systems-05.jpg
+      - src: /media/systems-zones-1.jpg
         kind: plan
         seed: 4
-        alt: Further systems sheet from the exercise
-      - src: /media/systems-01.jpg
+        alt: First pass at the dropped ceiling zones, washed over the corridor and the wet rooms
+      - src: /media/systems-zones-2.jpg
         kind: plan
         seed: 5
-        alt: Title sheet of Exercise 5, building systems for multi-unit residential buildings at 2100 Bank Street
-drawings: []
+        alt: The zones extended, with the ceiling diffusers marked within them
+  - layout: pair
+    caption: The bulkheads that follow from those zones, drawn as a continuous run rather than as separate pieces.
+    images:
+      - src: /media/systems-bulkhead-1.jpg
+        kind: plan
+        seed: 6
+        alt: The bulkhead traced as a single outline around the living space
+      - src: /media/systems-bulkhead-4.jpg
+        kind: plan
+        seed: 7
+        alt: The bulkhead resolved and thickened, closing the loop back to the risers
+  - layout: triptych
+    caption: Then the services themselves, and only then the light fittings. A lighting layout drawn before the ducts are resolved is a lighting layout that will be moved.
+    images:
+      - src: /media/systems-services-1.jpg
+        kind: plan
+        seed: 8
+        alt: Supply and waste runs drawn in blue against the washed ceiling zones
+      - src: /media/systems-services-2.jpg
+        kind: plan
+        seed: 9
+        alt: The full services layout with sprinkler heads in red and pipe runs in blue across both units
+      - src: /media/systems-sprinkler-axo.jpg
+        kind: axonometric
+        seed: 10
+        alt: Axonometric of the sprinkler system with the risers and branch lines drawn clear of the slab
+drawings:
+  - src: /media/systems-bulkhead-2.jpg
+    kind: plan
+    seed: 11
+    alt: Intermediate bulkhead study, the run extended along the corridor wall
+    drawingType: Bulkhead, second pass
+  - src: /media/systems-bulkhead-3.jpg
+    kind: plan
+    seed: 12
+    alt: Third bulkhead study, resolving the junction at the bathroom wall
+    drawingType: Bulkhead, third pass
+  - src: /media/systems-services-3.jpg
+    kind: plan
+    seed: 13
+    alt: Services layout with the electrical and sprinkler runs separated for clarity
+    drawingType: Services, separated
 tier: index
 credit: With Kyle Mok
 order: 13

@@ -304,22 +304,44 @@ button {
   position: absolute;
   inset: 0;
   z-index: -1;
-  /* Weighted to the left, where the type sits, so the right of the film stays
-     clear. Strong enough that body text is readable over a bright render. */
+  /* Weighted hard to the left, where the type sits, and clearing early so most
+     of the film is seen undimmed. The previous version ran 0.82 down to 0.28
+     across more than half the width and washed the render out, which is the
+     "too much fade" this was. Legibility is now carried locally by a shadow on
+     the glyphs themselves rather than by a veil over the whole picture. */
   background:
     linear-gradient(
       95deg,
-      rgba(0, 0, 0, 0.82) 0%,
-      rgba(0, 0, 0, 0.68) 30%,
-      rgba(0, 0, 0, 0.28) 55%,
-      rgba(0, 0, 0, 0) 78%
+      rgba(0, 0, 0, 0.6) 0%,
+      rgba(0, 0, 0, 0.38) 22%,
+      rgba(0, 0, 0, 0.08) 42%,
+      rgba(0, 0, 0, 0) 58%
     ),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, transparent 26%, rgba(0, 0, 0, 0.35) 100%);
+    linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, transparent 20%, rgba(0, 0, 0, 0.22) 100%);
 }
 
 .film-body {
   position: relative;
   width: 100%;
+}
+/* A pool of shade behind the text column only.
+   Lightening the full width scrim made the render read properly but left the
+   intro paragraph fighting bright grass. Darkening the whole film again would
+   undo the point, so the protection is local: it follows the text and has faded
+   out well before the middle of the frame. */
+.film-body::before {
+  content: '';
+  position: absolute;
+  inset: -3rem -10rem -3rem -6rem;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(
+    110% 90% at 8% 50%,
+    rgba(0, 0, 0, 0.62) 0%,
+    rgba(0, 0, 0, 0.45) 38%,
+    rgba(0, 0, 0, 0.16) 64%,
+    rgba(0, 0, 0, 0) 84%
+  );
 }
 .film,
 .film-body,
@@ -337,6 +359,9 @@ button {
   color: #0b0b0b;
   border-color: #fff;
 }
+.film .eyebrow {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
 .film .eyebrow em {
   color: #fff;
 }
@@ -349,7 +374,11 @@ button {
   letter-spacing: -0.005em;
   text-transform: uppercase;
   margin: 0;
-  text-shadow: 0 2px 40px rgba(4, 15, 18, 0.6);
+  /* With the scrim pulled back, the type carries its own contrast. The wide soft
+     shadow alone was not enough once the veil lightened, so a tight one holds the
+     glyph edge as well. Local contrast on the letters beats greying the whole
+     picture behind them. */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 2px 40px rgba(4, 15, 18, 0.6);
 }
 .film-body h1 .thin {
   font-weight: 200;
@@ -361,6 +390,10 @@ button {
   font-size: var(--t-lead);
   line-height: 1.6;
   text-wrap: pretty;
+  /* The intro is small text over moving imagery, so it is the first thing to
+     become unreadable once the scrim is lightened. Local contrast on the glyphs
+     rather than more veil over the film. */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6), 0 0 22px rgba(0, 0, 0, 0.5);
 }
 
 /* what the footage is, credited quietly in the corner */

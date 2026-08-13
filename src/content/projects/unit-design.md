@@ -7,8 +7,8 @@ location: 2100 Bank Street, Ottawa, Ontario
 buildingType: Residential unit types and massing study
 area: 38 to 119 sq.m per unit
 status: Academic
-role: With Kyle Mo, ARCS 4105 Exercise 2
-contribution: Joint exercise with Kyle Mo. The unit plans, areas and massing are shared work.
+role: Sole author, ARCS 4105 Exercise 2
+contribution: The whole exercise. Every unit plan, the areas and the massing studies.
 summary: The unit types that Renewal Square is built out of, drawn and dimensioned before the masterplan existed, from a 38 square metre bachelor to a 119 square metre four-bedroom across two floors.
 leadImage:
   src: /media/unit-floor7.jpg
@@ -51,7 +51,7 @@ imageGroups:
         alt: Two massing studies of the stacked unit types, each level in a different colour so the section through the building can be read at a glance
 drawings: []
 tier: index
-credit: With Kyle Mo
+credit: Sole author
 order: 16
 ---
 
@@ -61,4 +61,3 @@ Five types: a 38 square metre bachelor, a 52 square metre one-bedroom, and two-s
 
 The massing study colours each level separately so the stacking reads at a glance. It is a crude drawing and it did its job: it settled how the two-storey units interlock before anyone drew an elevation.
 
-Joint work with Kyle Mo.

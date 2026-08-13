@@ -9,7 +9,7 @@ area: 112 sq.m main floor, 45 sq.m suite, 8 sq.m mechanical
 status: Under construction
 role: Designer, independent commission
 contribution: The whole project, from site analysis and massing through the floor plans, the roof assembly and the drawings being built from. An independent commission carried out under my own name.
-summary: An elevated house on a village lot, with the living accommodation raised a full storey above parking, a mechanical room and a rental suite. Under construction since 2023.
+summary: An elevated house on a village lot, with the living accommodation raised a full storey above parking, a mechanical room and a ground floor suite. Under construction since 2023.
 leadImage:
   src: /media/casa-main-noon.jpg
   kind: photo
@@ -17,7 +17,7 @@ leadImage:
   alt: The house at midday, the living floor raised a full storey on posts above open parking, under an offset dual-skillion roof
 imageGroups:
   - layout: pair
-    caption: The house from the approach. Everything above the posts is the residence, everything below it is parking, plant and the letting suite.
+    caption: The house from the approach. Everything above the posts is the residence, everything below it is parking, plant and the ground floor suite.
     images:
       - src: /media/casa-birdseye.jpg
         kind: photo
@@ -106,7 +106,7 @@ imageGroups:
         seed: 18
         alt: Guest washroom with a single vanity, framed mirror and a tiled shower behind glass
   - layout: pair
-    caption: The guest room on the main floor, and the letting suite tucked under it at ground level.
+    caption: The guest room on the main floor, and the ground floor suite tucked under it.
     images:
       - src: /media/casa-guest-bedroom.jpg
         kind: photo
