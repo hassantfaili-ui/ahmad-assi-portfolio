@@ -8,92 +8,133 @@ buildingType: Urban placemaking proposal
 area: Site study
 status: Unbuilt
 role: With Awj, Exercise 3.2
-contribution: Joint work with Awj. The concept, the diagrams, the model and the views are shared.
-summary: A placemaking proposal for a site at Tunney's Pasture, organised around the relationship between public and private ground on both axes.
+contribution: Joint work with Awj. The concept, the layered diagrams, the model and the views are shared.
+summary: A placemaking proposal for a site at Tunney's Pasture, organised around the relationship between public and private ground on both axes, and built up as four drawn layers.
 leadImage:
-  src: /media/rv-park-aerial.jpg
+  src: /media/rv-model-oval-1.jpg
   kind: photo
   seed: 1
-  alt: Aerial view of the central park in the proposal, the green running between the blocks with paths crossing it
+  alt: Aerial along the oval path with the planted central strip running between the blocks and the water edge beyond
 imageGroups:
   - layout: pair
-    caption: The proposal as a whole. The blocks are massing; the ground between them is the project.
+    caption: The district as a whole. The blocks are massing; the ground between them is the project.
     images:
-      - src: /media/rv-district-axo.jpg
-        kind: axonometric
+      - src: /media/rv-model-final.jpg
+        kind: photo
         seed: 2
-        alt: Axonometric of the whole district with the buildings in white massing and the public ground picked out in green
-      - src: /media/rv-massing-1.jpg
+        alt: Aerial of the whole proposal with the buildings in white massing, the green open space threaded through it and the towers marking the centre
+      - src: /media/rv-model-bev-2.jpg
         kind: photo
         seed: 3
-        alt: Bird's eye view across the massing with the taller blocks to one side and the park threading between them
+        alt: Bird's eye view across the district with the taller blocks to one side and the green corridor running past them
   - layout: pair
-    caption: The central green, and the street that runs beside it.
+    caption: Two more angles on the massing, because a scheme this long reads differently from each end.
     images:
-      - src: /media/rv-massing-2.jpg
+      - src: /media/rv-model-bev-1.jpg
         kind: photo
         seed: 4
-        alt: Aerial view along the linear park with the surrounding blocks stepping down toward it
-      - src: /media/rv-street.jpg
+        alt: Aerial from the north with the street grid, the courtyard blocks and the planted courts between them
+      - src: /media/rv-model-bev-3.jpg
         kind: photo
         seed: 5
-        alt: Street level view between the blocks looking along the planted edge of the route
+        alt: Aerial from the opposite corner showing the green courtyards stepping through the block pattern
+  - layout: pair
+    caption: The oval path, which is the device that makes the central green a route rather than a gap.
+    images:
+      - src: /media/rv-model-oval-2.jpg
+        kind: photo
+        seed: 6
+        alt: The oval path from above with the tree rows along it and the blocks either side
+      - src: /media/rv-park-aerial.jpg
+        kind: photo
+        seed: 7
+        alt: Aerial of the central park with paths crossing the green between the blocks
   - layout: triptych
-    caption: At eye level. The canopies are the device that makes a long route worth walking.
+    caption: At eye level, taken from the three positions marked on the key plan below.
+    images:
+      - src: /media/rv-model-eye-1.jpg
+        kind: photo
+        seed: 8
+        alt: Eye level view along a paved path under mature trees, with figures walking and the water edge behind
+      - src: /media/rv-model-eye-2.jpg
+        kind: photo
+        seed: 9
+        alt: Eye level view across an open plaza with the massing blocks around it and the water strip beyond
+      - src: /media/rv-model-eye-3.jpg
+        kind: photo
+        seed: 10
+        alt: Eye level view down the tree lined avenue with the paving running out toward the water
+  - layout: triptych
+    caption: The canopy structures and the set pieces placed along the route.
     images:
       - src: /media/rv-walk-canopy.jpg
         kind: photo
-        seed: 6
-        alt: A paved walk under branching canopy structures, with trees planted along both sides
+        seed: 11
+        alt: A paved walk under branching canopy structures with trees planted along both sides
       - src: /media/rv-walk-autumn.jpg
         kind: photo
-        seed: 7
+        seed: 12
         alt: The same walk in autumn with people crossing it and the trees turning
       - src: /media/rv-canopy-trees.jpg
         kind: photo
-        seed: 8
-        alt: The canopy structures seen among red autumn planting on the open ground
+        seed: 13
+        alt: The canopy structures among red autumn planting on the open ground
   - layout: triptych
-    caption: The set pieces along the route.
+    caption: Things to walk toward. A route this long needs destinations along it, not just at the ends.
     images:
       - src: /media/rv-pavilion.jpg
         kind: photo
-        seed: 9
-        alt: A dome pavilion sitting on the lawn with a path curving past it
+        seed: 14
+        alt: A dome pavilion on the lawn with a path curving past it
       - src: /media/rv-water-basin.jpg
         kind: photo
-        seed: 10
+        seed: 15
         alt: A shallow water basin edged with hexagonal paving and planting
       - src: /media/rv-brick-building.jpg
         kind: photo
-        seed: 11
+        seed: 16
         alt: The brick community building on the corner of the site, two storeys with a deep window rhythm
 drawings:
-  - src: /media/rv-ground-plan.jpg
+  - src: /media/rv-plan-final.jpg
     kind: plan
-    seed: 12
-    alt: Ground plan of the district with the block pattern drawn in outline and the public open space filled in green
+    seed: 17
+    alt: Final ground plan of the district drawn as line work, the block pattern and the open space set out across the whole site
     drawingType: Ground plan
+  - src: /media/rv-plan-colour.jpg
+    kind: plan
+    seed: 18
+    alt: The ground plan in colour with the public open space filled in green against the built form
+    drawingType: Ground plan, coloured
   - src: /media/tunney-03.jpg
     kind: site
-    seed: 13
+    seed: 19
     alt: Parti diagram, four green squares divided by a green cross, setting out the relationship between public and private ground on both axes
-    drawingType: Parti diagram
-  - src: /media/tunney-04.jpg
+    drawingType: Layer 1, parti
+  - src: /media/rv-layer-2-land-use.jpg
     kind: site
-    seed: 14
-    alt: Circulation diagram over the site plan, the main routes drawn as arrows across the block pattern
-    drawingType: Circulation diagram
-  - src: /media/tunney-05.jpg
+    seed: 20
+    alt: Land use layer with the site boundary dashed and the blocks coloured by use, from residential through commercial to institutional
+    drawingType: Layer 2, land use
+  - src: /media/rv-layer-3-parks.jpg
     kind: site
-    seed: 15
-    alt: Second circulation diagram testing the routes against the revised block layout
-    drawingType: Circulation diagram, revised
-  - src: /media/tunney-06.jpg
+    seed: 21
+    alt: Parks layer with every piece of public green picked out against the grey of the built form
+    drawingType: Layer 3, parks
+  - src: /media/rv-layer-4-circulation.jpg
     kind: site
-    seed: 16
-    alt: Third circulation study comparing the proposed routes with the earlier diagrams
-    drawingType: Circulation study
+    seed: 22
+    alt: Circulation layer with the vehicle network in red and the main pedestrian desire lines drawn over it as arrows
+    drawingType: Layer 4, circulation
+  - src: /media/rv-view-key-1.jpg
+    kind: site
+    seed: 23
+    alt: Top view of the proposal used as the key for the eye level views, the green roofs and open space picked out
+    drawingType: View key
+  - src: /media/rv-view-key-2.jpg
+    kind: site
+    seed: 24
+    alt: Second top view key covering the remaining eye level positions
+    drawingType: View key, second sheet
 tier: set
 credit: With Awj
 order: 8
@@ -101,8 +142,8 @@ order: 8
 
 The site sits at Tunney's Pasture, and the proposal is called River's View. The parti is a single relationship: how public ground meets private ground, and how that meeting can be made to connect the site north to south and east to west at the same time rather than choosing one axis.
 
-The circulation diagram is where that gets tested. A parti that only works on paper falls apart as soon as you draw the routes people would actually take across it, so the block pattern was redrawn more than once to keep the two axes both working.
+The proposal is built as four layers, each drawn on the same plan. The parti sets the relationship, land use assigns it, the parks layer tests whether the public ground actually adds up to something, and circulation is where it all gets checked. A parti that only works on paper falls apart as soon as you draw the routes people would take across it, so the block pattern was redrawn more than once to keep both axes working.
 
-What holds the long central route together is the canopy structures. A green strip that length is otherwise just a gap between buildings, and people cut across it rather than walk it. The canopies give the route a rhythm and a reason, and the pavilion, the water basin and the community building are placed along it as things to walk toward.
+What holds the long central route together is the oval path and the canopy structures along it. A green strip that length is otherwise just a gap between buildings, and people cut across it rather than walk it. The canopies give the route a rhythm and a reason, and the pavilion, the water basin and the community building are placed along it as things to walk toward.
 
 Joint work with Awj for Exercise 3.2.
