@@ -54,8 +54,11 @@ const projects = defineCollection({
       .array(image.extend({ drawingType: z.string() }))
       .default([]),
     /** An optional walkthrough or flythrough for this project. */
-    /* Either a file in this repo or a YouTube id. A 4K walkthrough is far too
-       large to commit, so YouTube carries those and the repo stays light. */
+    /* Either a file in this repo or a YouTube id. A file is preferred: nothing is
+       requested from a third party and no cookies are set to play it. The Lincoln
+       Beach walkthrough is self hosted at 1440p, about 73MB, which fits under
+       GitHub's 100MB per file limit with room to spare.
+       The YouTube field is kept for any future film that will not fit. */
     film: z
       .object({
         src: z.string().optional(),

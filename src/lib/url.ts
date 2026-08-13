@@ -6,7 +6,7 @@
  * paths in markup or content for you, so every internal link and every asset
  * path has to go through here.
  *
- * Content files keep clean paths like /media/hero.mp4, which is what the editor
+ * Content files keep clean paths like /media/hero-1440.mp4, which is what the editor
  * shows and what a person would expect to type. The prefix is applied at render
  * time instead.
  *

@@ -16,9 +16,9 @@ leadImage:
   seed: 1
   alt: The museum on the corner of Hayne Boulevard, yellow weatherboard with teal and green shutters, paintings hung along the covered walk and a low white fence to the street
 film:
-  youtube: https://youtu.be/6e88kUbZFSA
+  src: /media/lincoln-beach-walkthrough.mp4
   poster: /media/lincoln-beach-film-poster.jpg
-  caption: Walkthrough of the completed scheme, moving from the boulevard through the courtyard to the lookout.
+  caption: Walkthrough of the completed scheme, moving from the boulevard through the courtyard to the lookout. Served from this site, with sound.
 imageGroups:
   - layout: pair
     caption: Arrival. The corner from across the boulevard, and the garden read over the fence from the pavement.

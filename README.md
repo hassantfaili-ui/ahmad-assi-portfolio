@@ -50,7 +50,7 @@ host needs the config edited by hand, and a custom domain needs no change at all
 Netlify updates `URL` once the domain is attached.
 
 Every internal link and asset goes through `url()` in `src/lib/url.ts`. Content
-files keep clean paths like `/media/hero.mp4`, which is what the editor shows and
+files keep clean paths like `/media/hero-1440.mp4`, which is what the editor shows and
 what a person would expect to type; the prefix is added at render time.
 
 The Keystatic editor never reaches the deployed site: it is mounted only when
@@ -125,13 +125,20 @@ like data.
   of year and place. Nothing is laid over the image, which is what lets a wall of these
   stay readable.
 - **The front film.** Ahmad's Lincoln Beach walkthrough runs behind his introduction,
-  muted and looping. `scripts/build-hero.sh` makes it from the 4K master: the first seven
-  seconds are cut because the film carries its own title card, which would sit on top of
-  his name, and a two pass encode caps it near 9MB so a page that autoplays on every
-  visit stays light. It is never downloaded on a narrow screen or when reduced motion is
-  requested; those cases keep the poster frame. The full quality version is on YouTube,
-  reached from the Lincoln Beach project page through a click to load facade, so nothing
-  is requested from Google unless a visitor asks for it.
+  muted and looping. `scripts/build-hero.sh` makes two encodes from the 4K master, 1440p
+  at 4 Mbps and 720p at 1.1 Mbps, and the first seven seconds are cut because the film
+  carries its own title card that would sit on top of his name. The source is chosen at
+  runtime: the smaller file goes to narrow screens, slow connections and anyone whose
+  browser asks to save data, because this autoplays and the size is spent from the
+  visitor's allowance. It is never downloaded at all on a narrow screen or when reduced
+  motion is requested; those cases keep the poster frame.
+- **Nothing is embedded from a third party.** The walkthrough on the Lincoln Beach page is
+  self hosted at 1440p, about 73MB, built by `scripts/build-walkthrough.sh` and served
+  from the same domain as everything else. It plays on a click with `preload="none"`, so
+  it is only fetched by someone who asks for it. True 4K was measured and rejected: at a
+  bitrate that fits under GitHub's 100MB per file limit it is visually identical at
+  matched display size, and it would leave 4MB of headroom. `Film.astro` keeps a YouTube
+  path with a click to load facade for any future film that will not fit.
 - **Projects are in three tiers**, all set in the editor, with Ahmad's order kept inside
   each one. Three leads take large cards, the set runs in a horizontal strip, and thin
   coursework sits in a ruled index below. The strip is a native scroll container, so

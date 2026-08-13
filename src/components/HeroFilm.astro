@@ -3,20 +3,28 @@
  * The front hero: the Lincoln Beach Center walkthrough, with Ahmad's
  * introduction over it.
  *
- * This used to be a crossfaded slideshow of stills assembled by
- * scripts/build-hero-film.sh. It is now the real film, which is a better first
- * impression and is unambiguously his work. Built by scripts/build-hero.sh from
- * the 4K original: the first seven seconds are cut because the film carries its
- * own burned-in title card, which would sit on top of Ahmad's name, and the
- * whole thing is capped near 1150 kbps so a page that autoplays on every visit
- * stays about nine megabytes rather than three hundred and fifty.
+ * This used to be a crossfaded slideshow of stills. It is now the real film,
+ * which is a better first impression and is unambiguously his work. Built by
+ * scripts/build-hero.sh from the 4K original: the first seven seconds are cut
+ * because the film carries its own burned-in title card, which would sit on top
+ * of Ahmad's name.
  *
- * The full quality version stays on YouTube, behind the click-to-load facade on
- * the project page. Nothing is requested from Google for this hero.
+ * TWO SOURCES, chosen at runtime. This autoplays on every visit, so the size is
+ * somebody else's data bill. 1440p at 4 Mbps goes to screens big enough to show
+ * it, and 720p at 1.1 Mbps to everything else, to anyone on a slow connection,
+ * and to anyone who has asked their browser to save data. See src/scripts/site.ts.
  *
- * It never autoplays on a narrow screen or when reduced motion is asked for.
- * In those cases the poster frame shows and the video is never downloaded,
- * which is why the source is held in data-src rather than src.
+ * True 4K is deliberately not offered here. Sixty seconds of watchable 4K is
+ * about 80MB, which every visitor would download before reading a word, for a
+ * film that is scrimmed, cropped to the viewport and playing behind text.
+ *
+ * It autoplays everywhere, including on a phone and with reduced motion set,
+ * because that was asked for explicitly. Be aware what that means: a phone
+ * visitor downloads the 8MB file whether they wanted moving pictures or not.
+ * Every other animation on the site still honours prefers-reduced-motion.
+ *
+ * The sources are held in data attributes rather than src so nothing starts
+ * downloading before the script has chosen which one to use.
  */
 interface Props {
   eyebrow: string;
@@ -36,7 +44,8 @@ const { eyebrow, name, surname, intro, ctaLabel, ctaHref } = Astro.props;
   <video
     class="film-media"
     data-hero
-    data-src={url("/media/hero.mp4")}
+    data-src-large={url("/media/hero-1440.mp4")}
+    data-src-small={url("/media/hero-720.mp4")}
     poster={url("/media/hero-poster.jpg")}
     muted
     loop

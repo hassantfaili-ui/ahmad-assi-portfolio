@@ -14,7 +14,8 @@
     "preview": "astro preview",
     "check": "astro check",
     "portfolio": "./scripts/build-portfolio.sh",
-    "hero": "./scripts/build-hero.sh"
+    "hero": "./scripts/build-hero.sh",
+    "walkthrough": "./scripts/build-walkthrough.sh"
   },
   "keywords": [],
   "author": "",

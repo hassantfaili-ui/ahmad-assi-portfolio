@@ -45,12 +45,36 @@ document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]').forEach((b) 
 const film = document.querySelector<HTMLVideoElement>('[data-hero]');
 
 if (film) {
-  const src = film.dataset.src;
+  /* Two encodes: 1440p for screens that can show it, 720p for everything else.
+     The hero autoplays, so the file size is spent out of the visitor's data
+     allowance rather than ours, and a phone gains nothing from the larger one.
+
+     navigator.connection is Chromium only, so the width check has to stand on
+     its own everywhere else. Device pixel ratio is included because a 1400px
+     retina laptop is really painting 2800px. */
+  const conn = (navigator as Navigator & {
+    connection?: { saveData?: boolean; effectiveType?: string };
+  }).connection;
+
+  const thrifty =
+    conn?.saveData === true || /(^|-)2g$/.test(conn?.effectiveType ?? '');
+  const painted = window.innerWidth * (window.devicePixelRatio || 1);
+
+  const src =
+    thrifty || painted < 1600
+      ? film.dataset.srcSmall || film.dataset.srcLarge
+      : film.dataset.srcLarge || film.dataset.srcSmall;
 
   /* Autoplay everywhere, by explicit request. Note this is deliberately not
      gated on prefers-reduced-motion: the client wants the film to run. Every
      other animation on the site still respects that preference. */
   if (src) {
+    /* autoplay is set here rather than in the markup so it can never start
+       downloading before the variant is chosen. Setting it as well as calling
+       play() matters: a single play() can land before the browser will honour
+       it and then reject silently, whereas the attribute means the browser
+       starts as soon as it is willing to. */
+    film.autoplay = true;
     film.src = src;
 
     const start = () => film.play().catch(() => {});
@@ -70,13 +94,26 @@ if (film) {
       window.addEventListener(e, retry, { passive: true }),
     );
 
-    /* Stop decoding video nobody can see once it is scrolled past. */
+    /* Stop decoding video nobody can see once it is scrolled past.
+
+       The `seen` guard is load bearing. An IntersectionObserver fires once as
+       soon as it starts observing, and that first callback can report
+       isIntersecting false while layout is still settling, even for an element
+       filling the top of the viewport. Without the guard it paused the hero
+       microseconds after start() had begun playing it, which is what made
+       autoplay look intermittent: play, playing, pause, all at t=0. Never pause
+       something that has not been visible yet. */
     if ('IntersectionObserver' in window) {
+      let seen = false;
       new IntersectionObserver(
         (entries) => {
           entries.forEach((e) => {
-            if (e.isIntersecting) start();
-            else film.pause();
+            if (e.isIntersecting) {
+              seen = true;
+              start();
+            } else if (seen) {
+              film.pause();
+            }
           });
         },
         { threshold: 0.05 },
