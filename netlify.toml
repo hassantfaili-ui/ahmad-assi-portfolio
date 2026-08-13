@@ -11,7 +11,11 @@
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "20"
+  # Astro 7 requires >=22.12.0. Do not lower this: Netlify's default build image
+  # ships Node 20, which fails with "Node.js v20.x is not supported by Astro"
+  # before it emits a single page. The requirement is also declared in
+  # package.json engines so it is visible without reading this file.
+  NODE_VERSION = "22"
 
 # The walkthrough film and the portfolio PDF are large and never change without
 # their filename changing, so they can be cached hard. HTML must not be.

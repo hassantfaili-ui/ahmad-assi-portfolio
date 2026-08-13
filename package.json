@@ -1,6 +1,9 @@
 {
   "name": "ahmad-assi-website",
   "version": "1.0.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "description": "Portfolio website for Ahmad Assi, architect",
   "directories": {
     "doc": "docs"
