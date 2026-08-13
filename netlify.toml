@@ -1,0 +1,37 @@
+# Netlify build.
+#
+# The base path is the only thing that differs between hosts. astro.config.mjs
+# reads NETLIFY, which Netlify sets during every build, and drops the
+# /ahmad-assi-portfolio prefix that GitHub Pages needs. Nothing here has to
+# change when a custom domain is attached: Netlify updates URL to the domain and
+# the config follows it.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# The walkthrough film and the portfolio PDF are large and never change without
+# their filename changing, so they can be cached hard. HTML must not be.
+[[headers]]
+  for = "/media/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/portfolio/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Astro emits hashed filenames under _astro, so those are safe to pin too.
+[[headers]]
+  for = "/_astro/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

@@ -11,43 +11,218 @@ role: Masterplan with Kyle Mo. Building A is mine.
 contribution: The masterplan, phasing and public realm were developed jointly with Kyle Mo under our studio name AM Architects. Building A, shown here in full, is my own, covering massing, plans from the parking level to the roof, elevations, sections, unit layouts, construction assemblies and every interior render. Kyle designed Building B, which is his work and is not included here.
 summary: Garden Heights Phase 3, a mixed-use quarter on Bank Street built around affordability, transit and an elevated public realm of rooftop gardens and greenhouses.
 leadImage:
-  src: /media/gh-aerial.jpg
+  src: /media/gh-bev-3.jpg
   kind: photo
   seed: 1
-  alt: Aerial render of the Renewal Square masterplan showing the mid-rise blocks with planted rooftops, the high-rise at the centre and the landscaped square between them
+  alt: Aerial render over the public square with the branching white canopies, the sports courts, the tower behind and Verdant Way running through
 imageGroups:
   - layout: pair
-    caption: The masterplan and its site, developed with Kyle Mo. Commercial at grade, communal space above, and green roofs across the whole quarter.
+    caption: The quarter from above. The blocks step along the site with planted roofs throughout, courtyards between them and the tower holding the north end.
     images:
-      - src: /media/gh-masterplan-render.jpg
-        kind: site
+      - src: /media/gh-bev-1.jpg
+        kind: photo
         seed: 2
-        alt: Coloured masterplan render of the whole site showing the arrangement of blocks, the internal street, the planted courtyards and the park edge
-      - src: /media/gh-site-render.jpg
-        kind: site
+        alt: Aerial of the whole quarter showing the run of mid-rise blocks with green roofs, the tower and the landscaped courtyards between them
+      - src: /media/gh-bev-2.jpg
+        kind: photo
         seed: 3
-        alt: Axonometric site render showing the massing of the quarter in context with the surrounding blocks
+        alt: Aerial from the opposite end with the courtyards, the playground and the planted roof terraces visible across the blocks
+  - layout: full
+    caption: Straight down. The site is long and narrow, and the plan works with that rather than against it.
+    images:
+      - src: /media/gh-top-view.jpg
+        kind: photo
+        seed: 4
+        alt: Rendered plan view of the whole site showing the block pattern, the internal street, the courtyards and the planted roofs
+  - layout: triptych
+    caption: Verdant Way at eye level. The branching canopies are what makes the internal street a place rather than a service road.
+    images:
+      - src: /media/gh-eyl-2.jpg
+        kind: photo
+        seed: 5
+        alt: The internal street with white branching canopies over the pavement, mid-rise blocks either side and a cyclist passing
+      - src: /media/gh-eyl-3.jpg
+        kind: photo
+        seed: 6
+        alt: The square under the canopies with stepped terraces and seating, the blocks rising behind
+      - src: /media/gh-eyl-4.jpg
+        kind: photo
+        seed: 7
+        alt: The paved route with a flowering tree, a market stall at the shopfronts and the canopy overhead
+  - layout: pair
+    caption: The street edges. Brick at the base where the quarter meets the existing fabric, glazing above.
+    images:
+      - src: /media/gh-eyl-1.jpg
+        kind: photo
+        seed: 8
+        alt: Corner view with the brick base of the block in the foreground and the glazed tower rising beyond it
+      - src: /media/gh-eyl-5.jpg
+        kind: photo
+        seed: 9
+        alt: Street level view along the pavement with street trees, the tower ahead and the mid-rise blocks to the right
+  - layout: triptych
+    caption: Building A, three elevations. Ten residential levels over a commercial ground floor, with parking below.
+    images:
+      - src: /media/gh-elev-north.jpg
+        kind: elevation
+        seed: 10
+        alt: North elevation render of Building A, the panel and glazing rhythm running the full height
+      - src: /media/gh-elev-west.jpg
+        kind: elevation
+        seed: 11
+        alt: West elevation render of Building A with the canopies and the square in front of it
+      - src: /media/gh-elev-south.jpg
+        kind: elevation
+        seed: 12
+        alt: South elevation render of Building A, the brick neighbour to the left and planting along the base
+  - layout: pair
+    caption: Inside the units. One-bedrooms at 46 and 52 square metres, two-bedrooms at 80, three-bedrooms at 118.
+    images:
+      - src: /media/gh-unit-1b-living.jpg
+        kind: photo
+        seed: 13
+        alt: Living room of a one-bedroom unit with the kitchen behind it, a wall mounted television and a timber floor
+      - src: /media/gh-unit-2b-bedroom.jpg
+        kind: photo
+        seed: 14
+        alt: Master bedroom of a two-bedroom unit with glazed doors opening onto the balcony
+  - layout: triptych
+    caption: Shared amenity at grade. The gym and the recreation room are on the ground floor and open to the public, not just to residents.
+    images:
+      - src: /media/gh-gym-1.jpg
+        kind: photo
+        seed: 15
+        alt: The public gym with resistance machines and graphics on the exposed brick wall
+      - src: /media/gh-gym-2.jpg
+        kind: photo
+        seed: 16
+        alt: The free weights end of the gym, racked along a fully glazed wall looking out to the trees
+      - src: /media/gh-rec-room.jpg
+        kind: photo
+        seed: 17
+        alt: The recreation room with a full height shelved wall, a pool table and glazing onto the planted courtyard
+  - layout: pair
+    caption: And on the roof, which is the part of the brief I most wanted to get right.
+    images:
+      - src: /media/gh-terrace.jpg
+        kind: photo
+        seed: 18
+        alt: A residential terrace under a deep colonnade, seating along the edge and the city beyond
+      - src: /media/gh-rooftop.jpg
+        kind: photo
+        seed: 19
+        alt: The rooftop community garden in flower, with a pergola and the greenhouse structure behind
 drawings:
-  - src: /media/gh-board-01.jpg
+  - src: /media/gh-masterplan.jpg
     kind: site
-    seed: 4
-    alt: Presentation board with the project title, the aerial render, the parti diagram, the masterplan, the figure ground comparison before and after, and the three development phases described
-    drawingType: Board 1, masterplan and phasing
-  - src: /media/gh-board-02.jpg
+    seed: 20
+    alt: The Renewal Square master plan with the site drawn in full and the written intent of the scheme alongside it
+    drawingType: Master plan
+  - src: /media/gh-parti.jpg
     kind: site
-    seed: 5
-    alt: Presentation board with the context plan locating 2100 Bank Street, the land use diagram, the site statistics and unit breakdowns, a public realm render and a section perspective through Verdant Way
-    drawingType: Board 2, context, land use and site statistics
-  - src: /media/gh-board-03.jpg
+    seed: 21
+    alt: Parti diagram setting out the layering of residential above commercial and residential, with the pathways and public space between
+    drawingType: Parti diagram
+  - src: /media/gh-infra-map.jpg
+    kind: site
+    seed: 22
+    alt: Context plan locating the site at 2100 Bank Street within the wider transit and road network of Ottawa
+    drawingType: Context plan
+  - src: /media/gh-figure-before.jpg
+    kind: site
+    seed: 23
+    alt: Figure ground drawing of Bank Street as existing, the built form in black against the open ground
+    drawingType: Figure ground, before
+  - src: /media/gh-figure-after.jpg
+    kind: site
+    seed: 24
+    alt: Figure ground drawing with the proposal in place, showing how the new blocks complete the street edge
+    drawingType: Figure ground, after
+  - src: /media/gh-phasing.jpg
+    kind: axonometric
+    seed: 25
+    alt: The three phases drawn as axonometrics, from site preparation and infrastructure through initial development to the final construction and public realm
+    drawingType: Phasing
+  - src: /media/gh-land-use.jpg
+    kind: site
+    seed: 26
+    alt: Land use diagram of the surrounding area, colour coded from single family through mid and high-rise residential to commercial, institutional and open space
+    drawingType: Land use
+  - src: /media/gh-density.jpg
+    kind: site
+    seed: 27
+    alt: Site statistics setting out the gross built area, the floor space index, units per hectare, people per hectare and the split between commercial and residential
+    drawingType: Site statistics
+  - src: /media/gh-unit-breakdown.jpg
     kind: plan
-    seed: 6
-    alt: Presentation board for Building A showing the massing axonometric, the underground parking level, ground level, two typical residential floor plates, the rooftop plan, three elevations, two sections and street level renders
-    drawingType: Board 3, Building A
-  - src: /media/gh-board-04.jpg
+    seed: 28
+    alt: Breakdown of units by type across the building, tabulated floor by floor
+    drawingType: Unit breakdown
+  - src: /media/gh-highlight-axo.jpg
+    kind: axonometric
+    seed: 29
+    alt: Massing axonometric of the quarter with Building A picked out in colour among the neighbouring blocks
+    drawingType: Building A within the plan
+  - src: /media/gh-circulation.jpg
+    kind: axonometric
+    seed: 30
+    alt: Circulation diagram of Building A, vertical and horizontal movement traced from the underground parking through the commercial floor and the residential levels to the roof
+    drawingType: Circulation, Building A
+  - src: /media/gh-plan-parking.jpg
+    kind: plan
+    seed: 31
+    alt: Underground parking level plan with the bays, the cores and the services
+    drawingType: Underground parking
+  - src: /media/gh-plan-ground.jpg
+    kind: plan
+    seed: 32
+    alt: Commercial ground floor plan with the restaurants, the public gym, retail, the residential lobby, mail room and recreation room
+    drawingType: Commercial ground floor
+  - src: /media/gh-plan-2-6-10.jpg
+    kind: plan
+    seed: 33
+    alt: Typical residential plate used at levels 2, 6 and 10, with the unit mix around the core
+    drawingType: Levels 2, 6 and 10
+  - src: /media/gh-plan-3-9.jpg
+    kind: plan
+    seed: 34
+    alt: The alternating residential plate used at levels 3, 4, 5, 7, 8 and 9
+    drawingType: Levels 3 to 5 and 7 to 9
+  - src: /media/gh-plan-rooftop.jpg
+    kind: plan
+    seed: 35
+    alt: Rooftop plan showing the community garden, the gathering space and the barbeque area
+    drawingType: Rooftop
+  - src: /media/gh-plan-1b.jpg
+    kind: plan
+    seed: 36
+    alt: One-bedroom unit plan drawn at large scale with the furniture layout tested in it
+    drawingType: One-bedroom unit
+  - src: /media/gh-plan-2b.jpg
+    kind: plan
+    seed: 37
+    alt: Two-bedroom unit plan drawn at large scale with the furniture layout tested in it
+    drawingType: Two-bedroom unit
+  - src: /media/gh-section-a.jpg
     kind: section
-    seed: 7
-    alt: Presentation board for Building A showing the circulation diagram, the construction details and material assemblies, unit interior renders, the recreation room, the public gym, the rooftop community garden and a residential terrace
-    drawingType: Board 4, Building A circulation, assemblies and interiors
+    seed: 38
+    alt: Section A through Building A with the plan key beside it, cut from the parking level to the roof garden
+    drawingType: Section A
+  - src: /media/gh-section-b.jpg
+    kind: section
+    seed: 39
+    alt: Section B through Building A on the other axis, with the plan key beside it
+    drawingType: Section B
+  - src: /media/gh-section-diagram.jpg
+    kind: section
+    seed: 40
+    alt: Section perspective along Verdant Way, cutting through the blocks either side of the internal street
+    drawingType: Section perspective, Verdant Way
+  - src: /media/gh-detail.jpg
+    kind: section
+    seed: 41
+    alt: Construction details and materials for Building A, the wall assemblies called out from the massing with the metal panel, brick veneer and concrete specified
+    drawingType: Construction details and materials
 tier: lead
 credit: With Kyle Mo
 order: 2
@@ -56,6 +231,8 @@ order: 2
 Garden Heights Phase 3 is a mixed-use quarter on a 3.8 hectare site at 2100 Bank Street, planned around the fact that the site is already well served by transit. The brief we set ourselves was affordability first: housing reachable by people from a range of backgrounds, with the amenities that make a neighbourhood work rather than just a collection of buildings.
 
 The masterplan puts commercial space at grade and lifts the communal programme above it. Rooftop garden terraces, greenhouses, restaurants and study space form a second, elevated public realm connected across the site, so the ground stays busy while the roofs do something other than shed water. Between the blocks sit landscaped parks, sports fields, a library, a gym and a kindergarten. Green roofs and energy efficiency were requirements of the scheme, not additions to it.
+
+Verdant Way is the internal street that holds it together. The branching canopies along it are the one deliberate piece of structure in the public realm, and they do a specific job: a street this long needs a reason to walk it rather than drive to the end, and a rhythm overhead gives it one.
 
 The work came in three phases. Phase one establishes the road hierarchy, the stormwater and noise mitigation, and the survey that sets the residential and commercial boundaries. Phase two builds the first residential and mixed-use blocks and connects them to utilities and transit. Phase three completes the buildings, the pathway network and the public realm.
 

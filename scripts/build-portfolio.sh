@@ -30,7 +30,11 @@ cd "$ROOT"
 
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 PORT=4399
-BASE=$(node -e "console.log(require('./astro.config.mjs').default.base ?? '')" 2>/dev/null || echo "/ahmad-assi-portfolio")
+# The config picks its base from the host, so ask it rather than assuming. An
+# ESM import is needed: require() cannot load an .mjs file.
+BASE=$(node --input-type=module -e \
+  "import c from './astro.config.mjs'; const b = c.base ?? '/'; process.stdout.write(b === '/' ? '' : b.replace(/\/$/, ''))" \
+  2>/dev/null || echo "/ahmad-assi-portfolio")
 OUT="$ROOT/public/portfolio/Ahmad_Assi_Portfolio.pdf"
 MAXW=1400
 QUALITY=3          # ffmpeg -q:v, roughly quality 72
