@@ -185,19 +185,38 @@ img {
 
 /* --- a project detail page ------------------------------------------------ */
 
+/* The text column is 122mm and sets the brief in two columns, which is a
+   measure decision rather than a taste one. At 62mm this held about 1,350
+   characters and the briefs run to 2,223, so the longest ones were being cut
+   off mid-sentence by the sheet's overflow with nothing to show it had
+   happened. Two columns of roughly 41 characters over 34 lines carry about
+   2,800, which clears the longest brief with room to spare. */
 .detail {
   display: grid;
-  grid-template-columns: 62mm 1fr;
+  grid-template-columns: 132mm 1fr;
   height: 100%;
 }
 .detail-text {
-  padding: 13mm 9mm 12mm 13mm;
+  padding: 13mm 10mm 12mm 13mm;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 .detail-text .p-title {
   font-size: 17pt;
   margin: 2mm 0 4mm;
+}
+.detail-body {
+  columns: 2;
+  column-gap: 7mm;
+  min-height: 0;
+}
+.detail-body .p-body {
+  font-size: 7.3pt;
+  line-height: 1.48;
+}
+.detail-body .p-body:first-child {
+  margin-top: 0;
 }
 .detail-credit {
   margin-top: auto;
@@ -218,13 +237,26 @@ img {
 .detail-grid figure {
   margin: 0;
   overflow: hidden;
-  background: var(--paper-2);
+  /* White, not the grey, because these fit rather than fill. Grey turns every
+     letterbox into a visible band; on white the unused space is just paper. */
+  background: var(--paper);
 }
 .detail-grid.is-three {
   grid-template-rows: 1.25fr 1fr;
 }
 .detail-grid.is-three figure:first-child {
   grid-column: span 2;
+}
+
+/* Fit the whole image rather than filling the box.
+   These slots hold plans, sections and titled sheets as often as renders, and
+   cover crops from the edges, which is exactly where a drawing keeps its title
+   block, its scale and its north point. Letterboxing a render is a much smaller
+   loss than beheading a drawing. Lead images keep cover: they were chosen as
+   covers, so they are composed to be cropped. */
+.detail-grid img,
+.single-strip img {
+  object-fit: contain;
 }
 
 /* --- one page project ----------------------------------------------------- */
@@ -264,7 +296,71 @@ img {
 .single-strip figure {
   margin: 0;
   overflow: hidden;
-  background: var(--paper-2);
+  /* White, not the grey, because these fit rather than fill. Grey turns every
+     letterbox into a visible band; on white the unused space is just paper. */
+  background: var(--paper);
+}
+
+/* --- contents ------------------------------------------------------------- */
+
+/* The same three tiers the site shows, at the same three weights, so somebody
+   who has seen the website recognises the shape of the document and somebody
+   who has not can see at a glance which projects are being put forward. */
+.toc {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16mm;
+  margin-top: 8mm;
+}
+.toc-group + .toc-group {
+  margin-top: 9mm;
+}
+.toc-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: 2.5mm;
+  margin-bottom: 3.5mm;
+  border-bottom: 0.4mm solid var(--rule);
+}
+.toc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.toc-list li {
+  display: grid;
+  grid-template-columns: 1fr 10mm;
+  align-items: baseline;
+  gap: 4mm;
+  padding: 1.6mm 0;
+}
+.toc-list .n {
+  font-size: 7pt;
+  letter-spacing: 0.12em;
+  color: var(--ink-3);
+  text-align: right;
+}
+.toc-lead .t {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 16pt;
+  text-transform: uppercase;
+  line-height: 1.04;
+}
+.toc-set .t {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 11.5pt;
+  text-transform: uppercase;
+  line-height: 1.06;
+}
+.toc-archive .t {
+  font-size: 7.6pt;
+  color: var(--ink-2);
+}
+.toc-archive li {
+  padding: 0.9mm 0;
 }
 
 /* --- the index and the plain sheets --------------------------------------- */

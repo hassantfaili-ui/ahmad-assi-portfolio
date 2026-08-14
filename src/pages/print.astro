@@ -59,9 +59,19 @@ const liveUrl = new URL(import.meta.env.BASE_URL, Astro.site ?? 'https://example
   .replace(/\/$/, '');
 
 /* Sheet numbering runs across the whole document so a reviewer can refer to a
-   page out loud. The cover is 01. */
-let sheet = 1;
+   page out loud. The cover is 01, the contents 02, and the work starts at 03. */
+let sheet = 2;
 const no = () => String(++sheet).padStart(2, '0');
+
+/* Page numbers for the contents, worked out from the same shape the document is
+   built in rather than typed in: two pages for each of the top three, then one
+   for each of the set. Getting these from the structure means they cannot drift
+   when a project moves between tiers in the editor. */
+const FIRST_WORK_PAGE = 3;
+const leadPage = (i: number) => FIRST_WORK_PAGE + i * 2;
+const setPage = (i: number) => FIRST_WORK_PAGE + leads.length * 2 + i;
+const archivePage = FIRST_WORK_PAGE + leads.length * 2 + set.length;
+const pad = (n: number) => String(n).padStart(2, '0');
 ---
 
 <html lang="en">
@@ -90,6 +100,88 @@ const no = () => String(++sheet).padStart(2, '0');
           <span>{resume.phone}</span>
         </div>
       </div>
+    </div>
+
+    <!-- 02, contents: the site's three tiers, in the site's order -->
+    <div class="sheet">
+      <div class="plain">
+        <p class="p-label">Selected work &nbsp;&middot;&nbsp; {resume.issued}</p>
+        <h2 class="p-title">Contents</h2>
+
+        <div class="toc">
+          <div>
+            <section class="toc-group toc-lead">
+              <div class="toc-head">
+                <p class="p-label">Selected projects</p>
+                <p class="p-label">{leads.length}</p>
+              </div>
+              <ul class="toc-list">
+                {
+                  leads.map((p, i) => (
+                    <li>
+                      <span class="t">{p.data.title}</span>
+                      <span class="n">{pad(leadPage(i))}</span>
+                    </li>
+                  ))
+                }
+              </ul>
+            </section>
+
+            <section class="toc-group toc-set">
+              <div class="toc-head">
+                <p class="p-label">The set</p>
+                <p class="p-label">{set.length}</p>
+              </div>
+              <ul class="toc-list">
+                {
+                  set.map((p, i) => (
+                    <li>
+                      <span class="t">{p.data.title}</span>
+                      <span class="n">{pad(setPage(i))}</span>
+                    </li>
+                  ))
+                }
+              </ul>
+            </section>
+          </div>
+
+          <div>
+            <section class="toc-group toc-archive">
+              <div class="toc-head">
+                <p class="p-label">Also in the archive &nbsp;&middot;&nbsp; page {pad(archivePage)}</p>
+                <p class="p-label">{index.length}</p>
+              </div>
+              <ul class="toc-list">
+                {
+                  index.map((p) => (
+                    <li>
+                      <span class="t">{p.data.title}</span>
+                      <span class="n">{p.data.year}</span>
+                    </li>
+                  ))
+                }
+              </ul>
+            </section>
+
+            <section class="toc-group toc-archive">
+              <div class="toc-head">
+                <p class="p-label">And</p>
+                <p class="p-label">3</p>
+              </div>
+              <ul class="toc-list">
+                <li><span class="t">Resume, experience</span><span class="n">{pad(archivePage + 1)}</span></li>
+                <li><span class="t">Education and skills</span><span class="n">{pad(archivePage + 2)}</span></li>
+                <li><span class="t">Contact</span><span class="n">{pad(archivePage + 3)}</span></li>
+              </ul>
+            </section>
+          </div>
+        </div>
+
+        <p class="p-body" style="margin-top:auto;max-width:150mm">
+          The same work, in the same order, as {liveUrl}.
+        </p>
+      </div>
+      <p class="sheet-no">Contents &nbsp;/&nbsp; 02</p>
     </div>
 
     <!-- the three lead projects, two pages each -->
@@ -125,7 +217,7 @@ const no = () => String(++sheet).padStart(2, '0');
                 <div class="detail-text">
                   <p class="p-label">{p.data.buildingType}</p>
                   <h3 class="p-title">{p.data.title}</h3>
-                  <div class="p-body"><Brief /></div>
+                  <div class="detail-body p-body"><Brief /></div>
                   <p class="detail-credit">{p.data.credit}</p>
                 </div>
                 <div class:list={['detail-grid', picks.length === 3 && 'is-three']}>
