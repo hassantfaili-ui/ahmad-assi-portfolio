@@ -7,7 +7,7 @@ location: Tunney's Pasture, Ottawa, Ontario
 buildingType: Urban placemaking proposal
 area: Site study
 status: Academic
-role: Sole author, Exercise 3.2
+role: Sole author
 contribution: The whole project. The parti, all four drawn layers, the block pattern, the model and every view.
 summary: A placemaking proposal for a site at Tunney's Pasture, organised around the relationship between public and private ground on both axes, and built up as four drawn layers.
 leadImage:

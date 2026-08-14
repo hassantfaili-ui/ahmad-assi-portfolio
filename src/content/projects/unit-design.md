@@ -28,13 +28,11 @@ imageGroups:
         alt: Lower level plan of the two-storey units, the sleeping accommodation set out with dimensions and areas noted
       - src: /media/unit-design/unit-floor6-outline.jpg
         alt: The same lower level drawn as an unfurnished outline, showing the party wall and the stair positions across a 9.65 metre frontage
-  - layout: pair
-    caption: The upper level, furnished and in outline. Drawing both is what catches a stair that works in plan and not in section.
+  - layout: full
+    caption: The upper level in outline. Drawing both levels is what catches a stair that works in plan and not in section.
     images:
       - src: /media/unit-design/unit-floor7-outline.jpg
         alt: Upper level outline plan of the pair of two-storey units, 18 metres deep on a 9.65 metre frontage
-      - src: /media/unit-design/unit-massing.jpg
-        alt: Two massing studies of the stacked unit types, each level in a different colour so the section through the building can be read at a glance
 drawings: []
 tier: index
 credit: Sole author

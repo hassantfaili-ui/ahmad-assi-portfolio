@@ -2,7 +2,7 @@
 title: 605 Bronson Avenue
 sheet: A-117
 category: Academic
-year: 2026
+year: 2025
 location: 605 Bronson Avenue and 275 Chamberlain Avenue, Ottawa, Ontario
 buildingType: Development feasibility and cost analysis
 area: 5,068 sq.m existing against 15,055 sq.m proposed

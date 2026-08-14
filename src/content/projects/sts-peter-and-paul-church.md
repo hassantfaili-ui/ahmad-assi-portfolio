@@ -2,7 +2,7 @@
 title: Sts. Peter and Paul Church
 sheet: A-108
 category: Cultural
-year: 2021
+year: 2024
 location: Ottawa, Ontario
 buildingType: Church grounds, open air structure and event spaces
 area: Outdoor grounds and pavilion

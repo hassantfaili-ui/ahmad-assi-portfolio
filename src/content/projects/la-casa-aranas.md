@@ -9,7 +9,7 @@ area: 112 sq.m main floor, 45 sq.m suite, 8 sq.m mechanical
 status: Under construction
 role: Designer, independent commission
 contribution: The whole project, from site analysis and massing through the floor plans, the roof assembly and the drawings being built from. An independent commission carried out under my own name.
-summary: An elevated house on a village lot, with the living accommodation raised a full storey above parking, a mechanical room and a ground floor suite. Under construction since 2023.
+summary: An elevated house on a village lot, with the living accommodation raised a full storey above parking, a mechanical room and a ground floor suite. Built in stages since 2023, at the pace the client funds it.
 leadImage:
   src: /media/la-casa-aranas/casa-main-noon.jpg
   alt: The house at midday, the living floor raised a full storey on posts above open parking, under an offset dual-skillion roof
@@ -150,5 +150,7 @@ The main floor is 112 square metres and split-bedroom: the open kitchen, dining 
 Underneath, the ground floor earns its keep: six parking spaces, an 8 square metre mechanical room, a fixed bike rack, and a 45 square metre open-concept suite that combines living, storage, washroom and sleeping in a compact layout. Raising the house created that floor for the cost of the posts.
 
 The roof is an offset dual-skillion, two opposing slopes that shed rain quickly and shelter the walkway below. It is the one gesture on an otherwise plain building, and it does structural work as well as compositional work.
+
+The house is being built in deliberate stages, each one starting when the client has funded it, which is the normal way a family house goes up here and the reason the programme runs to 2026 rather than a single season. Designing to be built that way is part of the brief: every stage has to stand on its own, be weathertight and be usable before the next one begins.
 
 The photographs at the end are the site itself, from the first posts in 2023 to the roof and the render in 2026. Drawing a house and watching it get built by the people on that lot are different educations, and the second one changed how I draw.

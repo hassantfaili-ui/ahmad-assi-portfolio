@@ -2,7 +2,7 @@
 title: Renewal Square
 sheet: A-104
 category: Academic
-year: 2025
+year: 2024
 location: 2100 Bank Street, Ottawa, Ontario
 buildingType: Mixed-use masterplan, residential, commercial and public realm
 area: 38,000 sq.m site, 3.8 hectares, FSI 1.4

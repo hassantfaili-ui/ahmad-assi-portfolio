@@ -46,6 +46,6 @@ Site 3 of Confederation Heights was the piece of the studio I took on alone. The
 
 Density is placed rather than spread. High rises sit along the edges, particularly near the major intersections, which is where the intensity can be absorbed, and the scale steps down toward the middle. That leaves the core free for an open space district: green communal ground, and a park dotted with food stands and booths so there is a reason to be there rather than merely pass through.
 
-The southern part is student housing, which reflects what already exists on Brookfield nearby. The heart of the site is mid-rise with cultural commercial markets at grade, giving the district its name and the transition from the tall periphery to something more intimate. The north east corner is marked by a train station, which is what makes the whole density argument reasonable in the first place.
+The southern part is student housing, which picks up what is already there: The Revalie, the student building on Brookfield immediately nearby. Matching it is the point, so the block reads as a continuation of the existing urban fabric rather than an intrusion into it. The heart of the site is mid-rise with cultural commercial markets at grade, giving the district its name and the transition from the tall periphery to something more intimate. The north east corner is marked by a train station, which is what makes the whole density argument reasonable in the first place.
 
 Targeted density is roughly 150 people per hectare.
