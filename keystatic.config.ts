@@ -65,27 +65,46 @@ const dated = (label: string) =>
   );
 
 /**
- * Where saving writes to.
+ * Where saving writes to. Three modes, picked by which variable is set.
  *
- * With PUBLIC_KEYSTATIC_GITHUB_REPO set, the editor commits straight to the
- * repository over GitHub, Netlify rebuilds, and the change is live in about a
- * minute. Without it, saving writes to the files on this machine, which is what
- * `npm run dev` does.
+ * CLOUD, set PUBLIC_KEYSTATIC_CLOUD_PROJECT to "team/project".
+ *   Ahmad signs in with an email and password, or a passkey, and never needs a
+ *   GitHub account. Keystatic Cloud holds the connection to this repository and
+ *   commits on his behalf, so the commits arrive authored by keystatic-cloud[bot].
+ *   This is the mode to use. It also needs the fewest secrets of the three:
+ *   in cloud mode every GitHub call is proxied through api.keystatic.cloud and
+ *   the server side API route is a stub, so there is no OAuth app, no client id,
+ *   no client secret and no KEYSTATIC_SECRET anywhere.
  *
- * Either way every edit is an ordinary, reviewable commit rather than something
- * that happened invisibly inside a database.
+ * GITHUB, set PUBLIC_KEYSTATIC_GITHUB_REPO to "owner/name".
+ *   The editor signs in with GitHub and needs write access to this repository.
+ *   Kept as the fallback, and as the path if the site is ever handed over to
+ *   Ahmad's own GitHub account outright.
  *
- * This file is loaded in the browser as well as on the server, so the value has
- * to come from import.meta.env, which Vite replaces at build time. Reading
- * process.env here throws "process is not defined" and the whole editor fails to
- * hydrate.
+ * NEITHER, the default. Saving writes to the files on this machine, which is
+ * what `npm run dev` does and the right way to make bulk changes.
+ *
+ * Every mode produces ordinary reviewable commits rather than rows in a vendor
+ * database, which is what lets the portfolio PDF keep building from the same
+ * files the site is built from.
+ *
+ * This file is loaded in the browser as well as on the server, so values have to
+ * come from import.meta.env, which Vite replaces at build time. Reading
+ * process.env here throws "process is not defined" and the editor fails to
+ * hydrate with a blank screen.
  */
+const cloudProject = import.meta.env.PUBLIC_KEYSTATIC_CLOUD_PROJECT;
 const repo = import.meta.env.PUBLIC_KEYSTATIC_GITHUB_REPO;
 
 export default config({
-  storage: repo
-    ? { kind: 'github', repo: repo as `${string}/${string}` }
-    : { kind: 'local' },
+  storage: cloudProject
+    ? { kind: 'cloud' }
+    : repo
+      ? { kind: 'github', repo: repo as `${string}/${string}` }
+      : { kind: 'local' },
+  ...(cloudProject
+    ? { cloud: { project: cloudProject as `${string}/${string}` } }
+    : {}),
   ui: {
     brand: { name: 'Ahmad Assi, architect' },
     navigation: { Content: ['projects', 'resume'] },

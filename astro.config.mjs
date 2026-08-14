@@ -18,7 +18,9 @@ import netlify from '@astrojs/netlify';
  * shipping a login page that cannot work.
  */
 const editing = process.env.npm_lifecycle_event === 'dev';
-const editorOnline = Boolean(process.env.PUBLIC_KEYSTATIC_GITHUB_REPO);
+const editorOnline = Boolean(
+  process.env.PUBLIC_KEYSTATIC_CLOUD_PROJECT || process.env.PUBLIC_KEYSTATIC_GITHUB_REPO,
+);
 
 /**
  * Served from the root of its own domain.

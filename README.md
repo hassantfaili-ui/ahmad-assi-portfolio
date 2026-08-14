@@ -230,43 +230,53 @@ Work through the editor rather than the files.
 
 ### Putting the editor online
 
-The code is done. What remains needs a GitHub account and secrets, so it is not
-something that can be set up on Ahmad's behalf.
+The code is done and all three storage modes are verified. What is left is account
+work, which cannot be done on Ahmad's behalf.
 
-**1. Give Ahmad write access to this repository.** He needs a GitHub account, and
-that account should eventually own the repository outright.
+**Use Keystatic Cloud.** It is the only option that lets Ahmad sign in with an email
+address and a password, or a passkey, without a GitHub account, and it needs fewer
+secrets than GitHub mode, not more. In cloud mode every GitHub call is proxied
+through `api.keystatic.cloud` and the server side API route is a stub, so there is
+no OAuth app, no client id, no client secret and no `KEYSTATIC_SECRET` to manage.
+Free for up to 3 users per team; this needs 2.
 
-**2. Create a GitHub App** at
-https://github.com/settings/apps/new. The only fields that matter:
+1. Sign in at https://keystatic.cloud and create a team.
+2. Create a project in that team and connect this GitHub repository to it. This is
+   the only step that touches GitHub, and it is done by the repo owner, once.
+3. Install the Keystatic Cloud GitHub App on the repository when prompted.
+4. Invite Ahmad to the team by email.
+5. In Netlify, set one environment variable and redeploy:
 
-| Field | Value |
-| --- | --- |
-| Homepage URL | `https://ahmadassi.netlify.app` |
-| Callback URL | `https://ahmadassi.netlify.app/api/keystatic/github/oauth/callback` |
-| Request user authorization (OAuth) during installation | tick |
-| Webhook | untick Active |
-| Repository permissions | Contents: **Read and write**, Metadata: Read-only |
+   | Variable | Value |
+   | --- | --- |
+   | `PUBLIC_KEYSTATIC_CLOUD_PROJECT` | `your-team/your-project` |
 
-Generate a client secret on the same page, then install the App on this
-repository.
+6. Ahmad opens `/keystatic`, signs in with his email, and edits. His saves arrive in
+   this repository as commits authored by `keystatic-cloud[bot]`, Netlify rebuilds,
+   and the change is live in about a minute.
 
-**3. Add four environment variables in Netlify**, under Site configuration →
-Environment variables. Nothing works until all four are set, and the editor is not
-built at all if the first is missing:
+Known rough edges, none of them blockers:
 
-| Variable | Where it comes from |
-| --- | --- |
-| `PUBLIC_KEYSTATIC_GITHUB_REPO` | `hassantfaili-ui/ahmad-assi-portfolio` |
-| `PUBLIC_KEYSTATIC_GITHUB_APP_SLUG` | the App's URL slug |
-| `KEYSTATIC_GITHUB_CLIENT_ID` | the App's client ID |
-| `KEYSTATIC_GITHUB_CLIENT_SECRET` | the secret generated in step 2 |
-| `KEYSTATIC_SECRET` | any long random string, e.g. `openssl rand -hex 32` |
+- Add photos in small batches. There is a 45MB limit on a single save, which is a
+  GitHub API limit rather than a Keystatic one, so plain GitHub mode has it too.
+- The films stay a developer job. The 73MB walkthrough and the 43MB hero exceed what
+  the editor can upload.
+- The Cloud sign-in redirect is tied to the production origin, so the editor will not
+  work on Netlify deploy previews.
+- Keystatic's docs for cloud mode have not been edited since March 2024 and there is
+  no public pricing page, so the quoted free tier is documented rather than confirmed
+  against live billing. The code and the service are current: `@keystatic/core` 0.6.5
+  shipped 11 August 2026.
 
-**4. Redeploy.** Then open `/keystatic`, sign in with GitHub, and check that saving
-a small change produces a commit.
+#### The GitHub fallback
 
-Until `PUBLIC_KEYSTATIC_GITHUB_REPO` is set, the site builds exactly as it does
-now: pure static files, no adapter, no editor routes, nothing that can half work.
+`PUBLIC_KEYSTATIC_GITHUB_REPO` still works and is left in place, for two reasons: it
+is the path if the repository is ever transferred to Ahmad outright, and GitHub now
+supports "Continue with Google", so an account needs no new password. That route also
+needs a GitHub App and four more variables, documented in the git history of this file.
+
+Until one of those variables is set, the site builds exactly as it does now: pure
+static files, no adapter, no editor routes, nothing that can half work.
 
 ## Accessibility and performance
 
