@@ -50,8 +50,7 @@ if (film) {
      allowance rather than ours, and a phone gains nothing from the larger one.
 
      navigator.connection is Chromium only, so the width check has to stand on
-     its own everywhere else. Device pixel ratio is included because a 1400px
-     retina laptop is really painting 2800px. */
+     its own everywhere else. */
   const conn = (navigator as Navigator & {
     connection?: { saveData?: boolean; effectiveType?: string };
   }).connection;
@@ -60,18 +59,28 @@ if (film) {
     conn?.saveData === true || /(^|-)2g$/.test(conn?.effectiveType ?? '');
 
   /* innerWidth can be 0 when this runs in a tab that has never been fronted,
-     and 0 would silently hand the small file to every desktop visitor. Take the
-     widest of the three measures so there is always something real to judge by;
-     screen.width is populated even when the layout viewport is not. */
-  const vw = Math.max(
-    window.innerWidth || 0,
-    document.documentElement?.clientWidth || 0,
-    window.screen?.width || 0,
-  );
-  const painted = vw * (window.devicePixelRatio || 1);
+     and 0 would silently hand the small file to every desktop visitor, so
+     screen.width stands in when there is no layout viewport to read.
 
+     It has to be a fallback and not a floor. Taking the widest of the three
+     instead, which is what this did, let a handset's own screen dimension
+     override the real viewport: screen.width follows the current orientation,
+     so a phone turned sideways reported 852 and a tablet 820.
+
+     Judged in CSS pixels, deliberately not multiplied by devicePixelRatio.
+     That multiplication was here to keep a retina laptop on the large file, but
+     a 1440px laptop clears this on its own, so the only thing it really did was
+     push small high density screens the wrong way: 820 x 2 and 852 x 3 both
+     sailed past the old 1600 mark and pulled 42.8MB onto a tablet or a phone,
+     usually over cellular. The film is a scrimmed background loop behind text,
+     which is the last thing on the page that needs the extra detail. */
+  const layout = window.innerWidth || document.documentElement?.clientWidth || 0;
+  const vw = layout || window.screen?.width || 0;
+
+  /* 1200 puts laptops and desktops on the large file and every phone, plus a
+     tablet held either way, on the small one. */
   const src =
-    thrifty || painted < 1600
+    thrifty || vw < 1200
       ? film.dataset.srcSmall || film.dataset.srcLarge
       : film.dataset.srcLarge || film.dataset.srcSmall;
 
