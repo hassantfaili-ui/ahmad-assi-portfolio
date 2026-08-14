@@ -217,16 +217,17 @@ export default config({
           validation: { isRequired: true },
         }),
         tier: fields.select({
-          label: 'Where it sits on the home page',
+          label: 'Where it sits on the projects page',
           description:
-            'Lead projects are the large cards at the top, and there should be three. ' +
-            'The set is the strip below them. The index is the short list at the ' +
-            'bottom, for thin coursework that should stay on the site without ' +
-            'competing with the strong work.',
+            'The top three are the large cards. The set is the strip under them. ' +
+            'The archive is the short list at the bottom, for coursework that ' +
+            'should stay on the site without competing with the strong work. ' +
+            'Only three can be in the top three: a fourth falls into the set ' +
+            'rather than disappearing.',
           options: [
-            { label: 'Lead, large card at the top', value: 'lead' },
+            { label: 'The top three, large card', value: 'lead' },
             { label: 'The set, in the strip', value: 'set' },
-            { label: 'The index, a line in the list', value: 'index' },
+            { label: 'The archive, a line in the list', value: 'index' },
           ],
           defaultValue: 'set',
         }),
