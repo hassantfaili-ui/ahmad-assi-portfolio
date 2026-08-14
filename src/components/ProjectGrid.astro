@@ -3,6 +3,7 @@ import type { CollectionEntry } from 'astro:content';
 import Drawing from './Drawing.astro';
 import ProjectCard from './ProjectCard.astro';
 import { url } from '../lib/url';
+import { tiers } from '../lib/tiers';
 
 interface Props {
   projects: CollectionEntry<'projects'>[];
@@ -13,10 +14,10 @@ const { projects } = Astro.props;
 /* Three tiers, all set in the editor, with Ahmad's order kept inside each one.
    Leads are the large cards, the set is the strip, and the index is a short list
    for the thin coursework: it stays on the site and stays clickable, but it does
-   not sit at the same size as the work that should be looked at first. */
-const leads = projects.filter((p) => p.data.tier === 'lead').slice(0, 3);
-const set = projects.filter((p) => p.data.tier === 'set');
-const index = projects.filter((p) => p.data.tier === 'index');
+   not sit at the same size as the work that should be looked at first.
+
+   Derived in src/lib/tiers.ts so this and the PDF cannot disagree. */
+const { leads, set, index } = tiers(projects);
 
 const isFile = (s?: string) => Boolean(s && s.startsWith('/'));
 
