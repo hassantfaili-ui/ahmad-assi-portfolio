@@ -1,6 +1,5 @@
 ---
 import type { CollectionEntry } from 'astro:content';
-import Drawing from './Drawing.astro';
 import ProjectCard from './ProjectCard.astro';
 import { url } from '../lib/url';
 import { tiers } from '../lib/tiers';
@@ -18,8 +17,6 @@ const { projects } = Astro.props;
 
    Derived in src/lib/tiers.ts so this and the PDF cannot disagree. */
 const { leads, set, index } = tiers(projects);
-
-const isFile = (s?: string) => Boolean(s && s.startsWith('/'));
 
 /** Only rows that have a value. An empty row is worse than no row. */
 function facts(d: CollectionEntry<'projects'>['data']) {
@@ -108,21 +105,12 @@ function facts(d: CollectionEntry<'projects'>['data']) {
       >
         <div class="panel-inner">
           <div class="panel-media">
-            {isFile(p.data.leadImage.src) ? (
-              <img
-                src={url(p.data.leadImage.src)}
-                alt={p.data.leadImage.alt}
-                loading="lazy"
-                decoding="async"
-              />
-            ) : (
-              <Drawing
-                kind={p.data.leadImage.kind}
-                seed={p.data.leadImage.seed}
-                alt={p.data.leadImage.alt}
-                reg={false}
-              />
-            )}
+            <img
+              src={url(p.data.leadImage.src)}
+              alt={p.data.leadImage.alt}
+              loading="lazy"
+              decoding="async"
+            />
           </div>
 
           <div class="panel-text">

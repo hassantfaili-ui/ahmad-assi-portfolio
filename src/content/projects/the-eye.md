@@ -12,68 +12,44 @@ contribution: Site inventory, programming, the plan geometry, planting, structur
 summary: A courtyard on the Carleton campus reorganised as a single lens, with a circular water feature at its centre and everything else arranged around that one figure.
 leadImage:
   src: /media/the-eye/eye-top-view.jpg
-  kind: photo
-  seed: 1
   alt: Overhead render of the courtyard showing the lens shaped lawn, the circular water feature at its centre, planting beds, a faceted blue canopy, curved seating and the paths that trace the outline
 imageGroups:
   - layout: pair
     caption: The whole figure, from above and in axonometric. The paths draw the outline; the lawn and planting fill it.
     images:
       - src: /media/the-eye/eye-axo-1.jpg
-        kind: axonometric
-        seed: 2
         alt: Axonometric render of the courtyard between the existing buildings showing the lens geometry and the canopy structure
       - src: /media/the-eye/eye-axo-2.jpg
-        kind: axonometric
-        seed: 3
         alt: Second axonometric render from the opposite corner showing the seating, the planting beds and the circulation around the lawn
   - layout: pair
     caption: The main entrance, morning and evening. The lighting is designed for the hours students actually cross the courtyard.
     images:
       - src: /media/the-eye/eye-entrance-morning.jpg
-        kind: photo
-        seed: 4
         alt: Render of the courtyard entrance in morning light with people crossing the paved approach
       - src: /media/the-eye/eye-entrance-evening.jpg
-        kind: photo
-        seed: 5
         alt: The same entrance in the evening with the path and canopy lighting on
   - layout: triptych
     caption: Inside the lens. The community garden, the curved bench and the seating under the trees.
     images:
       - src: /media/the-eye/eye-community-garden.jpg
-        kind: photo
-        seed: 6
         alt: Render of the raised community garden beds with planting in flower
       - src: /media/the-eye/eye-seating.jpg
-        kind: photo
-        seed: 7
         alt: Render of the serpentine timber bench on the lawn
       - src: /media/the-eye/eye-tree-seating.jpg
-        kind: photo
-        seed: 8
         alt: Render of the seating area shaded by trees beside the water feature
   - layout: full
     caption: Second entrance, from the opposite side of the courtyard.
     images:
       - src: /media/the-eye/eye-entrance-2.jpg
-        kind: photo
-        seed: 9
         alt: Render of the secondary entrance to the courtyard
 drawings:
   - src: /media/the-eye/eye-site-plan-01.jpg
-    kind: plan
-    seed: 10
     alt: General site plan of the courtyard showing the lens geometry, paving, planting, the water feature and the surrounding buildings
     drawingType: General site plan
   - src: /media/the-eye/eye-inventory-01.jpg
-    kind: plan
-    seed: 11
     alt: Site inventory plan recording what is already on the courtyard, including existing trees, paving and access points
     drawingType: Site inventory
   - src: /media/the-eye/eye-programming-01.jpg
-    kind: plan
-    seed: 12
     alt: Site programming diagram allocating the courtyard to garden, gathering, seating and circulation
     drawingType: Site programming
 tier: set

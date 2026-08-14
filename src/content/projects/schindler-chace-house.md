@@ -12,40 +12,26 @@ contribution: Group study of an existing building, plus my own analytical design
 summary: A first year study of R.M. Schindler's 1922 Kings Road house, built for two couples on a tiny budget and generally taken as the first house in the modernist style.
 leadImage:
   src: /media/schindler-chace-house/schindler-05.jpg
-  kind: plan
-  seed: 1
   alt: Redrawn plans of the Schindler Chace House, the four studios and their paired terraces set around the shared cores
 imageGroups:
   - layout: pair
     caption: The house analysed. Four studios, two open sleeping terraces, two shared washrooms and a single utility room.
     images:
       - src: /media/schindler-chace-house/schindler-03.jpg
-        kind: plan
-        seed: 2
         alt: Further analytical sheet from the Schindler Chace House study
       - src: /media/schindler-chace-house/schindler-04.jpg
-        kind: section
-        seed: 3
         alt: Further analytical sheet from the Schindler Chace House study
   - layout: triptych
     caption: Remaining sheets from the study.
     images:
       - src: /media/schindler-chace-house/schindler-05.jpg
-        kind: plan
-        seed: 4
         alt: Further sheet from the Schindler Chace House study
       - src: /media/schindler-chace-house/schindler-06.jpg
-        kind: plan
-        seed: 5
         alt: Further sheet from the Schindler Chace House study
       - src: /media/schindler-chace-house/schindler-01.jpg
-        kind: plan
-        seed: 6
         alt: Introduction page of the Schindler Chace House study with the building's history and key photographs
 drawings:
   - src: /media/schindler-chace-house/firstyear-01.jpg
-    kind: axonometric
-    seed: 7
     alt: Title sheet of the Schindler Chace House analytical design study
     drawingType: Analytical design, title sheet
 tier: index

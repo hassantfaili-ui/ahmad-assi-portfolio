@@ -38,24 +38,6 @@ const imageSlot = {
     description: 'Describe the drawing for someone who cannot see it. Required.',
     validation: { isRequired: true },
   }),
-  kind: fields.select({
-    label: 'Placeholder type',
-    description: 'Which kind of line work to draw while there is no real file.',
-    options: [
-      { label: 'Interior perspective', value: 'photo' },
-      { label: 'Plan', value: 'plan' },
-      { label: 'Section', value: 'section' },
-      { label: 'Elevation', value: 'elevation' },
-      { label: 'Axonometric', value: 'axonometric' },
-      { label: 'Site plan', value: 'site' },
-    ],
-    defaultValue: 'photo',
-  }),
-  seed: fields.integer({
-    label: 'Placeholder seed',
-    description: 'Change this number to redraw the placeholder differently.',
-    defaultValue: 1,
-  }),
 };
 
 const dated = (label: string) =>

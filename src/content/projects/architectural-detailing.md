@@ -12,20 +12,14 @@ contribution: Part of a six person group working as Hodeeva Designs. The detail 
 summary: One wall section drawn from the parking garage below to the classroom above, with every layer keyed to a written specification rather than left to a hatch pattern.
 leadImage:
   src: /media/architectural-detailing/detail-wall-section.jpg
-  kind: section
-  seed: 1
   alt: Wall section running from the parking garage through the foundation to the classroom above, every layer numbered and keyed, dimensioned across the assembly
 imageGroups:
   - layout: pair
     caption: The specification the section points at. W1 the exterior wall, F1 the floor, FN1 and FN2 the foundations above and below grade, G1 the glazing.
     images:
       - src: /media/architectural-detailing/detail-composite-notes.jpg
-        kind: section
-        seed: 2
         alt: Composite construction notes listing each assembly layer by layer with thickness, product and R value
       - src: /media/architectural-detailing/detail-construction-notes.jpg
-        kind: section
-        seed: 3
         alt: Construction notes numbering every material in the detail, from the air barrier and rigid insulation to the flashing and the glazing
 drawings: []
 tier: index

@@ -12,32 +12,22 @@ contribution: Part of a five person group. The set is the group's shared work.
 summary: A technical set documenting how a building actually keeps water and heat where they belong, drawn assembly by assembly with the thermal values worked out.
 leadImage:
   src: /media/core-and-shell/shell-03.jpg
-  kind: axonometric
-  seed: 1
   alt: Mechanical systems axonometric of the building, the duct runs and risers drawn in colour over the structural frame on a titled sheet
 imageGroups:
   - layout: pair
     caption: The envelope. A long section through the building, and the assemblies cut out of it at detail scale.
     images:
       - src: /media/core-and-shell/shell-01.jpg
-        kind: section
-        seed: 2
         alt: Sheet carrying the building longitudinal section alongside foundation, curtain wall, masonry, parapet and window details
       - src: /media/core-and-shell/shell-02.jpg
-        kind: section
-        seed: 3
         alt: Wall assembly detail showing the flashing, the pressure treated wall plate and the gasket at the junction between wall and foundation
   - layout: full
     caption: Services, drawn as axonometrics so the runs can be followed through the building rather than guessed at from plans.
     images:
       - src: /media/core-and-shell/shell-04.jpg
-        kind: axonometric
-        seed: 4
         alt: Electrical systems axonometric with the distribution drawn floor by floor over the structural frame
 drawings:
   - src: /media/core-and-shell/shell-window-sill.jpg
-    kind: section
-    seed: 7
     alt: Window sill detail drawn at large scale on a titled sheet, showing the sill flashing, the sealant joint and the layers of the wall behind it
     drawingType: Window sill detail
 tier: set

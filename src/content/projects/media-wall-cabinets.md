@@ -12,26 +12,18 @@ contribution: Designed the unit, drew the exploded set in both metric and imperi
 summary: A wall-hung media unit built as a set of standard carcasses, so the whole 2.05 metre run comes out of one repeated box.
 leadImage:
   src: /media/media-wall-cabinets/cabinets-night.jpg
-  kind: photo
-  seed: 11
   alt: The media wall at night, the recessed lights washing the glass shelves and the open bays either side of the television
 imageGroups:
   - layout: full
     caption: The same wall in daylight. Without the lighting on, it reads as plain white joinery between the timber panels.
     images:
       - src: /media/media-wall-cabinets/cabinets-day.jpg
-        kind: photo
-        seed: 12
         alt: The media wall in daylight, showing the white carcasses, the tinted glass door, the timber flanking panels and the floating shelf under the television
 drawings:
   - src: /media/media-wall-cabinets/cabinets-exploded-mm.png
-    kind: axonometric
-    seed: 14
     alt: Exploded axonometric of every component with dimensions in metres, showing the shelves, the three carcasses, their back panels, the two end units and the glass
     drawingType: Exploded assembly, metric
   - src: /media/media-wall-cabinets/cabinets-exploded-in.png
-    kind: axonometric
-    seed: 15
     alt: The same exploded axonometric dimensioned in feet and inches for the build
     drawingType: Exploded assembly, imperial
 tier: set

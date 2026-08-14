@@ -12,53 +12,35 @@ contribution: Part of a seven person group. The site analysis, the budgets and t
 summary: A development feasibility study comparing the site as it stands against a fourteen storey proposal, taken through zoning, construction budget and pro forma to a recommendation on whether to build at all.
 leadImage:
   src: /media/bronson-avenue/bronson-site-proposed.jpg
-  kind: site
-  seed: 1
   alt: Site plan of the proposed option at 605 Bronson Avenue with the property line, setbacks and fire route marked, noting 15,055 square metres of floor area over fourteen storeys
 imageGroups:
   - layout: pair
     caption: The two options, drawn to the same convention. Five storeys and 5,068 square metres as it stands, against fourteen storeys and 15,055.
     images:
       - src: /media/bronson-avenue/bronson-site-existing.jpg
-        kind: site
-        seed: 2
         alt: Site plan of the existing condition with the property line, highway setback and fire route keyed to a legend
       - src: /media/bronson-avenue/bronson-budget-existing.jpg
-        kind: plan
-        seed: 3
         alt: Construction budget for the existing option, broken down by programme with gross floor areas and costs per square foot
   - layout: pair
     caption: The same two questions asked of the proposal. Nothing here is a rendering, and that is the point of the exercise.
     images:
       - src: /media/bronson-avenue/bronson-budget-proposed.jpg
-        kind: plan
-        seed: 4
         alt: Construction budget for the proposed option, adding underground parking, surface parking, servicing and landscaping to the programme costs
       - src: /media/bronson-avenue/bronson-proforma-existing.jpg
-        kind: plan
-        seed: 5
         alt: Pro forma for the existing option, setting out the loan amount, interest rate, monthly payment and total interest paid over thirty years
   - layout: pair
     caption: The pro forma for the proposal, and the equity it builds over ten years.
     images:
       - src: /media/bronson-avenue/bronson-proforma-proposed.jpg
-        kind: plan
-        seed: 6
         alt: Pro forma for the proposed option with a seventy million dollar loan amount and the resulting monthly payment and interest
       - src: /media/bronson-avenue/bronson-sellhold-proposed.jpg
-        kind: plan
-        seed: 7
         alt: Develop and sell against develop and hold for the proposal, comparing development cost, market value, profit and approximate annual return
   - layout: pair
     caption: Where the numbers land. The existing option returns under five per cent a year; the proposal turns a profit only on a sale.
     images:
       - src: /media/bronson-avenue/bronson-sellhold-existing.jpg
-        kind: plan
-        seed: 8
         alt: Develop and sell against develop and hold for the existing option, showing a negative ten year income and a low annual return
       - src: /media/bronson-avenue/bronson-takeaways.jpg
-        kind: plan
-        seed: 9
         alt: The key takeaways, concluding that holding is not economically viable, that selling after two years returns about eighteen per cent, and that it may be worth waiting for costs to fall
 drawings: []
 tier: index

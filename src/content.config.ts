@@ -13,8 +13,6 @@ import { glob } from 'astro/loaders';
 const image = z.object({
   src: z.string(),
   alt: z.string().min(1, 'Alt text is required on every image'),
-  kind: z.enum(['plan', 'section', 'elevation', 'axonometric', 'site', 'photo']).default('photo'),
-  seed: z.number().int().optional(),
 });
 
 const projects = defineCollection({
