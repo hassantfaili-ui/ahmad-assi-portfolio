@@ -1,4 +1,5 @@
 import { config, fields, collection, singleton } from '@keystatic/core';
+import { projectImage } from './src/lib/image-field';
 
 /**
  * The visual editor. Run `npm run dev` and open /keystatic.
@@ -22,7 +23,10 @@ import { config, fields, collection, singleton } from '@keystatic/core';
  * out. Better that the editor refuses to save it.
  */
 const imageSlot = {
-  src: fields.image({
+  /* Not fields.image. See src/lib/image-field.tsx: the built-in one renames
+     every image in a project on every save, which re-uploads the lot and can
+     push a single save past GitHub's request limit. */
+  src: projectImage({
     label: 'Image',
     description: 'Choose a file, or drag one in. It is stored with the site.',
     directory: 'public/media',
