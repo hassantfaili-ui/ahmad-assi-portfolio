@@ -1,10 +1,9 @@
 # Netlify build.
 #
-# The base path is the only thing that differs between hosts. astro.config.mjs
-# reads NETLIFY, which Netlify sets during every build, and drops the
-# /ahmad-assi-portfolio prefix that GitHub Pages needs. Nothing here has to
-# change when a custom domain is attached: Netlify updates URL to the domain and
-# the config follows it.
+# This is the only host now: GitHub Pages is retired and the base path that went
+# with it is gone, so the site is served from the root here and in development.
+# Nothing here has to change when a custom domain is attached, since Netlify
+# updates URL to the domain and astro.config.mjs follows it.
 
 [build]
   command = "npm run build"
@@ -17,12 +16,23 @@
   # package.json engines so it is visible without reading this file.
   NODE_VERSION = "22"
 
-# The walkthrough film and the portfolio PDF are large and never change without
-# their filename changing, so they can be cached hard. HTML must not be.
+# Media is cached for an hour and then revalidated, deliberately not "immutable".
+#
+# Immutable was wrong once Ahmad started editing the site. It tells a browser not
+# to so much as ask about the file for a year, and Keystatic writes an uploaded
+# photo under its own filename. So replacing a render with a better version
+# exported under the same name would change nothing for anyone who had already
+# visited, for a year, with no way for him to tell why. The failure looks exactly
+# like the edit not having saved.
+#
+# The hour covers a browsing session completely, so nothing is refetched while
+# someone is actually looking around. After that Netlify answers with a 304 from
+# its ETag unless the file really did change, which costs a few hundred bytes and
+# keeps the films, the largest things here, from being downloaded twice.
 [[headers]]
   for = "/media/*"
   [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
+    Cache-Control = "public, max-age=3600, must-revalidate"
 
 [[headers]]
   for = "/portfolio/*"

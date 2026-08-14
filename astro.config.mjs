@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import keystatic from '@keystatic/astro';
 import netlify from '@astrojs/netlify';
+import shrinkMedia from './src/integrations/shrink-media.mjs';
 
 /**
  * The editor.
@@ -47,5 +48,8 @@ export default defineConfig({
      unconditionally would turn a pure file deploy into one with functions
      attached for no reason. */
   ...(editorOnline ? { adapter: netlify() } : {}),
-  integrations: editing || editorOnline ? [react(), keystatic()] : [],
+  /* shrink-media runs on every build, editor or not. It is the backstop that
+     keeps an oversized upload from reaching a visitor, so it must not be
+     conditional on the thing that lets uploads happen. */
+  integrations: [...(editing || editorOnline ? [react(), keystatic()] : []), shrinkMedia()],
 });
