@@ -10,9 +10,15 @@
  * of Ahmad's name.
  *
  * TWO SOURCES, chosen at runtime. This autoplays on every visit, so the size is
- * somebody else's data bill. 1440p at 4 Mbps goes to screens big enough to show
- * it, and 720p at 1.1 Mbps to everything else, to anyone on a slow connection,
+ * somebody else's data bill. 1440p goes to viewports 1200 CSS pixels and wider,
+ * and 720p at 1.1 Mbps to everything narrower, to anyone on a slow connection,
  * and to anyone who has asked their browser to save data. See src/scripts/site.ts.
+ *
+ * Note the committed 1440p file was not produced by the current build script.
+ * scripts/build-hero.sh encodes at 4000k and says so, which would be about 29MB;
+ * hero-1440.mp4 is 42.8MB at 5,955,301 bps. Re-running the script as it stands
+ * would therefore also make the film noticeably smaller, which is a quality
+ * decision and not a mechanical one, so it has been left alone.
  *
  * True 4K is deliberately not offered here. Sixty seconds of watchable 4K is
  * about 80MB, which every visitor would download before reading a word, for a

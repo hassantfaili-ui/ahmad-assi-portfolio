@@ -39,8 +39,13 @@ document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]').forEach((b) 
 });
 
 /* --------------------------------------------------------- 2. hero film --- */
-/* The source is attached here rather than in the markup so a narrow screen or a
-   reduced-motion preference never downloads it. Those cases keep the poster. */
+/* The source is attached here rather than in the markup so that nothing starts
+   downloading before the right encode has been chosen.
+
+   It does not skip the film. An earlier note here claimed a narrow screen or a
+   reduced-motion preference kept the poster and fetched nothing, and neither is
+   true: a narrow screen gets the small encode, and reduced motion is not
+   consulted at all, because autoplay everywhere was asked for explicitly. */
 
 const film = document.querySelector<HTMLVideoElement>('[data-hero]');
 

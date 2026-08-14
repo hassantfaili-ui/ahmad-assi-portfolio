@@ -73,6 +73,9 @@ type Opts = Parameters<typeof fields.image>[0] & {
 /** Vector and animated formats are destroyed by a canvas round trip. */
 const PASS_THROUGH = new Set(['svg', 'gif']);
 
+/** Ceiling for a PNG that has to stay a PNG because it really is transparent. */
+const PNG_CAP = 4 * 1024 * 1024;
+
 /** Six hex characters of the content hash, enough that two different images
     picked for the same project will not land on the same filename. */
 async function digest(data: Uint8Array): Promise<string> {
@@ -96,6 +99,21 @@ function hasTransparency(ctx: CanvasRenderingContext2D, w: number, h: number): b
   return false;
 }
 
+/** Draw the bitmap at a given scale and hand back the canvas and its context. */
+function paint(bitmap: ImageBitmap, scale: number) {
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (ctx) ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  return { canvas, ctx };
+}
+
+const encode = (canvas: HTMLCanvasElement, png: boolean, quality: number) =>
+  new Promise<Blob | null>((resolve) =>
+    canvas.toBlob(resolve, png ? 'image/png' : 'image/jpeg', png ? undefined : quality),
+  );
+
 async function downscale(
   value: NonNullable<ImageValue>,
   maxEdge: number,
@@ -107,39 +125,61 @@ async function downscale(
   const bitmap = await createImageBitmap(
     new Blob([value.data as unknown as BlobPart]),
   );
-  const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
 
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  if (!ctx) return value;
-  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
+  try {
+    const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
+    const first = paint(bitmap, scale);
+    if (!first.ctx) return value;
 
-  const keepPng = ext === 'png' && hasTransparency(ctx, canvas.width, canvas.height);
-  const blob = await new Promise<Blob | null>((resolve) =>
-    canvas.toBlob(resolve, keepPng ? 'image/png' : 'image/jpeg', keepPng ? undefined : quality),
-  );
-  if (!blob) return value;
+    const keepPng =
+      ext === 'png' && hasTransparency(first.ctx, first.canvas.width, first.canvas.height);
 
-  const data = new Uint8Array(await blob.arrayBuffer());
-  /* A photograph that was already small and well compressed can come out of the
-     canvas larger than it went in. Keeping the original is both smaller and one
-     less generation of loss. */
-  if (data.length >= value.data.length && scale === 1) return value;
+    let blob = await encode(first.canvas, keepPng, quality);
+    if (!blob) return value;
 
-  const extension = keepPng ? 'png' : 'jpg';
-  /* Keep his own name for the file, tidied, so the media folder stays readable.
-     The hash is what makes it safe: two different photographs chosen for the
-     same project cannot collide, and choosing the same one twice is a no-op. */
-  const stem =
-    value.filename
-      .replace(/\.[^.]+$/, '')
-      .replace(/[^a-zA-Z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 60) || 'image';
-  return { data, extension, filename: `${stem}-${await digest(data)}.${extension}` };
+    /* A PNG kept for its alpha channel does not get the JPEG path, and lossless
+       PNG of a large detailed image can still be many megabytes, which is the
+       one remaining way to put a heavy file into a save. Flattening it is not
+       the answer, since the whole reason it is still a PNG is that something is
+       genuinely transparent and would land on a black rectangle. So: one more
+       pass at fewer pixels, sized from how far over it came out. Once, not in a
+       loop, and only for the rare file that needs it.
+
+       This bounds the size rather than guaranteeing it, because PNG does not
+       compress in proportion to pixel count. Hence the 0.9: without a margin,
+       a worst case of pure noise landed at 4.04MB against a 4MB cap. Real
+       drawings are nowhere near that, the one genuinely transparent file in
+       Ahmad's export folders comes out at 0.31MB, and even the noise case is
+       eight to a save. */
+    if (keepPng && blob.size > PNG_CAP) {
+      const tighter = Math.max(0.35, Math.sqrt(PNG_CAP / blob.size) * 0.9);
+      const second = paint(bitmap, scale * tighter);
+      const retry = second.ctx ? await encode(second.canvas, true, quality) : null;
+      if (retry && retry.size < blob.size) blob = retry;
+    }
+
+    const data = new Uint8Array(await blob.arrayBuffer());
+
+    /* A photograph that was already small and well compressed can come out of
+       the canvas larger than it went in. Keeping the original is both smaller
+       and one less generation of loss. */
+    if (data.length >= value.data.length && scale === 1) return value;
+
+    const extension = keepPng ? 'png' : 'jpg';
+    /* Keep his own name for the file, tidied, so the media folder stays
+       readable. The hash is what makes it safe: two different photographs
+       chosen for the same project cannot collide, and choosing the same one
+       twice is a no-op. */
+    const stem =
+      value.filename
+        .replace(/\.[^.]+$/, '')
+        .replace(/[^a-zA-Z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 60) || 'image';
+    return { data, extension, filename: `${stem}-${await digest(data)}.${extension}` };
+  } finally {
+    bitmap.close();
+  }
 }
 
 export function projectImage(opts: Opts): AssetFormField<ImageValue, ImageValue, string | null> {
