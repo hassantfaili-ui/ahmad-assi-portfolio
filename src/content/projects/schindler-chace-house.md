@@ -7,7 +7,7 @@ location: 833 North Kings Road, West Hollywood, California
 buildingType: Case study and analytical design
 area: Four studios, two sleeping terraces, guest apartment
 status: Academic
-role: Group case study, with Ashleigh, JiYoung, Nitike, Salma and Jhil
+role: Group case study
 contribution: Group study of an existing building, plus my own analytical design drawings.
 summary: A first year study of R.M. Schindler's 1922 Kings Road house, built for two couples on a tiny budget and generally taken as the first house in the modernist style.
 leadImage:
@@ -48,18 +48,13 @@ drawings:
     seed: 7
     alt: Title sheet of the Schindler Chace House analytical design study
     drawingType: Analytical design, title sheet
-  - src: /media/schindler-chace-house/firstyear-02.jpg
-    kind: axonometric
-    seed: 8
-    alt: Analytical design sheet developing the study of the house
-    drawingType: Analytical design
 tier: index
 credit: Case study, group of six
-order: 14
+order: 17
 ---
 
 R.M. Schindler built the Kings Road house in West Hollywood in 1922 as a cooperative dwelling for himself, his wife and the Chaces: four individual studios, two open terraces for sleeping, two shared washrooms, one utility room combining kitchen, sewing and laundry, and a guest apartment. The budget was 12,550 dollars.
 
 The construction is the part worth studying. The walls are tilt-slab concrete with slits left between the panels and fitted with glass, so light enters through the joints of the structure itself, with a conventional post-and-beam system carrying the ceiling. Windows make up so much of the remaining wall that the interiors and the gardens read as one continuous set of rooms, which is the reason the house is usually named as the first built in the modernist style.
 
-Group study with Ashleigh, JiYoung, Nitike, Salma and Jhil, alongside my own analytical design drawings.
+Group study of an existing building, alongside my own analytical design drawings.

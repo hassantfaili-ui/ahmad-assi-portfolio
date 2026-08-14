@@ -135,9 +135,9 @@ drawings:
     seed: 24
     alt: Second top view key covering the remaining eye level positions
     drawingType: View key, second sheet
-tier: set
+tier: index
 credit: Sole author
-order: 8
+order: 16
 ---
 
 The site sits at Tunney's Pasture, and the proposal is called River's View. The parti is a single relationship: how public ground meets private ground, and how that meeting can be made to connect the site north to south and east to west at the same time rather than choosing one axis.

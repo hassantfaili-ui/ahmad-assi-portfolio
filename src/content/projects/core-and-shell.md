@@ -8,7 +8,7 @@ buildingType: Envelope and assembly documentation
 area: Wall, roof and foundation assemblies
 status: Academic
 role: Group 1, ARCC 2203, tutor Jay Lim
-contribution: Part of a five person group with Keya Purohit, Pluto Kaneria, Mitchell Holmes and Audrey Johnston. The set is the group's shared work.
+contribution: Part of a five person group. The set is the group's shared work.
 summary: A technical set documenting how a building actually keeps water and heat where they belong, drawn assembly by assembly with the thermal values worked out.
 leadImage:
   src: /media/core-and-shell/shell-03.jpg
@@ -27,24 +27,13 @@ imageGroups:
         kind: section
         seed: 3
         alt: Wall assembly detail showing the flashing, the pressure treated wall plate and the gasket at the junction between wall and foundation
-  - layout: pair
+  - layout: full
     caption: Services, drawn as axonometrics so the runs can be followed through the building rather than guessed at from plans.
     images:
       - src: /media/core-and-shell/shell-04.jpg
         kind: axonometric
         seed: 4
         alt: Electrical systems axonometric with the distribution drawn floor by floor over the structural frame
-      - src: /media/core-and-shell/shell-05.jpg
-        kind: plan
-        seed: 5
-        alt: Plumbing systems sheet with the supply and waste runs set out against the ground floor plan
-  - layout: full
-    caption: The specification, which is where the assemblies stop being drawings and become products with numbers attached.
-    images:
-      - src: /media/core-and-shell/shell-06.jpg
-        kind: section
-        seed: 6
-        alt: Outline specification listing the divisions from concrete and masonry through thermal and moisture protection to openings and finishes
 drawings:
   - src: /media/core-and-shell/shell-window-sill.jpg
     kind: section
@@ -60,4 +49,4 @@ The unglamorous half of architecture, and the half that decides whether a buildi
 
 Doing this in third year is what makes it possible to detail a 400 millimetre wall on a real house later and defend the choice, which is the connection between this sheet and La Casa Aranas.
 
-Produced as Group 1 for ARCC 2203 under Jay Lim, with Keya Purohit, Pluto Kaneria, Mitchell Holmes and Audrey Johnston.
+Produced as Group 1 for ARCC 2203 under Jay Lim.

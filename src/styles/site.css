@@ -275,6 +275,16 @@ button {
   text-wrap: pretty;
 }
 
+/* A one line intro, by request.
+   52ch is the right measure for a paragraph and the wrong one for a single
+   short sentence: it broke the projects intro after "work." for no reason but
+   the cap. Releasing the width lets it sit on one line wherever there is room,
+   and it still wraps normally on a narrow screen, where one line would mean
+   either an overflow or type too small to read. */
+.sub-line {
+  max-width: none;
+}
+
 /* ------------------------------------------------------------------ film --- */
 /* The front hero: his renders as a slow moving film, with the introduction over
    it. The scrim is what keeps the type legible over moving imagery, so it is

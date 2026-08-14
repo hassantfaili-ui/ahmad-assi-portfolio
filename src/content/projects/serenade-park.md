@@ -8,7 +8,7 @@ buildingType: Public park and landscape proposal
 area: Drawn at 1 to 200
 status: Academic
 role: Sole author, ARCS 3304 final project
-contribution: The park proposal is mine, including the street sections and the physical model. It sits inside an area plan for Earl Armstrong developed by Team 1 with Chloe, Nan and Sophie, which is included here and credited to them.
+contribution: The park proposal is mine, including the street sections and the physical model. It sits inside an area plan for Earl Armstrong developed by Team 1, which is included here and credited to that team.
 summary: A park for a new transit-oriented district at Bowesville, organised around a lake and a sequence of named grounds rather than one open lawn, with the streets around it sectioned and dimensioned.
 leadImage:
   src: /media/serenade-park/bowes-axo-rendered.jpg

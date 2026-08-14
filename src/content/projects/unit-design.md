@@ -52,7 +52,7 @@ imageGroups:
 drawings: []
 tier: index
 credit: Sole author
-order: 16
+order: 15
 ---
 
 Exercise 2 of the same comprehensive studio that produced Renewal Square, and the reason that project has real unit areas rather than approximate ones. The types were drawn and dimensioned first, then the building was designed around them.

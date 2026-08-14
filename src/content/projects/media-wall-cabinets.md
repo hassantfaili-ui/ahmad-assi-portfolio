@@ -36,7 +36,7 @@ drawings:
     drawingType: Exploded assembly, imperial
 tier: set
 credit: Designed and built
-order: 12
+order: 10
 ---
 
 The unit is 2.05 metres long and hung off the wall, so the floor stays clear underneath it. Everything above the television, the floating shelf and the two small wall shelves, is the same 50 millimetre thickness, which keeps the horizontals reading as one family.

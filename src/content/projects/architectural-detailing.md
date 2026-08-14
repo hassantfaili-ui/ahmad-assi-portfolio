@@ -30,7 +30,7 @@ imageGroups:
 drawings: []
 tier: index
 credit: Group of six
-order: 18
+order: 11
 ---
 
 One detail, drawn properly. The section runs from a parking garage below grade, through the foundation wall, up past the floor assembly and into a classroom, and every layer in it is numbered and named.

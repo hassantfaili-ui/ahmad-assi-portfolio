@@ -7,7 +7,7 @@ location: Ottawa, Ontario
 buildingType: Block typology inventory
 area: Nineteen types, 7.5 m lots to high rise
 status: Academic
-role: With Amos and Awj, ARCS 2303
+role: ARCS 2303
 contribution: Joint inventory. The measuring, drawing and tabulating were shared across the three of us.
 summary: An inventory of nineteen city block types, from a 7.5 metre detached lot to a high rise on a mid-rise base, each with its floor area, storeys, units and the number of people living and working in it.
 leadImage:
@@ -113,8 +113,8 @@ drawings:
     alt: High rise on a mid-rise base, the tallest type in the inventory, dimensioned in both parts
     drawingType: High rise on a base
 tier: index
-credit: With Amos and Awj
-order: 15
+credit: Group of three
+order: 18
 ---
 
 An inventory rather than a design. Nineteen block types are drawn to the same convention and tabulated the same way: single family detached on 7.5 and 10 metre lots, row housing sorted by orientation and garage position, back-to-back, stacked towns, mid-rise blocks with and without commercial at grade, high rise freestanding and high rise sitting on a mid-rise base, corner conditions, and office buildings.

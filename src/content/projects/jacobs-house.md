@@ -52,7 +52,7 @@ imageGroups:
 drawings: []
 tier: index
 credit: Redrawing, group of four
-order: 11
+order: 14
 ---
 
 Frank Lloyd Wright built the Jacobs House in Madison in 1937: roughly 145 square metres, structural redwood plywood sandwich walls and repurposed brick, and the first of the Usonian houses. The exercise was to draft its plan, section and elevation at 1 to 100, and to do it in the manner of a studied drafting precedent rather than in a house style.

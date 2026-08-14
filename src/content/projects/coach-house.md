@@ -79,7 +79,7 @@ drawings:
     seed: 14
     alt: Timber framing axonometric with every stud, plate and rafter drawn individually above the floor slab
     drawingType: Timber framing
-tier: index
+tier: set
 credit: Group of five
 order: 9
 ---

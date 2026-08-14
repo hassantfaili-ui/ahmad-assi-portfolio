@@ -63,7 +63,7 @@ imageGroups:
 drawings: []
 tier: index
 credit: Group of seven
-order: 17
+order: 12
 ---
 
 An assignment about whether a building should be built, not what it should look like. The site is 605 Bronson Avenue and 275 Chamberlain, and the question is put twice: once to the site as it stands, once to a fourteen storey proposal.

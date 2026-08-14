@@ -53,7 +53,7 @@ drawings:
     drawingType: Site 3, Market District, full sheet
 tier: set
 credit: Sole author
-order: 10
+order: 8
 ---
 
 Site 3 of Confederation Heights was the piece of the studio I took on alone. The strategy is about connection first: roads and pedestrian routes, including bridges, tied into the contextual elements around the site rather than stopping at its boundary.

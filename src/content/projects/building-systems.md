@@ -7,8 +7,8 @@ location: 2100 Bank Street, Ottawa, Ontario
 buildingType: Services coordination study
 area: One residential floor plate
 status: Academic
-role: With Kyle Mok, Exercise 5
-contribution: Joint exercise with Kyle Mok, on the same Bank Street site as Renewal Square.
+role: Exercise 5
+contribution: Joint exercise, on the same Bank Street site as Renewal Square.
 summary: The services study behind the Bank Street housing, working out where ceilings drop, where the ducts run, and where the light fittings land once both are resolved.
 leadImage:
   src: /media/building-systems/systems-services-4.jpg
@@ -81,7 +81,7 @@ drawings:
     alt: Services layout with the electrical and sprinkler runs separated for clarity
     drawingType: Services, separated
 tier: index
-credit: With Kyle Mok
+credit: Joint exercise
 order: 13
 ---
 
@@ -89,4 +89,4 @@ This is the same site as Renewal Square, 2100 Bank Street, taken from a differen
 
 The sequence is the useful part. Establish a point of departure, identify where the ceiling has to drop, run the HVAC ducts, and only then place the light fittings, because a lighting layout drawn before the ducts are resolved is a lighting layout that will be moved. Coordinating those three in that order is most of what services coordination is.
 
-Joint exercise with Kyle Mok, dated May 2024.
+Joint exercise, dated May 2024.
