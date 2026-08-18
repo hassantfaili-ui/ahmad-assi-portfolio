@@ -43,14 +43,21 @@ imageGroups:
       - src: /media/renewal-square/gh-eyl-5.jpg
         alt: Street level view along the pavement with street trees, the tower ahead and the mid-rise blocks to the right
   - layout: triptych
-    caption: Building A, three elevations. Ten residential levels over a commercial ground floor, with parking below.
+    caption: Building A, the three elevations as drawn, each with its key plan and the direction of view marked.
+    images:
+      - src: /media/renewal-square/gh-elev-north-sheet.jpg
+        alt: North elevation of Building A titled and keyed, the panel and glazing rhythm running the full height with the neighbouring brick block alongside
+      - src: /media/renewal-square/gh-elev-west-sheet.jpg
+        alt: West elevation of Building A titled and keyed, showing the canopies and the square in front of it
+      - src: /media/renewal-square/gh-elev-south.jpg
+        alt: South elevation of Building A titled and keyed, the brick neighbour to the left and planting along the base
+  - layout: pair
+    caption: The same two faces as straight renders, without the sheet around them.
     images:
       - src: /media/renewal-square/gh-elev-north.jpg
         alt: North elevation render of Building A, the panel and glazing rhythm running the full height
       - src: /media/renewal-square/gh-elev-west.jpg
         alt: West elevation render of Building A with the canopies and the square in front of it
-      - src: /media/renewal-square/gh-elev-south.jpg
-        alt: South elevation render of Building A, the brick neighbour to the left and planting along the base
   - layout: pair
     caption: Inside the units. One-bedrooms at 46 and 52 square metres, two-bedrooms at 80, three-bedrooms at 118.
     images:

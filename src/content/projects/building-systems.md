@@ -11,49 +11,53 @@ role: Exercise 5
 contribution: Joint exercise, on the same Bank Street site as Renewal Square.
 summary: The services study behind the Bank Street housing, working out where ceilings drop, where the ducts run, and where the light fittings land once both are resolved.
 leadImage:
-  src: /media/building-systems/systems-services-4.jpg
+  src: /media/building-systems/systems-11-composite.jpg
   alt: The coordinated plan with the dropped ceiling zones washed in, the bulkheads outlined and the duct and sprinkler runs drawn over the top
 imageGroups:
   - layout: pair
-    caption: The point of departure. The plan as designed, and the same plan with the furniture in, because where a bed goes decides where a duct cannot.
+    caption: The point of departure. The plan as designed, then the zones where the ceiling has to come down, which is the first thing every service after it has to live inside.
     images:
-      - src: /media/building-systems/systems-plan-base.jpg
-        alt: The bare floor plate drawn in outline with the partitions and openings only
-      - src: /media/building-systems/systems-plan-furniture.jpg
-        alt: The same plate with the furniture layout in place across both units
+      - src: /media/building-systems/systems-01-point-of-departure.jpg
+        alt: Floor plan of the two bedroom unit as designed, unfurnished, with the north point marked
+      - src: /media/building-systems/systems-02-areas-dropped.jpg
+        alt: The same plan with the dropped ceiling zones washed in across the corridor, kitchen and bathrooms
   - layout: pair
-    caption: Where the ceiling has to drop. Washed in so the extent is arguable rather than assumed.
+    caption: Ducts before fittings. A lighting layout drawn before the ducts are resolved is a lighting layout that gets moved.
     images:
-      - src: /media/building-systems/systems-zones-1.jpg
-        alt: First pass at the dropped ceiling zones, washed over the corridor and the wet rooms
-      - src: /media/building-systems/systems-zones-2.jpg
-        alt: The zones extended, with the ceiling diffusers marked within them
+      - src: /media/building-systems/systems-03-light-fixtures.jpg
+        alt: Light fixture layout drawn over the dropped ceiling zones
+      - src: /media/building-systems/systems-04-hvac-ducts.jpg
+        alt: HVAC duct runs drawn through the dropped zones, the supply spine crossing the corridor and branching to each room
   - layout: pair
-    caption: The bulkheads that follow from those zones, drawn as a continuous run rather than as separate pieces.
+    caption: The vented appliances, each needing its own route to outside air.
     images:
-      - src: /media/building-systems/systems-bulkhead-1.jpg
-        alt: The bulkhead traced as a single outline around the living space
-      - src: /media/building-systems/systems-bulkhead-4.jpg
-        alt: The bulkhead resolved and thickened, closing the loop back to the risers
-  - layout: triptych
-    caption: Then the services themselves, and only then the light fittings. A lighting layout drawn before the ducts are resolved is a lighting layout that will be moved.
+      - src: /media/building-systems/systems-05-dryer-venting.jpg
+        alt: Clothes dryer venting drawn from the laundry stack out through the exterior wall
+      - src: /media/building-systems/systems-06-bathroom-fans.jpg
+        alt: Bathroom exhaust fan venting drawn from both washrooms to the exterior
+  - layout: pair
+    caption: The kitchen and the wet services.
     images:
-      - src: /media/building-systems/systems-services-1.jpg
-        alt: Supply and waste runs drawn in blue against the washed ceiling zones
-      - src: /media/building-systems/systems-services-2.jpg
-        alt: The full services layout with sprinkler heads in red and pipe runs in blue across both units
-      - src: /media/building-systems/systems-sprinkler-axo.jpg
-        alt: Axonometric of the sprinkler system with the risers and branch lines drawn clear of the slab
-drawings:
-  - src: /media/building-systems/systems-bulkhead-2.jpg
-    alt: Intermediate bulkhead study, the run extended along the corridor wall
-    drawingType: Bulkhead, second pass
-  - src: /media/building-systems/systems-bulkhead-3.jpg
-    alt: Third bulkhead study, resolving the junction at the bathroom wall
-    drawingType: Bulkhead, third pass
-  - src: /media/building-systems/systems-services-3.jpg
-    alt: Services layout with the electrical and sprinkler runs separated for clarity
-    drawingType: Services, separated
+      - src: /media/building-systems/systems-07-range-hood.jpg
+        alt: Range hood venting drawn from the kitchen through the bulkhead to the exterior wall
+      - src: /media/building-systems/systems-08-plumbing.jpg
+        alt: Plumbing runs drawn to the kitchen, both bathrooms and the laundry
+  - layout: pair
+    caption: Sprinklers, set out on their coverage radii, then everything drawn together.
+    images:
+      - src: /media/building-systems/systems-09-sprinkler-layout.jpg
+        alt: Sprinkler head layout with the coverage circle of each head drawn so the overlaps can be checked
+      - src: /media/building-systems/systems-10-composite-plumbing.jpg
+        alt: Composite of the plumbing and the sprinkler layout over the dropped ceiling zones
+  - layout: pair
+    caption: Everything at once, which is the test of whether the sequence worked, and the riser drawn in three dimensions.
+    images:
+      - src: /media/building-systems/systems-11-composite.jpg
+        alt: Composite drawing carrying the dropped ceilings, ducts, light fittings, plumbing and sprinklers together on one plan
+      - src: /media/building-systems/systems-12-plumbing-riser-axo.jpg
+        alt: Axonometric of the plumbing riser showing the stack running between floor plates and branching at each level
+
+drawings: []
 tier: index
 credit: Joint exercise
 order: 13
