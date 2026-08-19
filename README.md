@@ -39,18 +39,14 @@ films are well over it, so they are served from an R2 bucket instead and
 drops them from `dist`; without it the build warns, then fails on the host. See
 `docs/EDITING.md`.
 
-Two earlier hosts have been left behind.
-Nothing in the code assumes a host: `astro.config.mjs` reads `CF_PAGES_URL` with
-`URL` as a fallback, and every internal link and asset goes through `url()` in
+Nothing in the code assumes a particular host. `astro.config.mjs` reads
+`CF_PAGES_URL`, and every internal link and asset goes through `url()` in
 `src/lib/url.ts`, which is a passthrough at a root base and is what would make a
-subpath host work again without touching a single path.
+host that serves the site from a subfolder work without touching a single path.
+Content files keep clean paths like `/media/hero-1440.mp4`, which is what a person
+would expect to type; the prefix is added at render time.
 
-Every internal link and asset goes through `url()` in `src/lib/url.ts`. Content
-files keep clean paths like `/media/hero-1440.mp4`, which is what the editor shows and
-what a person would expect to type; the prefix is added at render time.
-
-The Keystatic editor never reaches the deployed site: it is mounted only when
-`npm_lifecycle_event` is `dev`, and CI runs `build`.
+Every route prerenders, so the published site is plain files.
 
 ## Running it
 
@@ -62,8 +58,7 @@ npm install
 npm run dev
 ```
 
-That serves the site at http://localhost:4321 and the content editor at
-http://localhost:4321/keystatic.
+That serves the site at http://localhost:4321 and reloads as files are saved.
 
 ```bash
 npm run build
@@ -74,39 +69,27 @@ serves that output locally, and `npm run check` type checks the project.
 
 ## Editing content
 
-Ahmad edits the site in a browser at **/keystatic**. Saving commits to this
-repository, Cloudflare rebuilds, and the change is live in about a minute. Every edit
-is an ordinary reviewable commit rather than something that happened invisibly
-inside a database.
+Content is files in this repository, so every edit is an ordinary reviewable
+commit rather than something that happened invisibly inside a database. Push, and
+Cloudflare rebuilds within a minute or two.
 
 Two things to edit:
 
-- **Projects**, one entry per project. Add, reorder or delete them freely.
-- **Resume**, a single record holding the name, biography, experience, education,
-  skills and everything in the title block.
+- **Projects**, one markdown file each in `src/content/projects/`. Add, reorder or
+  delete them freely; `src/content.config.ts` defines and validates the fields, so
+  a missing required field fails the build with the file named.
+- **Resume**, `src/data/resume.json`, a single record holding the name, biography,
+  experience, education, skills and everything in the title block.
 
-Photos are upload fields, not paths to type. Choosing a file writes it into
-`public/media/<project-slug>/` and stores the path, and Remove takes it off the
-page. **Each project's images live in its own folder for exactly this reason:**
-Keystatic scopes a collection's uploads to the entry slug, so with everything in
-one flat folder the editor showed every image field as empty and would have
-blanked them all on the first save.
+Photographs go in `public/media/<project-slug>/`, one folder per project, and are
+referenced by path. Exports straight out of a renderer are fine: the build resizes
+anything oversized on its way into `dist`, so an enormous JPEG cannot reach a
+visitor.
 
-`npm run dev` runs the same editor against the files on this machine instead,
-which is the way to make bulk changes without a hundred commits.
+`npm run dev` serves the site from the files on this machine, which is the way to
+see a set of changes before pushing any of them.
 
-Two things worth knowing:
-
-- The editor keeps unsaved work in the browser. If a form opens **empty with an
-  "Unsaved" badge and a "Restored draft" message**, that is a stale draft, not lost
-  content: use the `...` menu to reset the entry and it reloads from the file.
-- Only the two `/keystatic` routes run on a server. Every page of the portfolio
-  itself is still a plain prerendered file.
-
-### Turning the editor on
-
-The code is in place; what is left needs a GitHub account and cannot be done for
-you. See [Putting the editor online](#putting-the-editor-online).
+See [docs/EDITING.md](docs/EDITING.md) for the field by field account.
 
 ## Images and drawings
 
@@ -152,7 +135,7 @@ like data.
   bitrate that fits under GitHub's 100MB per file limit it is visually identical at
   matched display size, and it would leave 4MB of headroom. `Film.astro` keeps a YouTube
   path with a click to load facade for any future film that will not fit.
-- **Projects are in three tiers**, all set in the editor, with Ahmad's order kept inside
+- **Projects are in three tiers**, set by `tier` in each project's file, with Ahmad's order kept inside
   each one. Three leads take large cards, the set runs in a horizontal strip, and thin
   coursework sits in a ruled index below. The strip is a native scroll container, so
   trackpad, touch and keyboard work with no JavaScript; the two buttons are for a mouse
@@ -182,7 +165,7 @@ like data.
 | `scripts/build-portfolio.sh` | Renders the portfolio PDF from the site itself. |
 | `src/content/projects/` | One markdown file per project. |
 | `src/data/resume.json` | The resume record. |
-| `keystatic.config.ts` | The editor's schemas. |
+| `src/content.config.ts` | The project fields, and the rules they have to pass. |
 | `docs/wireframes/index.html` | The low-fidelity wireframes the layout came from. |
 | `docs/superpowers/specs/` | The design decisions and why. |
 
@@ -191,23 +174,21 @@ like data.
 These are known and deliberate, not oversights:
 
 1. **Confirm the inferred project details.** See below.
-2. **There is no contact form.** The previous host provided one; Cloudflare has no
-   equivalent, so it was removed rather than left to post nowhere. The page is the
-   email link, which was always the primary route: an attachment will not fit
-   through a form anyway. Adding one back means a third party service.
-3. **Add the CV PDF.** Put it in `public/cv/` and set `cvFile` in the editor. Until then
-   the resume page simply omits the download button rather than offering a broken one.
+2. **There is no contact form.** Cloudflare has nothing that accepts a submission
+   without a third party service, so it was removed rather than left to post
+   nowhere. The page is the email link, which was always the primary route: an
+   attachment will not fit through a form anyway.
+3. **Add the CV PDF.** Put it in `public/cv/` and set `cvFile` in
+   `src/data/resume.json`. Until then the resume page simply omits the download
+   button rather than offering a broken one.
 4. **Attach a domain.** Cloudflare handles the certificate. Nothing in the config changes.
    Do the same for the R2 bucket: the `pub-....r2.dev` address it uses today is rate
    limited and Cloudflare says not to use it in production.
-5. **Put the editor online** if Ahmad should edit without running a terminal.
-6. **Add tests.** No Playwright coverage is written yet: the routes, the projects strip, form validation, keyboard navigation and the empty states all deserve it.
-7. **Register accounts in Ahmad's own name.** The host, the domain and any CMS account
-   should be his, so keeping the site online never depends on anyone else.
+5. **Add tests.** No Playwright coverage is written yet: the routes, the projects strip, keyboard navigation and the empty states all deserve it.
+6. **Register accounts in Ahmad's own name.** The host and the domain should be his,
+   so keeping the site online never depends on anyone else.
 
 ### What still needs Ahmad
-
-Work through the editor rather than the files.
 
 1. **Sts. Peter and Paul Church is deliberately not published.** The design development
    set in that folder is the copyright of **Muzaiko Architecture**, is dated 2021-08, is
@@ -222,58 +203,8 @@ Work through the editor rather than the files.
 3. **Two dates are inferred**, not stated in the material: the Lincoln Beach and La Casa
    Aranas years both come from his graduation year.
 4. **A portrait**, if he wants one. There is no photograph of him in anything supplied.
-5. **Categories.** The set in `keystatic.config.ts` and the matching enum in
-   `src/content.config.ts` should be trimmed to whatever his real work actually is.
-
-### Putting the editor online
-
-The code is done and all three storage modes are verified. What is left is account
-work, which cannot be done on Ahmad's behalf.
-
-**Use Keystatic Cloud.** It is the only option that lets Ahmad sign in with an email
-address and a password, or a passkey, without a GitHub account, and it needs fewer
-secrets than GitHub mode, not more. In cloud mode every GitHub call is proxied
-through `api.keystatic.cloud` and the server side API route is a stub, so there is
-no OAuth app, no client id, no client secret and no `KEYSTATIC_SECRET` to manage.
-Free for up to 3 users per team; this needs 2.
-
-1. Sign in at https://keystatic.cloud and create a team.
-2. Create a project in that team and connect this GitHub repository to it. This is
-   the only step that touches GitHub, and it is done by the repo owner, once.
-3. Install the Keystatic Cloud GitHub App on the repository when prompted.
-4. Invite Ahmad to the team by email.
-5. In Cloudflare, set one environment variable and redeploy:
-
-   | Variable | Value |
-   | --- | --- |
-   | `PUBLIC_KEYSTATIC_CLOUD_PROJECT` | `your-team/your-project` |
-
-6. Ahmad opens `/keystatic`, signs in with his email, and edits. His saves arrive in
-   this repository as commits authored by `keystatic-cloud[bot]`, Cloudflare rebuilds,
-   and the change is live in about a minute.
-
-Known rough edges, none of them blockers:
-
-- A single save cannot exceed 45 MiB, which is GitHub's own API limit rather than
-  Keystatic's. Photographs are downscaled in the browser before they are committed,
-  so roughly fifty fit in one save and this is unlikely to be met in practice.
-- The films stay a developer job. They live in R2, not in the editor.
-- The Cloud sign-in redirect is tied to the production origin, so the editor will not
-  work on preview deployments.
-- Keystatic's docs for cloud mode have not been edited since March 2024 and there is
-  no public pricing page, so the quoted free tier is documented rather than confirmed
-  against live billing. The code and the service are current: `@keystatic/core` 0.6.5
-  shipped 11 August 2026.
-
-#### The GitHub fallback
-
-`PUBLIC_KEYSTATIC_GITHUB_REPO` still works and is left in place, for two reasons: it
-is the path if the repository is ever transferred to Ahmad outright, and GitHub now
-supports "Continue with Google", so an account needs no new password. That route also
-needs a GitHub App and four more variables, documented in the git history of this file.
-
-Until one of those variables is set, the site builds exactly as it does now: pure
-static files, no adapter, no editor routes, nothing that can half work.
+5. **Categories.** The `category` enum in `src/content.config.ts` should be trimmed
+   to whatever his real work actually is.
 
 ## Accessibility and performance
 

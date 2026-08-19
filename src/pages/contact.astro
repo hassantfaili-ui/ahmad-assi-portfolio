@@ -6,14 +6,14 @@ import { url } from '../lib/url';
 /**
  * Email only.
  *
- * There is no form. The previous host provided one, Cloudflare has no
- * equivalent, and
- * markup that silently posts nowhere is worse than none. Email was always the
- * primary route anyway: a practice writing to a graduate attaches a brief or a
- * job description, and no form field takes an attachment.
+ * There is no form. Cloudflare has nothing that accepts a submission without a
+ * third party service, and markup that silently posts nowhere is worse than
+ * none. Email was always the primary route anyway: a practice writing to a
+ * graduate attaches a brief or a job description, and no form field takes an
+ * attachment.
  */
 /* Empty in the data today, so TypeScript infers never[]. Typed here so the block
-   below starts working the moment a link is added in the editor. */
+   below starts working the moment a link is added to src/data/resume.json. */
 const social = resume.social as { label: string; href: string }[];
 
 const tel = resume.phone.replace(/[^\d+]/g, '');
@@ -97,49 +97,3 @@ const mailto = `mailto:${resume.email}?subject=${subject}`;
     </div>
   </section>
 </Site>
-
-<script>
-  /* Validation only, and only if the form is on the page at all. The submission
-     off the browser's own required-field checks still apply. */
-  const form = document.querySelector<HTMLFormElement>('[data-contact]');
-
-  if (form) {
-    const RULES: Record<string, (v: string) => string | null> = {
-      name: (v) => (v.trim() ? null : 'Add your name so Ahmad knows who is writing.'),
-      email: (v) =>
-        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? null : 'Check the email address.',
-      message: (v) => (v.trim().length >= 12 ? null : 'A little more detail, at least a sentence.'),
-    };
-
-    function setError(name: string, message: string | null) {
-      const err = document.querySelector<HTMLElement>(`[data-err-for="${name}"]`);
-      const input = form!.elements.namedItem(name) as HTMLInputElement | null;
-      if (!err || !input) return;
-      err.textContent = message ?? '';
-      err.hidden = !message;
-      input.setAttribute('aria-invalid', message ? 'true' : 'false');
-    }
-
-    form.addEventListener('submit', (e) => {
-      let firstBad: HTMLInputElement | null = null;
-      for (const [name, rule] of Object.entries(RULES)) {
-        const input = form.elements.namedItem(name) as HTMLInputElement | null;
-        if (!input) continue;
-        const message = rule(input.value);
-        setError(name, message);
-        if (message && !firstBad) firstBad = input;
-      }
-      if (firstBad) {
-        e.preventDefault();
-        firstBad.focus();
-      }
-    });
-
-    form.querySelectorAll<HTMLInputElement>('input, textarea').forEach((input) => {
-      input.addEventListener('blur', () => {
-        const rule = RULES[input.name];
-        if (rule) setError(input.name, rule(input.value));
-      });
-    });
-  }
-</script>

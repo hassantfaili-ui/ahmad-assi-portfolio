@@ -9,17 +9,17 @@ import { fileURLToPath } from 'node:url';
  * he sent, the average photograph is 6.7MB, forty of them are over 5MB, and one
  * site map is 39.6MB at 7200x4800. The library in the repo today is nothing like
  * that only because every image in it was resized by hand before being committed.
- * Once he is uploading through the editor himself there is no such step, and the
- * site would happily serve a visitor a 39MB JPEG.
+ * That step is a habit rather than a guarantee, and the first time it is skipped
+ * the site would happily serve a visitor a 39MB JPEG.
  *
  * So the build refuses to publish one. Anything past the ceiling is resized and
- * re-encoded on the way into dist. Nothing is asked of the person uploading, and
- * nothing can be forgotten.
+ * re-encoded on the way into dist. Nothing is asked of the person adding the
+ * image, and nothing can be forgotten.
  *
  * It works on dist, never on public. That is deliberate twice over. The originals
  * stay in the repo as masters, which is what scripts/build-portfolio.sh reads when
  * it makes the print copies for the PDF, and a build that only ever writes to its
- * own output cannot corrupt anything Ahmad uploaded.
+ * own output cannot corrupt anything Ahmad supplied.
  *
  * The thresholds are set so that nothing currently in the library is touched: the
  * existing 270 images are all within them, so this changes the site today by

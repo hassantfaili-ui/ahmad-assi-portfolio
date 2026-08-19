@@ -6,8 +6,7 @@ import { glob } from 'astro/loaders';
  * Resume data lives in src/data/resume.json as a single document, because it is
  * one person's record rather than a set of independent items.
  *
- * Shapes here are deliberately CMS-shaped: every field maps to one editor input,
- * and alt text is required so an image cannot ship without it.
+ * Alt text is required on every image, so an image cannot ship without it.
  */
 
 const image = z.object({

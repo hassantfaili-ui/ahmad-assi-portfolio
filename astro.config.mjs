@@ -1,62 +1,36 @@
 import { defineConfig } from 'astro/config';
-import react from '@astrojs/react';
-import keystatic from '@keystatic/astro';
 import cloudflare from '@astrojs/cloudflare';
 import shrinkMedia from './src/integrations/shrink-media.mjs';
 
 /**
- * The editor.
- *
- * Keystatic's admin UI and its API need to run on a server, so the Cloudflare
- * adapter is here to give them somewhere to run. Everything else stays static:
- * `output: 'static'` is unchanged, and only the two Keystatic routes opt out of
- * prerendering. A visitor to any page of the portfolio is still served a plain
- * file, exactly as before.
- *
- * It is mounted whenever a GitHub repo is configured for it, and always during
- * `npm run dev` so it can be used locally against the files on disk. If the
- * GitHub credentials are missing the editor simply is not built, rather than
- * shipping a login page that cannot work.
- */
-const editing = process.env.npm_lifecycle_event === 'dev';
-/* Always true now that the cloud project is committed in keystatic.config.ts.
-   Kept as a flag so a build can still be made without the editor by clearing it. */
-const editorOnline = true;
-
-/**
  * Served from the root of its own domain.
  *
- * This used to switch between a root base for Netlify and a /ahmad-assi-portfolio
- * subpath for GitHub Pages. Pages is retired, and keeping the subpath for a host
- * nothing deploys to had a cost: Keystatic's admin UI routes itself from the site
- * root, so under a base path the editor loaded its shell and then 404'd on every
- * screen inside it.
- *
  * Everything internal still goes through src/lib/url.ts. It is a passthrough at
- * a root base, and it is what would make a subpath host work again if one is ever
- * needed, without touching a single link or asset path.
+ * a root base, and it is what would make a host that serves the site from a
+ * subfolder work, without touching a single link or asset path.
  *
  * A custom domain needs no change here: Cloudflare Pages updates CF_PAGES_URL
  * once it is attached.
  */
 export default defineConfig({
-  /* Cloudflare Pages publishes the deploy URL as CF_PAGES_URL. URL is kept as a
-     fallback so a Netlify build, or a local `netlify dev`, still resolves. */
-  site: process.env.CF_PAGES_URL || process.env.URL || 'https://ahmadassi.ca',
+  /* Cloudflare Pages publishes the deploy URL as CF_PAGES_URL. */
+  site: process.env.CF_PAGES_URL || 'https://ahmadassi.ca',
   output: 'static',
   trailingSlash: 'ignore',
   build: { inlineStylesheets: 'auto' },
   devToolbar: { enabled: false },
-  /* Always on, deliberately. It used to be conditional, on the reasoning that a
-     site with no editor needs no server. That produced two different build
-     shapes from one repository, and the deploy command only suits one of them:
-     `wrangler deploy` wants a worker, and a build without the adapter emits
-     none, so it failed looking for dist/server/wrangler.json. One shape every
-     time is worth more than skipping a worker that costs nothing when idle and
-     that Cloudflare serves static assets around for free either way. */
+  /* Every route prerenders, so nothing here needs a server. The adapter stays
+     because the deploy does: the site is published with `wrangler deploy`, and it
+     is the adapter that writes dist/client/wrangler.json and the
+     .wrangler/deploy/config.json that points wrangler at it. Without it there is
+     no config to deploy at all.
+
+     With no on-demand route the worker it describes has no `main`, only
+     `assets`, which is a static assets Worker and deploys as one. Verified with
+     `wrangler deploy --dry-run`: config resolved, 383 assets read, no error.
+     dist/server is empty and unused; that is expected, not a failure. */
   adapter: cloudflare(),
-  /* shrink-media runs on every build, editor or not. It is the backstop that
-     keeps an oversized upload from reaching a visitor, so it must not be
-     conditional on the thing that lets uploads happen. */
-  integrations: [...(editing || editorOnline ? [react(), keystatic()] : []), shrinkMedia()],
+  /* shrink-media runs on every build. It is the backstop that keeps an oversized
+     file from reaching a visitor. */
+  integrations: [shrinkMedia()],
 });

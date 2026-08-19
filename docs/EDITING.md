@@ -1,96 +1,60 @@
 # Editing the site
 
-Everything on this site is editable from a browser, with a login and no code.
-The editor is [Keystatic](https://keystatic.com). It writes ordinary files back
-to the repository, so every change is a normal commit that can be read and
-undone, and Cloudflare rebuilds the site within a minute or two of a save.
+Everything on this site is content in this repository. There is no login and no
+database: a change is an ordinary commit that can be read and undone, and
+Cloudflare rebuilds the site within a minute or two of a push.
 
-The editor lives at **`/admin`**, for example `https://ahmadassi.ca/admin`.
-That is the address to give Ahmad and the one to bookmark. It hands straight on
-to `/keystatic`, which is where the editor actually runs.
+Two places hold everything:
 
----
+| What | Where |
+| --- | --- |
+| Projects | `src/content/projects/`, one markdown file each |
+| Resume and contact details | `src/data/resume.json` |
+| Photographs and drawings | `public/media/<project-slug>/` |
 
-## Turning the login on
-
-This is the one part that cannot be done from inside the repository, because it
-needs accounts. It takes about ten minutes, once.
-
-1. Go to [keystatic.cloud](https://keystatic.cloud) and sign in with GitHub.
-2. Create a team, then create a project inside it and point it at the GitHub
-   repository this site is in.
-3. Install the Keystatic Cloud GitHub App when it asks, granting it access to
-   that one repository.
-4. Copy the project identifier it gives you. It looks like `team-name/project-name`.
-5. Nothing to set in the host. The project key and the R2 origin are committed in
-   `keystatic.config.ts` and `src/lib/url.ts`, because neither is a secret: both
-   are `PUBLIC_` values that end up in the page source anyway. Cloudflare also
-   refuses variables on a Worker that has only static assets, which this one is
-   until the editor is switched on, so setting them there is circular.
-6. Redeploy. **Deployments → Retry deployment**, or push any commit.
-7. Check it took:
-
-   ```bash
-   npm run editor:check -- https://ahmadassi.ca
-   ```
-
-   That reports what is configured and whether the deployed site is actually
-   serving the editor. It exists because the failure is otherwise silent: with
-   the variable missing or malformed the site still builds and every page still
-   works, and only `/keystatic` is quietly absent. Pasting the Keystatic Cloud
-   URL instead of the bare `team-name/project-name` is the usual slip, and the
-   check names it.
-
-After that, `/keystatic` shows a login screen. Sign in with an email address and
-password, or a passkey. The free tier covers three people.
-
-A GitHub account is needed once, at step 1, to create the project and install the
-app. It is never needed again: Keystatic Cloud does the committing.
-
-### Doing it without Keystatic Cloud
-
-The alternative is to set `PUBLIC_KEYSTATIC_GITHUB_REPO` to `owner/repo` instead
-and create a GitHub OAuth app. That works, but it means signing in to the editor
-with a GitHub account every time, which is the thing Cloud exists to avoid.
-
-### Editing without any login at all
-
-On your own machine:
+To see a change before pushing it:
 
 ```bash
 npm run dev
 ```
 
-Then open `http://localhost:4321/keystatic`. This writes straight to the files on
-disk, with no login and no network, which is the quickest way to make a lot of
-changes at once. Commit them afterwards.
+That serves the site at `http://localhost:4321` and reloads as files are saved.
+`npm run check` type checks the content against the schema, which is the same
+check the build runs.
 
 ---
 
 ## What can be changed
 
-**Projects.** Every project is one entry under Projects.
+**Projects.** Every project is one markdown file under `src/content/projects/`.
+The fields are defined and validated in `src/content.config.ts`, so a typo in a
+field name or a missing required field fails the build with the file named
+rather than shipping a broken page.
 
-- *Photographs.* Add, remove and drag to reorder inside each group. Uploading is
-  choosing a file or dragging one in. Photographs are shrunk in the browser as
-  they are added, so exports straight out of a renderer are fine.
-- *The cover photo.* The "Lead image" at the top of the entry. It is what appears
-  on the projects page and at the top of the project's own page.
-- *Descriptions and specs.* Title, year, location, building type, area, status,
-  role, what you personally did, the one line summary, and the longer text at the
-  bottom of the entry.
-- *Where it sits.* "Where it sits on the projects page" chooses the top three,
-  the set, or the archive. "Order" is a number, low first, that decides the
-  sequence within all of them.
-- *Adding a project.* The "+" on the Projects list. *Removing one.* The bin icon
-  inside the entry.
+- *Photographs.* `leadImage` is the cover, used on the projects page and at the
+  top of the project's own page. `imageGroups` holds the rest, in the order they
+  are listed, each group laid out as a `pair`, a `full` bleed or a `triptych`.
+  `drawings` are shown in the drawing viewer.
+- *Adding an image.* Put the file in `public/media/<project-slug>/` and reference
+  it as `/media/<project-slug>/<file>.jpg`. Exports straight out of a renderer
+  are fine: the build resizes anything oversized on its way into `dist`, so a
+  39MB JPEG can never reach a visitor.
+- *Descriptions and specs.* `title`, `year`, `location`, `buildingType`, `area`,
+  `status`, `role`, `contribution`, `summary`, and the body text below the
+  frontmatter.
+- *Where it sits.* `tier` chooses `lead` (the top three), `set` (the strip) or
+  `index` (the compact list). `order` is a number, low first, that decides the
+  sequence within each tier.
+- *Adding a project.* Copy an existing file and change the frontmatter.
+  *Removing one.* Delete the file.
 
-**Resume and contact.** Both live under Resume. That single entry holds the
-experience, education, skills and languages on the resume page, and also the
-email address, phone number, location and availability shown on the contact page.
+**Resume and contact.** `src/data/resume.json` holds the experience, education,
+skills and languages on the resume page, and also the email address, phone
+number, location and availability shown on the contact page.
 
-**Alt text is required on every image.** It is the sentence a screen reader
-reads, and search engines use it too.
+**Alt text is required on every image.** The schema enforces it, so the build
+fails rather than publishing an image without one. It is the sentence a screen
+reader reads, and search engines use it too.
 
 ---
 
@@ -98,12 +62,12 @@ reads, and search engines use it too.
 
 **Only three projects can be in the top three.** Marking a fourth does not break
 anything and does not lose it: it falls into the set instead, in its usual place
-by order. Move one of the existing three down first if you want to swap.
+by order. Move one of the existing three down first to swap.
 
 **The portfolio PDF does not regenerate itself.** It is built from the same
 projects, in the same order, by `npm run portfolio`, which needs a computer with
-Node, Chrome and ffmpeg. Editing a project in the browser updates the website
-immediately and leaves the PDF as it was until someone rebuilds it.
+Node, Chrome and ffmpeg. Editing a project updates the website on the next push
+and leaves the PDF as it was until someone rebuilds it.
 
 ---
 
@@ -123,7 +87,8 @@ declared in `package.json` engines.
 
 **Nothing served may exceed 25 MiB.** That is a hard platform limit. If a large
 file is added, the build fails with "Asset too large" and names it.
-`public/_headers` carries the caching rules that used to live in `netlify.toml`.
+`public/_headers` carries the caching rules: media for an hour then revalidate,
+hashed assets pinned hard, HTML always revalidating.
 
 ### The films
 
@@ -148,5 +113,6 @@ site requests: `media/hero-1440.mp4`, `media/hero-720.mp4`,
 The bucket is served from `media.ahmadassi.ca`, a custom domain rather than the
 rate limited `pub-….r2.dev` address Cloudflare says not to use in production.
 
-There is no contact form. It was Netlify Forms and there is no equivalent here,
-so the contact page is the email link, which was always the primary route.
+There is no contact form. Cloudflare has nothing that accepts a submission
+without a third party service, so the contact page is the email link, which was
+always the primary route.
