@@ -80,6 +80,11 @@ roughly 300 images sits well inside.
 **Create an S3 API token** for the bucket, with object read and write. You need
 the account id, the access key id and the secret.
 
+The bucket is called **`ahmadassi`**, and it already holds the three films under
+a `media/` prefix: `hero-1440.mp4` at 44.8MB, `hero-720.mp4` at 8.2MB, and
+`lincoln-beach-walkthrough.mp4` at 76.5MB. The migration matches those by key
+and does not re-upload them. The hero poster is not there yet and will be.
+
 ---
 
 ## 4. Upload the media
@@ -91,7 +96,7 @@ the repository and not in the bucket.
 CLOUDFLARE_R2_ACCOUNT_ID=... \
 CLOUDFLARE_R2_ACCESS_KEY_ID=... \
 CLOUDFLARE_R2_SECRET_ACCESS_KEY=... \
-CLOUDFLARE_R2_BUCKET=ahmadassi-media \
+CLOUDFLARE_R2_BUCKET=ahmadassi \
 DATABASE_URL="postgresql://..." \
 npm run migrate:content
 ```
