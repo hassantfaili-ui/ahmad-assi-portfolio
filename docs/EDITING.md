@@ -1,118 +1,135 @@
 # Editing the site
 
-Everything on this site is content in this repository. There is no login and no
-database: a change is an ordinary commit that can be read and undone, and
-Cloudflare rebuilds the site within a minute or two of a push.
+Everything on ahmadassi.ca is edited in a browser. Go to
+**[ahmadassi.ca/admin](https://ahmadassi.ca/admin)**, sign in when Cloudflare
+asks, and you are in.
 
-Two places hold everything:
-
-| What | Where |
-| --- | --- |
-| Projects | `src/content/projects/`, one markdown file each |
-| Resume and contact details | `src/data/resume.json` |
-| Photographs and drawings | `public/media/<project-slug>/` |
-
-To see a change before pushing it:
-
-```bash
-npm run dev
-```
-
-That serves the site at `http://localhost:4321` and reloads as files are saved.
-`npm run check` type checks the content against the schema, which is the same
-check the build runs.
+There is nothing to install and nothing to run. A change is live within a few
+seconds of saving.
 
 ---
 
-## What can be changed
+## The four screens
 
-**Projects.** Every project is one markdown file under `src/content/projects/`.
-The fields are defined and validated in `src/content.config.ts`, so a typo in a
-field name or a missing required field fails the build with the file named
-rather than shipping a broken page.
+| Screen | What it is for |
+| --- | --- |
+| **Projects** | Every project. Add, edit, reorder, publish, delete |
+| **Media** | Every photograph, drawing, film and PDF that has been uploaded |
+| **Resume** | Your biography, experience, education, skills and contact details |
+| **Settings** | The film behind your name on the home page |
 
-- *Photographs.* `leadImage` is the cover, used on the projects page and at the
-  top of the project's own page. `imageGroups` holds the rest, in the order they
-  are listed, each group laid out as a `pair`, a `full` bleed or a `triptych`.
-  `drawings` are shown in the drawing viewer.
-- *Adding an image.* Put the file in `public/media/<project-slug>/` and reference
-  it as `/media/<project-slug>/<file>.jpg`. Exports straight out of a renderer
-  are fine: the build resizes anything oversized on its way into `dist`, so a
-  39MB JPEG can never reach a visitor.
-- *Descriptions and specs.* `title`, `year`, `location`, `buildingType`, `area`,
-  `status`, `role`, `contribution`, `summary`, and the body text below the
-  frontmatter.
-- *Where it sits.* `tier` chooses `lead` (the top three), `set` (the strip) or
-  `index` (the compact list). `order` is a number, low first, that decides the
-  sequence within each tier.
-- *Adding a project.* Copy an existing file and change the frontmatter.
-  *Removing one.* Delete the file.
+---
 
-**Resume and contact.** `src/data/resume.json` holds the experience, education,
-skills and languages on the resume page, and also the email address, phone
-number, location and availability shown on the contact page.
+## Adding a project
 
-**Alt text is required on every image.** The schema enforces it, so the build
-fails rather than publishing an image without one. It is the sentence a screen
-reader reads, and search engines use it too.
+1. **Projects**, then **New project**. Give it a title.
+2. It opens straight into the editor. It is **not published yet**, which is
+   deliberate: nobody sees it until you say so.
+3. Fill in the fields on the left.
+4. Drag your renders onto the panel on the right. Drop as many at once as you
+   like, or paste them straight out of an email.
+5. Give each image a **description**. See below.
+6. Choose the **cover**, which is the image that represents the project
+   everywhere else on the site.
+7. Turn on **Published**.
+
+---
+
+## Uploading
+
+Drag files onto the page. That is the whole thing.
+
+**Do not resize anything first.** Export at whatever quality you like. A 39MB
+render is fine. The site makes its own smaller copies and gives each visitor the
+right size for the screen they are on, so a large original costs them nothing.
+
+**Films are compressed in your browser before they upload**, into a large copy
+and a small one, and a still frame is taken for the poster. A four minute
+upload bar is the compression, not a problem. This needs **Chrome, Edge, or
+Safari 16.4 or newer**. Firefox cannot do it and will say so rather than
+uploading something unusable.
+
+Accepted: JPEG, PNG, WebP, AVIF, GIF, TIFF, MP4, MOV, WebM, and PDF.
+
+---
+
+## Descriptions, and why they are required
+
+Every image needs one sentence describing what is in it. The save will not go
+through without it.
+
+It is the sentence read aloud to somebody who cannot see the image, and it is
+also what search engines read. "The museum on the corner of Hayne Boulevard,
+yellow weatherboard with teal shutters" is a description. "Render 4" is not.
+
+---
+
+## Arranging a project's images
+
+Images sit in **groups**, and a group has a layout:
+
+- **Pair**, two side by side
+- **Full**, one across the full width
+- **Triptych**, three across
+
+A group can carry one caption for all of its images.
+
+Drag to reorder, either the groups or the images inside them. It also works from
+the keyboard: tab to the handle and use the arrow keys.
+
+**Drawings** are separate from photographs and appear in their own section, each
+labelled with what it is: a plan, a section, an elevation.
+
+---
+
+## Where a project appears
+
+The home page has three tiers, set by **Tier** on each project:
+
+- **Lead**, the three large cards at the top
+- **Set**, the horizontal strip below them
+- **Index**, a compact list at the bottom, for coursework
+
+**Only three projects can lead.** Marking a fourth does not break anything and
+does not lose it: it drops into the strip instead, in its usual place. The
+Projects screen says so when it happens. To swap one in, move one of the current
+three down first.
+
+**Order** is the drag handle on the Projects screen. It applies within each
+tier.
 
 ---
 
 ## Two things worth knowing
 
-**Only three projects can be in the top three.** Marking a fourth does not break
-anything and does not lose it: it falls into the set instead, in its usual place
-by order. Move one of the existing three down first to swap.
+**Changing a project's web address breaks links to it.** The address is the
+`slug` field. If anyone has linked to `/work/lincoln-beach-center`, changing it
+means that link stops working. Changing the title alone is always safe.
 
-**The portfolio PDF does not regenerate itself.** It is built from the same
-projects, in the same order, by `npm run portfolio`, which needs a computer with
-Node, Chrome and ffmpeg. Editing a project updates the website on the next push
-and leaves the PDF as it was until someone rebuilds it.
+**Deleting a project leaves its files alone.** They stay in Media, so nothing is
+lost by accident. Removing a file for good is a separate deliberate act on the
+Media screen, and the site refuses to do it while anything still uses that file,
+naming what.
 
 ---
 
-## Hosting
+## The portfolio PDF
 
-Cloudflare, connected to this repository.
+The PDF at `/portfolio` does **not** rebuild itself. It is made from the same
+projects, in the same order, by a person running one command on a computer with
+the tools installed. Editing a project updates the website immediately and
+leaves the PDF as it was.
 
-| setting | value |
-| --- | --- |
-| Build command | `npm run build` |
-| Output directory | `dist` |
-| `NODE_VERSION` | `22` |
+Ask Hassan when you want a fresh one.
 
-`NODE_VERSION` is not optional. Astro 7 requires 22.12 or newer and the default
-build image is older, which fails before a single page is emitted. It is also
-declared in `package.json` engines.
+---
 
-**Nothing served may exceed 25 MiB.** That is a hard platform limit. If a large
-file is added, the build fails with "Asset too large" and names it.
-`public/_headers` carries the caching rules: media for an hour then revalidate,
-hashed assets pinned hard, HTML always revalidating.
+## If something goes wrong
 
-### The films
-
-The three films are too big for that limit, so they are not served from here.
-They live in an R2 bucket and `PUBLIC_MEDIA_ORIGIN` points at it:
-
-```
-PUBLIC_MEDIA_ORIGIN = https://media.ahmadassi.ca
-```
-
-With it set, the build rewrites the film URLs to that origin and deletes the
-files out of `dist`, so the largest published file is the portfolio PDF at
-9.3MB. The copies in `public/media` are the masters and match the bucket byte
-for byte; they are what local development serves. Unset the variable and the
-build warns that the films will be published and that a capped host will
-reject them.
-
-The bucket keys must stay under a `media/` prefix, because that is the path the
-site requests: `media/hero-1440.mp4`, `media/hero-720.mp4`,
-`media/lincoln-beach-walkthrough.mp4`.
-
-The bucket is served from `media.ahmadassi.ca`, a custom domain rather than the
-rate limited `pub-….r2.dev` address Cloudflare says not to use in production.
-
-There is no contact form. Cloudflare has nothing that accepts a submission
-without a third party service, so the contact page is the email link, which was
-always the primary route.
+- **A save is refused.** The reason is written on the field that caused it. Most
+  often it is a missing description on an image.
+- **A film will not upload.** Check the browser. Firefox cannot compress video.
+- **A file will not delete.** Something still uses it, and the message names
+  what. Remove it there first.
+- **A change is not showing.** Give it a few seconds and reload. If it still is
+  not there, the save did not go through, and it will have said so.

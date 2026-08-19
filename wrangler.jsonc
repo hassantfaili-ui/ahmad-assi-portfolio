@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ahmadassi",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-19",
+  // Not optional. Prisma, the AWS SDK and jose all reach for Node built-ins.
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": { "enabled": true },
+  // The rendered page cache. Filled in by `wrangler kv namespace create`.
+  "kv_namespaces": [
+    { "binding": "NEXT_INC_CACHE_KV", "id": "16f75036435c4717afd84d98a443eaad" }
+  ],
+  // Pools and caches the Neon connection so @prisma/adapter-pg works from a
+  // Worker. Filled in by `wrangler hyperdrive create`.
+  "hyperdrive": [
+    { "binding": "HYPERDRIVE", "id": "8ce38335941d4d65bfd16407cfbcc2a0" }
+  ],
+  // MEDIA_ORIGIN is read by the server at runtime, so it belongs here.
+  //
+  // NEXT_PUBLIC_MEDIA_ORIGIN deliberately does NOT. Next inlines every
+  // NEXT_PUBLIC_ value into the browser bundle when `next build` runs, so a
+  // Worker variable set here would arrive far too late and the browser would
+  // keep whatever was compiled in. It has to be in the environment of the
+  // build, which means .env or the CI environment. Verified by building with a
+  // probe value and finding it in the emitted chunks.
+  "vars": {
+    "MEDIA_ORIGIN": "https://media.ahmadassi.ca"
+  }
+}

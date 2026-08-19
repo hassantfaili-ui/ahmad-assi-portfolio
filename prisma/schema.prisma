@@ -1,0 +1,344 @@
+// The content model for ahmadassi.ca.
+//
+// Ported from the Zod schema that validated the Astro content collection, in
+// src/content.config.ts on main. That schema was a good model of what a project
+// is, so it moves across rather than being reinvented. Every rule it enforced at
+// build time is enforced here at save time instead, which is a better place for
+// it: the person who broke the rule is now the person who sees the message.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma 7 no longer takes the connection URL here. It lives in
+// prisma.config.ts for the CLI, and the client is handed an adapter instead.
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------- enums ---
+
+/// Where a project sits on the home page. Order is respected inside each tier,
+/// so the sequence stays Ahmad's. Only three can lead; see src/lib/tiers.ts for
+/// what happens to a fourth and why that matters.
+enum Tier {
+  lead
+  set
+  index
+}
+
+enum GroupLayout {
+  pair
+  full
+  triptych
+}
+
+enum ProjectCategory {
+  Residential
+  Cultural
+  Commercial
+  Academic
+  Competition
+}
+
+enum ProjectStatus {
+  Built
+  UnderConstruction
+  DesignDevelopment
+  Unbuilt
+  Competition
+  Academic
+}
+
+enum MediaKind {
+  image
+  video
+  poster
+  document
+}
+
+/// Four resume lists that share the same shape, kept as one table with a
+/// discriminator rather than four near identical ones.
+enum ResumeSection {
+  volunteering
+  awards
+  publications
+  exhibitions
+}
+
+// ---------------------------------------------------------------- media ---
+
+/// One row per object in R2.
+///
+/// `key` is the object key, never a URL. src/lib/media-url.ts composes the URL
+/// at render time from MEDIA_ORIGIN, so moving the bucket is one variable.
+model Media {
+  id              String    @id @default(cuid())
+  key             String    @unique
+  kind            MediaKind
+  contentType     String
+  bytes           Int
+  originalName    String
+  width           Int?
+  height          Int?
+  durationSeconds Float?
+  createdAt       DateTime  @default(now())
+
+  // Everything that can point at a file. All of these are checked before a
+  // delete is allowed, so a file in use cannot be removed out from under a page.
+  leadFor        Project[]       @relation("ProjectLeadImage")
+  projectImages  ProjectImage[]
+  drawings       Drawing[]
+  filmSources    FilmSource[]
+  filmPosters    Film[]          @relation("FilmPoster")
+  profilePortrait Profile[]      @relation("ProfilePortrait")
+  profileCv      Profile[]       @relation("ProfileCv")
+  profilePortfolio Profile[]     @relation("ProfilePortfolio")
+
+  @@index([kind])
+  @@index([createdAt])
+}
+
+// -------------------------------------------------------------- projects ---
+
+model Project {
+  id     String @id @default(cuid())
+  slug   String @unique
+  title  String
+
+  /// Sheet numbers look like A-101. Validated on save.
+  sheet        String
+  category     ProjectCategory
+  year         Int
+  location      String
+  buildingType String
+  area         String?
+  status       ProjectStatus
+
+  /// Kept separate from the summary on purpose: on team projects this is the
+  /// difference between an honest portfolio and a misleading one.
+  role         String
+  contribution String
+  summary      String
+
+  /// The prose below the fields, as markdown.
+  body String @default("")
+
+  /// The short version of who did the work, for the card. Required, because a
+  /// portfolio that does not say which projects were group work is misleading,
+  /// and a reviewer assumes the worst when it is left out.
+  credit String
+
+  tier      Tier    @default(set)
+  order     Int     @default(99)
+  published Boolean @default(true)
+
+  leadImageId  String?
+  leadImage    Media?  @relation("ProjectLeadImage", fields: [leadImageId], references: [id], onDelete: SetNull)
+  leadImageAlt String  @default("")
+
+  film Film?
+
+  imageGroups ImageGroup[]
+  drawings    Drawing[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tier, order])
+  @@index([published, order])
+}
+
+model ImageGroup {
+  id        String      @id @default(cuid())
+  projectId String
+  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  layout    GroupLayout @default(pair)
+  caption   String?
+  order     Int         @default(0)
+
+  images ProjectImage[]
+
+  @@index([projectId, order])
+}
+
+/// Alt text and ordering live here rather than on Media, because the same file
+/// may legitimately appear twice with two different descriptions, and because
+/// ordering belongs to the arrangement rather than to the file.
+model ProjectImage {
+  id      String     @id @default(cuid())
+  groupId String
+  group   ImageGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  mediaId String
+  media   Media      @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  /// Required. It is the sentence a screen reader announces.
+  alt   String
+  order Int    @default(0)
+
+  @@index([groupId, order])
+}
+
+model Drawing {
+  id          String  @id @default(cuid())
+  projectId   String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  mediaId     String
+  media       Media   @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+  alt         String
+  drawingType String
+  order       Int     @default(0)
+
+  @@index([projectId, order])
+}
+
+/// A film is several encodes of one thing, so the sources are rows rather than
+/// two columns. A Film with no project is the site hero.
+model Film {
+  id String @id @default(cuid())
+
+  projectId String?  @unique
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  posterMediaId String?
+  posterMedia   Media?  @relation("FilmPoster", fields: [posterMediaId], references: [id], onDelete: SetNull)
+
+  /// Kept for any future film too large to be worth self hosting. Nothing is
+  /// requested from Google until a visitor presses play; see the Film component.
+  youtubeId String?
+  caption   String?
+
+  sources FilmSource[]
+}
+
+model FilmSource {
+  id      String @id @default(cuid())
+  filmId  String
+  film    Film   @relation(fields: [filmId], references: [id], onDelete: Cascade)
+  mediaId String
+  media   Media  @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  /// 1440 or 720. The two encodes scripts/build-hero.sh produced by hand, and
+  /// the two src/lib/transcode.ts now produces in the browser.
+  height Int
+
+  @@unique([filmId, height])
+}
+
+// ---------------------------------------------------------------- resume ---
+
+/// A single row. Ahmad is one person, not a collection.
+model Profile {
+  id String @id @default("profile")
+
+  name            String
+  discipline      String
+  credential      String
+  registration    String
+  location        String
+  yearsExperience String
+  availability    String
+  issued          String
+
+  welcome     String
+  positioning String
+  /// The About block on the home page, one string per paragraph.
+  longBio     String[]
+
+  portraitMediaId String?
+  portraitMedia   Media?  @relation("ProfilePortrait", fields: [portraitMediaId], references: [id], onDelete: SetNull)
+  portraitAlt     String  @default("")
+
+  cvMediaId String?
+  cvMedia   Media?  @relation("ProfileCv", fields: [cvMediaId], references: [id], onDelete: SetNull)
+
+  portfolioMediaId String?
+  portfolioMedia   Media?  @relation("ProfilePortfolio", fields: [portfolioMediaId], references: [id], onDelete: SetNull)
+
+  email      String
+  phone      String
+  references String @default("Available upon request")
+
+  updatedAt DateTime @updatedAt
+}
+
+/// The "At a glance" blocks on the resume page. Four categories of a few lines
+/// each, because a reader scans before they read.
+model Fact {
+  id    String   @id @default(cuid())
+  label String
+  items String[]
+  order Int      @default(0)
+
+  @@index([order])
+}
+
+model SocialLink {
+  id    String @id @default(cuid())
+  label String
+  href  String
+  order Int    @default(0)
+
+  @@index([order])
+}
+
+model ExperienceEntry {
+  id            String   @id @default(cuid())
+  role          String
+  firm          String
+  location      String
+  period        String
+  contributions String[]
+  order         Int      @default(0)
+
+  @@index([order])
+}
+
+model EducationEntry {
+  id          String  @id @default(cuid())
+  credential  String
+  institution String
+  year        String
+  note        String?
+  order       Int     @default(0)
+
+  @@index([order])
+}
+
+model SkillGroup {
+  id    String  @id @default(cuid())
+  label String
+  order Int     @default(0)
+  items Skill[]
+
+  @@index([order])
+}
+
+model Skill {
+  id           String     @id @default(cuid())
+  skillGroupId String
+  skillGroup   SkillGroup @relation(fields: [skillGroupId], references: [id], onDelete: Cascade)
+  name         String
+  order        Int        @default(0)
+
+  @@index([skillGroupId, order])
+}
+
+model Language {
+  id    String @id @default(cuid())
+  text  String
+  order Int    @default(0)
+
+  @@index([order])
+}
+
+model ResumeEntry {
+  id      String        @id @default(cuid())
+  section ResumeSection
+  title   String
+  detail  String
+  year    String
+  order   Int           @default(0)
+
+  @@index([section, order])
+}

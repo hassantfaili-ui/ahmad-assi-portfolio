@@ -1,0 +1,29 @@
+/* ==========================================================================
+   The design tokens, exposed to Tailwind.
+
+   site.css defines the same values as plain custom properties, which is what
+   every ported component rule reads. This block re-declares them under
+   Tailwind's @theme so a utility class and an authored rule resolve to exactly
+   the same colour and the same typeface. Without it the two systems drift and
+   the page ends up with two nearly identical blacks.
+
+   Only the light values live here. Dark is a theme swap on :root[data-theme]
+   in site.css, and Tailwind has no equivalent that would keep the two in step,
+   so authored CSS stays the single source of truth for the swap.
+   ========================================================================== */
+
+@theme {
+  --color-paper: #ffffff;
+  --color-paper-2: #f4f4f2;
+  --color-ink: #0b0b0b;
+  --color-ink-2: rgba(11, 11, 11, 0.66);
+  --color-ink-3: rgba(11, 11, 11, 0.42);
+  --color-rule: rgba(11, 11, 11, 0.14);
+  --color-rule-2: rgba(11, 11, 11, 0.07);
+  --color-invert-ink: #ffffff;
+
+  --font-display: 'Big Shoulders Display Variable', 'Big Shoulders Display', sans-serif;
+  --font-prose: 'Archivo Variable', 'Archivo', sans-serif;
+
+  --ease-site: cubic-bezier(0.16, 0.84, 0.28, 1);
+}
