@@ -160,3 +160,68 @@ describe('the administration layout is the gate it claims to be', () => {
     expect(source).toMatch(/export const dynamic = 'force-dynamic'/);
   });
 });
+
+/**
+ * Every administration page guards itself, and every editing query does too.
+ *
+ * The original test asserted the layout calls requireAdmin, which was necessary
+ * and not sufficient. An RSC request for a page segment can render that page
+ * without re-rendering its layout, so the layout's check was simply skipped:
+ * an anonymous GET of /admin/media/?_rsc came back with all 294 object keys in
+ * the bucket. Cloudflare Access would have refused that at the edge on the real
+ * domain, which is exactly the comfort that let it go unnoticed.
+ *
+ * So the guard is asserted in two more places. On every page, so the segment
+ * path renders a signed out state. And on every editing query, which is the one
+ * that actually cannot be routed around.
+ */
+
+const ADMIN_PAGES = join(process.cwd(), 'src', 'app', '(admin)');
+const ADMIN_QUERIES = join(process.cwd(), 'src', 'lib', 'admin-queries.ts');
+
+function pageFiles(directory: string): string[] {
+  let found: string[] = [];
+  for (const entry of readdirSync(directory)) {
+    const path = join(directory, entry);
+    if (statSync(path).isDirectory()) found = found.concat(pageFiles(path));
+    else if (entry === 'page.tsx') found.push(path);
+  }
+  return found;
+}
+
+describe('every administration page refuses on its own', () => {
+  const pages = pageFiles(ADMIN_PAGES);
+
+  it('finds the pages, so a move cannot make this pass vacuously', () => {
+    expect(pages.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it.each(pages.map((file) => [relative(file), file]))('%s checks the identity', (_label, file) => {
+    const source = readFileSync(file, 'utf8');
+    expect(source, 'does not import the identity check').toMatch(
+      /import\s*\{[^}]*getIdentity[^}]*\}\s*from/,
+    );
+    expect(source, 'does not act on the identity check').toMatch(/await\s+getIdentity\(\)/);
+  });
+});
+
+describe('every editing query refuses on its own', () => {
+  const source = readFileSync(ADMIN_QUERIES, 'utf8');
+  const exported = [...source.matchAll(/export async function ([A-Za-z0-9_]+)\s*\(/g)].map(
+    (match) => match[1],
+  );
+
+  it('finds the queries', () => {
+    expect(exported.length).toBeGreaterThanOrEqual(4);
+    expect(exported).toContain('listMedia');
+  });
+
+  it.each(exported.map((name) => [name]))('%s calls requireIdentity first', (name) => {
+    const start = source.indexOf(`export async function ${name}(`);
+    const end = source.indexOf('\n}', start);
+    const body = source.slice(start, end === -1 ? undefined : end);
+
+    expect(body, `${name} has no body`).not.toBe('');
+    expect(body, `${name} does not require an identity`).toMatch(/await requireIdentity\(\)/);
+  });
+});

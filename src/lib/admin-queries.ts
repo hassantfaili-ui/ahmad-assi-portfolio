@@ -1,9 +1,24 @@
 import 'server-only';
 
+import { getIdentity } from '@/lib/access';
 import { db } from '@/lib/db';
 
 /**
  * The reads the editing screens perform.
+ *
+ * EVERY function here refuses without an identity, and that is the real gate.
+ *
+ * The guard used to live only in the administration layout, which was necessary
+ * and not sufficient: an RSC request for a page segment can render that page
+ * without re-rendering its layout, so the check was simply skipped. Anonymous
+ * requests to /admin/media/?_rsc came back with all 294 object keys in the
+ * bucket, and /admin/resume/?_rsc with Ahmad's private email. Cloudflare Access
+ * would have stopped those at the edge on the real domain, which is exactly the
+ * comfort that let the hole sit there unnoticed.
+ *
+ * Putting it here means no routing path can get round it. A layout can be
+ * skipped and a page can be added without its guard, but nothing reads this
+ * data without going through these functions.
  *
  * Separate from src/lib/queries.ts because they answer a different question.
  * Those queries are what a visitor sees, so they filter to published work and
@@ -11,6 +26,21 @@ import { db } from '@/lib/db';
  * unpublished projects, and they carry the counts and the usage information
  * that only matter when deciding whether something is safe to delete.
  */
+
+/**
+ * Refuse, loudly, if there is no identity.
+ *
+ * A throw rather than an empty result. Returning nothing would render an
+ * editing screen that looks merely empty, which is indistinguishable from a
+ * genuinely empty database and hides the failure. Reaching here without an
+ * identity is a bug, and it should look like one.
+ */
+async function requireIdentity(): Promise<void> {
+  const identity = await getIdentity();
+  if (!identity) {
+    throw new Error('The editing data was requested without a signed in identity.');
+  }
+}
 
 const mediaSelect = {
   id: true,
@@ -56,6 +86,7 @@ export type AdminProjectRow = {
 
 /** Every project, published or not, in running order. */
 export async function listProjects(): Promise<AdminProjectRow[]> {
+  await requireIdentity();
   const rows = await db.project.findMany({
     orderBy: [{ order: 'asc' }, { id: 'asc' }],
     select: {
@@ -94,6 +125,7 @@ export async function listProjects(): Promise<AdminProjectRow[]> {
 
 /** One project with everything the editor needs, published or not. */
 export async function getProjectForEditing(id: string) {
+  await requireIdentity();
   return db.project.findUnique({
     where: { id },
     include: {
@@ -128,6 +160,7 @@ export type MediaWithUsage = AdminMedia & {
  * only refused after the fact teaches him to expect it to work.
  */
 export async function listMedia(): Promise<MediaWithUsage[]> {
+  await requireIdentity();
   const rows = await db.media.findMany({
     orderBy: { createdAt: 'desc' },
     select: {
@@ -175,5 +208,6 @@ export async function listMedia(): Promise<MediaWithUsage[]> {
 
 /** How many projects are marked lead, for the overflow warning. */
 export async function countLeads(): Promise<number> {
+  await requireIdentity();
   return db.project.count({ where: { tier: 'lead' } });
 }

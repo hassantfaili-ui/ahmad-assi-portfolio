@@ -27,7 +27,13 @@ import { pathToFileURL } from 'node:url';
 const ROOT = process.cwd();
 const BUNDLE = join(ROOT, '.open-next', 'server-functions', 'default');
 
-const build = spawnSync('npx', ['opennextjs-cloudflare', 'build'], { stdio: 'inherit' });
+/* Explicitly emptied for the build, whatever the developer's .env says. This
+   is a deploy artefact: there is no such thing as a correct value here other
+   than absent. */
+const build = spawnSync('npx', ['opennextjs-cloudflare', 'build'], {
+  stdio: 'inherit',
+  env: { ...process.env, ACCESS_DEV_BYPASS: '' },
+});
 if (build.status !== 0) {
   process.exit(build.status ?? 1);
 }

@@ -68,6 +68,11 @@ export function isAccessConfigured(): boolean {
  * This throws rather than returning false in production, because the failure it
  * prevents is the administration area silently open to the internet, and a
  * variable left set by accident is exactly how that would happen.
+ *
+ * It has already earned its keep once. Next reads .env at build time, so the
+ * bypass a developer is told to put in their own .env was baked into a deployed
+ * worker, and this is what caught it. scripts/cf-build.mjs now empties it for
+ * the build as well, so there are two things to get wrong rather than one.
  */
 export function isAccessBypassed(): boolean {
   const bypass = process.env.ACCESS_DEV_BYPASS === 'true';

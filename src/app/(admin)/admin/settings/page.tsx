@@ -1,3 +1,5 @@
+import { SignedOut } from '@/components/admin/SignedOut';
+import { getIdentity } from '@/lib/access';
 import type { Metadata } from 'next';
 
 import { HeroFilmEditor } from '@/components/admin/HeroFilmEditor';
@@ -21,6 +23,12 @@ export const metadata: Metadata = {
 };
 
 export default async function SettingsPage() {
+  /* Guarded here as well as in the layout. An RSC request for this
+     segment can render the page without re-rendering the layout, which
+     skipped the layout's check entirely and served the editing data to
+     anonymous requests. */
+  if (!(await getIdentity())) return <SignedOut />;
+
   const hero = await getHeroFilm();
 
   return (

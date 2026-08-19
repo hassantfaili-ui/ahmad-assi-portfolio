@@ -1,3 +1,5 @@
+import { SignedOut } from '@/components/admin/SignedOut';
+import { getIdentity } from '@/lib/access';
 import { notFound } from 'next/navigation';
 
 import { ProjectForm } from '@/components/admin/ProjectForm';
@@ -39,6 +41,12 @@ function toMedia(media: {
 }
 
 export default async function ProjectEditorPage({ params }: ProjectEditorPageProps) {
+  /* Guarded here as well as in the layout. An RSC request for this
+     segment can render the page without re-rendering the layout, which
+     skipped the layout's check entirely and served the editing data to
+     anonymous requests. */
+  if (!(await getIdentity())) return <SignedOut />;
+
   const { id } = await params;
   const project = await getProjectForEditing(id);
 

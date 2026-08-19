@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import { Fragment } from 'react';
 
+import { renderMarkdown } from '@/lib/markdown';
 import { getProfile, getProjectBySlug, getPublishedProjects } from '@/lib/queries';
 import type { MediaRef, ProjectDetail } from '@/lib/queries';
 import { tiers } from '@/lib/tiers';
@@ -91,20 +92,6 @@ function gallery(project: ProjectDetail): MediaRef[] {
 
 function drawings(project: ProjectDetail): MediaRef[] {
   return project.drawings.map((drawing) => drawing.media);
-}
-
-/**
- * The brief, in paragraphs.
- *
- * Same stopgap as the project page, and the same cost: a heading, a table and a
- * bold run in the current briefs come through as markdown source, and the curly
- * quotes Astro produced are straight here. It wants a markdown renderer.
- */
-function paragraphs(body: string): string[] {
-  return body
-    .split(/\n\s*\n/)
-    .map((paragraph) => paragraph.trim().replace(/\s*\n\s*/g, ' '))
-    .filter(Boolean);
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -334,11 +321,17 @@ export default async function PrintPage() {
                 <div className="detail-text">
                   <p className="p-label">{project.buildingType}</p>
                   <h3 className="p-title">{project.title}</h3>
-                  <div className="detail-body p-body">
-                    {paragraphs(project.body).map((paragraph) => (
-                      <p key={paragraph}>{paragraph}</p>
-                    ))}
-                  </div>
+                  {/* The same renderer the project pages use. This page split
+                      on blank lines instead, which printed the markdown source
+                      into the portfolio: Renewal Square read "**Garden
+                      Heights**" with the asterisks, and the cabinets cut sheet
+                      table vanished entirely. This is the document Ahmad
+                      attaches to applications, so it is the worst place of the
+                      two to get it wrong. */}
+                  <div
+                    className="detail-body p-body"
+                    dangerouslySetInnerHTML={{ __html: renderMarkdown(project.body) }}
+                  />
                   <p className="detail-credit">{project.credit}</p>
                 </div>
                 <div className={picks.length === 3 ? 'detail-grid is-three' : 'detail-grid'}>
