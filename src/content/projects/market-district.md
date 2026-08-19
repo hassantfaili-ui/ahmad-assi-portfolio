@@ -33,6 +33,30 @@ imageGroups:
     images:
       - src: /media/market-district/conf-perspective-2.jpg
         alt: Street level view along the market frontage with the arched openings, a bus at the kerb and street trees over the pavement
+  - layout: pair
+    caption: The masterplan, before and after. The road structure is kept and the blocks are rebuilt around a new central square.
+    images:
+      - src: /media/market-district/md-01.jpg
+        alt: Site plan of the district as proposed, the central square with its radiating paths set against the surrounding block structure
+      - src: /media/market-district/md-02.jpg
+        alt: The same plan drawn as blocks only, showing the grain of the proposed development against the existing road pattern
+  - layout: full
+    caption: The square itself, which is what the whole density argument is arranged around.
+    images:
+      - src: /media/market-district/md-03.jpg
+        alt: Axonometric of the central square with its fountain, radiating paths and market stalls, ringed by mid-rise blocks with the train station in the foreground
+  - layout: full
+    caption: The district at large, the high rises held to the edges near the intersections and the scale dropping towards the centre.
+    images:
+      - src: /media/market-district/md-04.jpg
+        alt: Wider axonometric of the whole site showing the transition from high rise at the periphery to mid-rise around the square
+  - layout: pair
+    caption: At eye level, and the plan details behind it.
+    images:
+      - src: /media/market-district/md-05.jpg
+        alt: Two street level views, the market frontage under the trees and the corner where the mosque meets the new block
+      - src: /media/market-district/md-06.jpg
+        alt: Two detail plans of the square, keyed to show the planting, the paving pattern and the food stall positions
 drawings:
   - src: /media/market-district/conf-poster-ahmad.jpg
     alt: The full Site 3 Market District sheet, carrying the written strategy, the context axonometrics, the before and after comparison and the street level views
