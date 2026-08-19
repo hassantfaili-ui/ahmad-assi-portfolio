@@ -188,6 +188,14 @@ export function MediaLibrary({ media }: { media: MediaWithUsage[] }) {
   const [busy, setBusy] = useState(false);
   const [blocked, setBlocked] = useState<{ name: string; usedBy: string[] } | null>(null);
 
+  /* A delete that failed with the confirmation still open. Every other outcome
+     closes it, and a toast in the corner is readable then. This one is not: the
+     dialog holds the screen, the toast sits under its overlay, and Radix hides
+     everything outside the dialog from a screen reader while it is open, so the
+     live region announces nothing at all. So the reason is put where the click
+     was, next to the button that will be pressed again. */
+  const [problem, setProblem] = useState<string | null>(null);
+
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return media.filter(
@@ -200,11 +208,15 @@ export function MediaLibrary({ media }: { media: MediaWithUsage[] }) {
   const filtering = query.trim() !== '' || kind !== 'all';
 
   const requestDelete = useCallback((item: MediaWithUsage) => {
+    setProblem(null);
     setPending(item);
   }, []);
 
   const closeConfirm = useCallback((open: boolean) => {
-    if (!open) setPending(null);
+    if (!open) {
+      setPending(null);
+      setProblem(null);
+    }
   }, []);
 
   const clearFilters = useCallback(() => {
@@ -215,6 +227,7 @@ export function MediaLibrary({ media }: { media: MediaWithUsage[] }) {
   const confirmDelete = useCallback(async () => {
     if (!pending) return;
     setBusy(true);
+    setProblem(null);
 
     try {
       const response = await fetch(`/api/media/${pending.id}`, { method: 'DELETE' });
@@ -237,7 +250,7 @@ export function MediaLibrary({ media }: { media: MediaWithUsage[] }) {
       }
 
       if (!response.ok) {
-        push(`${pending.originalName} could not be deleted. Try again in a moment.`, 'error');
+        setProblem(`${pending.originalName} could not be deleted. Try again in a moment.`);
         return;
       }
 
@@ -245,7 +258,11 @@ export function MediaLibrary({ media }: { media: MediaWithUsage[] }) {
       setPending(null);
       router.refresh();
     } catch {
-      push('Nothing was deleted. Check your connection and try again.', 'error');
+      /* The request never got an answer: a dropped connection, or the tab put
+         to sleep mid flight. Nothing was deleted, and saying so is the whole
+         job, because the file is still sitting in the list behind the dialog
+         looking exactly as it did before. */
+      setProblem('Nothing was deleted. Check your connection and try again.');
     } finally {
       setBusy(false);
     }
@@ -313,6 +330,14 @@ export function MediaLibrary({ media }: { media: MediaWithUsage[] }) {
               undo. You would have to upload it again.
             </p>
             <p className="mt-2">Nothing on the site uses it, so no page will change.</p>
+            {problem ? (
+              <p
+                role="alert"
+                className="mt-3 rounded-md border border-red-200 bg-red-50 p-3 text-red-900"
+              >
+                {problem}
+              </p>
+            ) : null}
           </>
         }
         confirmLabel="Delete it for good"

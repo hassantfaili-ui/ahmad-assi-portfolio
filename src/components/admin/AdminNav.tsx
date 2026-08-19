@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { GuardedLink } from '@/components/admin/GuardedLink';
+
 import { cn } from '@/lib/utils';
 
 const LINKS = [
@@ -12,6 +14,20 @@ const LINKS = [
   { href: '/admin/settings', label: 'Settings' },
 ];
 
+/**
+ * The bar above every editing screen.
+ *
+ * Its four links go through GuardedLink rather than Link, and that is the whole
+ * point of the shared unsaved work registry. A client side route change does
+ * not fire beforeunload, so before this these were the one exit nothing
+ * watched: writing ten minutes of description and then clicking Resume out of
+ * habit discarded every word with no prompt, while the screen underneath said
+ * "Not saved yet" the entire time.
+ *
+ * "View the site" stays an ordinary anchor. It crosses into a different root
+ * layout, so it is a real document navigation and the browser's own warning
+ * covers it.
+ */
 export function AdminNav({ email }: { email: string }) {
   const pathname = usePathname();
 
@@ -27,7 +43,7 @@ export function AdminNav({ email }: { email: string }) {
                 link.href === '/admin' ? pathname === '/admin' : pathname.startsWith(link.href);
               return (
                 <li key={link.href}>
-                  <Link
+                  <GuardedLink
                     href={link.href}
                     aria-current={current ? 'page' : undefined}
                     className={cn(
@@ -38,7 +54,7 @@ export function AdminNav({ email }: { email: string }) {
                     )}
                   >
                     {link.label}
-                  </Link>
+                  </GuardedLink>
                 </li>
               );
             })}

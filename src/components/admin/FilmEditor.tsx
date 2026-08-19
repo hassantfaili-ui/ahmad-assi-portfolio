@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useState, useSyncExternalStore, useTransition } from 'react';
+import { useCallback, useState, useTransition } from 'react';
 
 import { Dropzone } from '@/components/admin/Dropzone';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +10,9 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
+import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
 import type { UploadedFilm, UploadedItem } from '@/hooks/use-uploads';
+import { runAction } from '@/lib/action-result';
 import { mediaUrl } from '@/lib/media-url';
 import { deleteFilm, saveFilm } from '@/lib/mutations';
 import { formatBytes } from '@/lib/upload-policy';
@@ -40,26 +42,6 @@ export interface EditorFilm {
 
 const EMPTY_FILM: EditorFilm = { posterMedia: null, youtubeId: '', caption: '', sources: [] };
 
-/**
- * Whether this is running in the browser yet.
- *
- * The video dropzone works out whether this browser can compress video by
- * looking for an encoder on window, which the server does not have. So the
- * server renders the notice saying video cannot be uploaded here and the
- * browser renders no notice, the two disagree, and React throws the server's
- * version of the page away. Ahmad saw that as "this browser cannot compress
- * video" flashing up on a browser that can, every time the screen loaded.
- *
- * Holding the dropzone back until hydration has finished makes both renders
- * identical. useSyncExternalStore is the sanctioned way to say that a value
- * legitimately differs between the server and the browser; setting state from
- * an effect would reach the same place by causing the mismatch first and
- * patching it afterwards.
- */
-const NEVER_CHANGES = () => () => {};
-const IN_THE_BROWSER = () => true;
-const ON_THE_SERVER = () => false;
-
 function toEditorMedia(media: { id: string; key: string; bytes: number; width: number | null; height: number | null }): EditorMedia {
   return {
     id: media.id,
@@ -85,6 +67,11 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
   const [confirming, setConfirming] = useState(false);
   const [saving, startSave] = useTransition();
   const [removing, startRemoval] = useTransition();
+
+  /* The film's own flag, not the details form's. A caption typed here and a
+     video dropped here are lost by the same reload, and neither is covered by
+     the save button at the top of the screen. */
+  useRegisterUnsaved('project:film', unsaved);
 
   const change = useCallback((changes: Partial<EditorFilm>) => {
     setFilm((current) => ({ ...current, ...changes }));
@@ -121,12 +108,17 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
     }
 
     startSave(async () => {
-      const result = await saveFilm(projectId, {
-        posterMediaId: film.posterMedia?.id ?? null,
-        youtubeId: film.youtubeId,
-        caption: film.caption,
-        sources: film.sources.map((source) => ({ mediaId: source.media.id, height: source.height })),
-      });
+      const result = await runAction(() =>
+        saveFilm(projectId, {
+          posterMediaId: film.posterMedia?.id ?? null,
+          youtubeId: film.youtubeId,
+          caption: film.caption,
+          sources: film.sources.map((source) => ({
+            mediaId: source.media.id,
+            height: source.height,
+          })),
+        }),
+      );
 
       if (!result.ok) {
         setErrors(result.errors ?? {});
@@ -143,7 +135,7 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
 
   const remove = useCallback(() => {
     startRemoval(async () => {
-      const result = await deleteFilm(projectId);
+      const result = await runAction(() => deleteFilm(projectId));
 
       if (!result.ok) {
         push(result.message ?? 'The film could not be taken off. Try again.', 'error');
@@ -159,7 +151,6 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
     });
   }, [projectId, push]);
 
-  const hydrated = useSyncExternalStore(NEVER_CHANGES, IN_THE_BROWSER, ON_THE_SERVER);
   const hasVideo = film.sources.length > 0;
   const dropLabel = hasVideo ? 'Drop a new video here to replace this one' : 'Drop a walkthrough here';
 
@@ -190,21 +181,14 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
         </div>
       </div>
 
-      {hydrated ? (
-        <Dropzone
-          destination="film"
-          accept="video"
-          filmProfile="walkthrough"
-          onUploaded={takeUpload}
-          label={dropLabel}
-          hint="It is made smaller in this browser before anything is sent, so a long film takes a few minutes and then uploads quickly."
-        />
-      ) : (
-        <div className="rounded-xl border-2 border-dashed border-neutral-300 bg-white p-8 text-center">
-          <p className="text-sm font-medium text-neutral-800">{dropLabel}</p>
-          <p className="mt-1 text-xs text-neutral-500">One moment, getting this ready.</p>
-        </div>
-      )}
+      <Dropzone
+        destination="film"
+        accept="video"
+        filmProfile="walkthrough"
+        onUploaded={takeUpload}
+        label={dropLabel}
+        hint="It is made smaller in this browser before anything is sent, so a long film takes a few minutes and then uploads quickly."
+      />
 
       {errors.film && (
         <p role="alert" className="text-sm font-medium text-red-600">

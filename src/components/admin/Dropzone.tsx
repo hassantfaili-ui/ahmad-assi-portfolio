@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useId, useRef, useState, useSyncExternalStore } from 'react';
 import { AlertCircle, CheckCircle2, RotateCcw, Upload, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
 import { useUploads, type UploadedItem, type UploadRow } from '@/hooks/use-uploads';
 import { canTranscode } from '@/lib/transcode';
 import { formatBytes } from '@/lib/upload-policy';
@@ -77,6 +78,15 @@ export function Dropzone({
     filmProfile,
     onUploaded,
   });
+
+  /* An upload in flight is unsaved work, and the most expensive kind here.
+     A four minute browser transcode of a full quality export is not a change to
+     a form, so no form flag would ever have covered it: closing the tab at
+     minute four destroyed the whole encode with nothing asking. Registered
+     under this instance's own id so two dropzones on one screen do not release
+     each other's claim. */
+  const instanceId = useId();
+  useRegisterUnsaved(`upload:${instanceId}`, busy);
 
   const [over, setOver] = useState(false);
   const input = useRef<HTMLInputElement>(null);

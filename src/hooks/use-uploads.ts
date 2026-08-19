@@ -277,9 +277,28 @@ export function useUploads({ destination, slug, filmProfile = 'walkthrough', onU
         if (result) done.push(result);
       }
 
-      if (done.length > 0) onUploaded?.(done);
+      /* Inside its own try. This used to run outside every catch in the file,
+         so a consumer that threw produced an unhandled rejection: no toast, no
+         error boundary, and the row still cheerfully reading Done while the
+         uploaded media never reached the form. Minutes of transcoding became an
+         orphaned file with no signal that anything had gone wrong. */
+      if (done.length > 0) {
+        try {
+          onUploaded?.(done);
+        } catch (error) {
+          console.error('An upload finished but the screen could not take it', error);
+          for (const { row } of queued) {
+            patch(row.id, {
+              stage: 'failed',
+              label: 'Failed',
+              error:
+                'The file uploaded, but this screen could not add it. Reload the page and try again.',
+            });
+          }
+        }
+      }
     },
-    [runOne, onUploaded],
+    [runOne, onUploaded, patch],
   );
 
   const retry = useCallback(
@@ -288,7 +307,18 @@ export function useUploads({ destination, slug, filmProfile = 'walkthrough', onU
       if (!file) return;
       patch(id, { stage: 'queued', progress: 0, label: 'Waiting', error: undefined });
       const result = await runOne(id, file);
-      if (result) onUploaded?.([result]);
+      if (!result) return;
+
+      try {
+        onUploaded?.([result]);
+      } catch (error) {
+        console.error('An upload finished but the screen could not take it', error);
+        patch(id, {
+          stage: 'failed',
+          label: 'Failed',
+          error: 'The file uploaded, but this screen could not add it. Reload the page and try again.',
+        });
+      }
     },
     [patch, runOne, onUploaded],
   );

@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { useCallback, useState, useTransition } from 'react';
 
 import { FilmEditor, type EditorFilm } from '@/components/admin/FilmEditor';
+import { GuardedLink } from '@/components/admin/GuardedLink';
 import {
   MediaPanel,
   type EditorDrawing,
@@ -17,6 +17,8 @@ import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/toast';
+import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
+import { runAction } from '@/lib/action-result';
 import { saveProject, setProjectPublished } from '@/lib/mutations';
 import {
   CATEGORIES,
@@ -159,6 +161,11 @@ export function ProjectForm({ project, groups, drawings, film }: ProjectFormProp
   const [saving, startSave] = useTransition();
   const [publishing, startPublish] = useTransition();
 
+  /* Covers closing the tab, reloading, and leaving the site. Clicking a link
+     inside the admin is a client side route change the browser cannot see, so
+     that case is GuardedLink's, below. */
+  useRegisterUnsaved('project:fields', unsaved);
+
   const update = useCallback((changes: Partial<FormValues>) => {
     setValues((current) => ({ ...current, ...changes }));
     setUnsaved(true);
@@ -192,7 +199,7 @@ export function ProjectForm({ project, groups, drawings, film }: ProjectFormProp
     }
 
     startSave(async () => {
-      const result = await saveProject(project.id, input);
+      const result = await runAction(() => saveProject(project.id, input));
 
       if (!result.ok) {
         setErrors(result.errors ?? {});
@@ -221,7 +228,7 @@ export function ProjectForm({ project, groups, drawings, film }: ProjectFormProp
   const togglePublished = useCallback(() => {
     const next = !published;
     startPublish(async () => {
-      const result = await setProjectPublished(project.id, next);
+      const result = await runAction(() => setProjectPublished(project.id, next));
 
       if (!result.ok) {
         push(result.message ?? 'That did not change. Try again.', 'error');
@@ -237,9 +244,12 @@ export function ProjectForm({ project, groups, drawings, film }: ProjectFormProp
     <div className="grid gap-6">
       <div className="sticky top-0 z-20 -mx-6 flex flex-wrap items-center gap-3 border-b border-neutral-200 bg-neutral-50/95 px-6 py-3 backdrop-blur">
         <div className="min-w-0">
-          <Link href="/admin" className="text-xs text-neutral-500 hover:text-neutral-900">
+          <GuardedLink
+            href="/admin"
+            className="text-xs text-neutral-500 hover:text-neutral-900"
+          >
             All projects
-          </Link>
+          </GuardedLink>
           <h1 className="truncate text-lg font-semibold">{values.title || 'Untitled project'}</h1>
         </div>
 

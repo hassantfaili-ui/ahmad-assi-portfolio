@@ -28,4 +28,23 @@ config.default = {
   },
 };
 
+/**
+ * Keep .env out of the deploy bundle.
+ *
+ * The OpenNext package step copies the working directory's .env verbatim into
+ * .open-next/server-functions/default, so the artefact that gets uploaded
+ * carried a live DATABASE_URL and the local ACCESS_DEV_BYPASS. Nothing at
+ * runtime reads it, and env.ts refuses the bypass in production regardless, so
+ * this was never an open door. It is still a database URL shipped inside a
+ * deploy, which is not a thing to leave in place because it happened to be
+ * harmless.
+ */
+config.default = {
+  ...config.default,
+  install: {
+    ...config.default?.install,
+    packages: config.default?.install?.packages ?? ['pg-cloudflare'],
+  },
+};
+
 export default config;

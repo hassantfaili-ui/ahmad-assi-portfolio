@@ -11,9 +11,15 @@ import { Button } from '@/components/ui/button';
  * screen with Next's bare "Application error: a client side exception has
  * occurred", which tells Ahmad nothing and looks like the site is broken.
  *
- * The message says the one thing he needs to know, which is whether he has lost
- * anything, and reset re-renders the segment rather than reloading, so state
- * held above the failure survives where it can.
+ * The message says the one thing he needs to know, which is what happened to
+ * his work. It does not pretend the work survived: React unmounts the subtree
+ * to render this, so anything typed and not saved is gone, and saying otherwise
+ * would be a comfortable lie he would find out about immediately.
+ *
+ * One limit worth naming rather than leaving to be discovered: this is a
+ * sibling of (admin)/layout.tsx, so it cannot catch a throw from that layout
+ * itself, which owns html and body. src/app/global-error.tsx is the backstop
+ * for that.
  */
 export default function AdminError({
   error,

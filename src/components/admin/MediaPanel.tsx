@@ -12,7 +12,9 @@ import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
+import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
 import type { UploadedImage, UploadedItem } from '@/hooks/use-uploads';
+import { runAction } from '@/lib/action-result';
 import { saveDrawings, saveImageGroups } from '@/lib/mutations';
 import { hasErrors, validateImages, type FieldErrors } from '@/lib/validation';
 
@@ -151,6 +153,11 @@ export function MediaPanel({
   const [drawingsUnsaved, setDrawingsUnsaved] = useState(false);
   const [savingDrawings, startDrawingSave] = useTransition();
 
+  /* Two halves, two flags, and each is cleared only by the button that saves
+     it. One warning covers both, because the browser asks the same question
+     whichever of them is outstanding. */
+  useRegisterUnsaved('project:media', groupsUnsaved || drawingsUnsaved);
+
   /**
    * Every change to the arrangement goes through here, as a function of what is
    * already there rather than of what was there.
@@ -218,13 +225,15 @@ export function MediaPanel({
     }
 
     startGroupSave(async () => {
-      const result = await saveImageGroups(
-        projectId,
-        groups.map((group) => ({
-          layout: group.layout,
-          caption: group.caption,
-          images: group.images.map((image) => ({ mediaId: image.mediaId, alt: image.alt })),
-        })),
+      const result = await runAction(() =>
+        saveImageGroups(
+          projectId,
+          groups.map((group) => ({
+            layout: group.layout,
+            caption: group.caption,
+            images: group.images.map((image) => ({ mediaId: image.mediaId, alt: image.alt })),
+          })),
+        ),
       );
 
       if (!result.ok) {
@@ -304,13 +313,15 @@ export function MediaPanel({
     }
 
     startDrawingSave(async () => {
-      const result = await saveDrawings(
-        projectId,
-        drawings.map((drawing) => ({
-          mediaId: drawing.mediaId,
-          alt: drawing.alt,
-          drawingType: drawing.drawingType,
-        })),
+      const result = await runAction(() =>
+        saveDrawings(
+          projectId,
+          drawings.map((drawing) => ({
+            mediaId: drawing.mediaId,
+            alt: drawing.alt,
+            drawingType: drawing.drawingType,
+          })),
+        ),
       );
 
       if (!result.ok) {

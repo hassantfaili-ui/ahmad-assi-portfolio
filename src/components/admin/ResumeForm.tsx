@@ -2,7 +2,13 @@
 
 import Image from 'next/image';
 import { Plus, X } from 'lucide-react';
-import { useState, useTransition, type ReactNode } from 'react';
+import {
+  useState,
+  useTransition,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from 'react';
 
 import { Dropzone } from '@/components/admin/Dropzone';
 import { SortableList } from '@/components/admin/SortableList';
@@ -12,7 +18,9 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/toast';
+import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
 import type { UploadedItem } from '@/hooks/use-uploads';
+import { runAction } from '@/lib/action-result';
 import { mediaUrl } from '@/lib/media-url';
 import {
   saveProfile,
@@ -254,12 +262,42 @@ function blankIn(section: string, noun: string, values: string[], what: string):
   return `${noun} ${index + 1} under ${section} has no ${what}. Fill it in, or remove it, then save again.`;
 }
 
+/**
+ * A setter that also marks its half of the screen as unsaved.
+ *
+ * Wrapping the setter rather than each of the fifty or so places that call one
+ * is what makes the flag exhaustive. A field wired to a wrapped setter is
+ * covered the moment it is written, and no call site is left that can change a
+ * savable value quietly, which is the whole failure this guards against: the
+ * badge stays off, the leave warning never arms, and the work goes.
+ */
+function marking<T>(
+  set: Dispatch<SetStateAction<T>>,
+  markDirty: Dispatch<SetStateAction<boolean>>,
+): Dispatch<SetStateAction<T>> {
+  return (next) => {
+    markDirty(true);
+    set(next);
+  };
+}
+
 // ------------------------------------------------------------ the screen ---
 
 export function ResumeForm({ data }: { data: ResumeData }) {
   const { push } = useToast();
 
-  const [fields, setFields] = useState<ProfileFields>(() => ({
+  // One flag for each save button, because the two halves are written by two
+  // separate actions and saving one leaves the other exactly as unsaved as it
+  // was. A single flag would clear the badge over work that is still only on
+  // the page, which is the trap this screen already sets by having the header
+  // say the halves are independent.
+  const [profileDirty, setProfileDirty] = useState(false);
+  const [listsDirty, setListsDirty] = useState(false);
+
+  useRegisterUnsaved('resume:profile', profileDirty);
+  useRegisterUnsaved('resume:lists', listsDirty);
+
+  const [fields, setFieldsState] = useState<ProfileFields>(() => ({
     name: data.profile?.name ?? '',
     discipline: data.profile?.discipline ?? '',
     credential: data.profile?.credential ?? '',
@@ -276,20 +314,24 @@ export function ResumeForm({ data }: { data: ResumeData }) {
     references: data.profile?.references ?? '',
   }));
 
-  const [longBio, setLongBio] = useState<TextRow[]>(() => toTextRows(data.profile?.longBio ?? []));
-  const [portrait, setPortrait] = useState<FileRef | null>(() => data.profile?.portraitMedia ?? null);
-  const [cv, setCv] = useState<FileRef | null>(() => data.profile?.cvMedia ?? null);
-  const [portfolio, setPortfolio] = useState<FileRef | null>(
+  const [longBio, setLongBioState] = useState<TextRow[]>(() =>
+    toTextRows(data.profile?.longBio ?? []),
+  );
+  const [portrait, setPortraitState] = useState<FileRef | null>(
+    () => data.profile?.portraitMedia ?? null,
+  );
+  const [cv, setCvState] = useState<FileRef | null>(() => data.profile?.cvMedia ?? null);
+  const [portfolio, setPortfolioState] = useState<FileRef | null>(
     () => data.profile?.portfolioMedia ?? null,
   );
 
-  const [facts, setFacts] = useState<FactRow[]>(() =>
+  const [facts, setFactsState] = useState<FactRow[]>(() =>
     data.facts.map((fact) => ({ uid: nextUid(), label: fact.label, items: toTextRows(fact.items) })),
   );
-  const [social, setSocial] = useState<SocialRow[]>(() =>
+  const [social, setSocialState] = useState<SocialRow[]>(() =>
     data.social.map((link) => ({ uid: nextUid(), label: link.label, href: link.href })),
   );
-  const [experience, setExperience] = useState<ExperienceRow[]>(() =>
+  const [experience, setExperienceState] = useState<ExperienceRow[]>(() =>
     data.experience.map((entry) => ({
       uid: nextUid(),
       role: entry.role,
@@ -299,7 +341,7 @@ export function ResumeForm({ data }: { data: ResumeData }) {
       contributions: toTextRows(entry.contributions),
     })),
   );
-  const [education, setEducation] = useState<EducationRow[]>(() =>
+  const [education, setEducationState] = useState<EducationRow[]>(() =>
     data.education.map((entry) => ({
       uid: nextUid(),
       credential: entry.credential,
@@ -308,17 +350,17 @@ export function ResumeForm({ data }: { data: ResumeData }) {
       note: entry.note ?? '',
     })),
   );
-  const [skillGroups, setSkillGroups] = useState<SkillGroupRow[]>(() =>
+  const [skillGroups, setSkillGroupsState] = useState<SkillGroupRow[]>(() =>
     data.skillGroups.map((group) => ({
       uid: nextUid(),
       label: group.label,
       items: toTextRows(group.items.map((item) => item.name)),
     })),
   );
-  const [languages, setLanguages] = useState<TextRow[]>(() =>
+  const [languages, setLanguagesState] = useState<TextRow[]>(() =>
     toTextRows(data.languages.map((language) => language.text)),
   );
-  const [entries, setEntries] = useState<Record<Section, EntryRow[]>>(() => ({
+  const [entries, setEntriesState] = useState<Record<Section, EntryRow[]>>(() => ({
     volunteering: entryRowsFor(data.entries, 'volunteering'),
     awards: entryRowsFor(data.entries, 'awards'),
     publications: entryRowsFor(data.entries, 'publications'),
@@ -330,6 +372,25 @@ export function ResumeForm({ data }: { data: ResumeData }) {
   const [listsNotice, setListsNotice] = useState<string | null>(null);
   const [savingProfile, startProfileSave] = useTransition();
   const [savingLists, startListsSave] = useTransition();
+
+  // Every savable value on this screen is written through one of these rather
+  // than through its setter directly, so marking the right half unsaved is not
+  // something a call site can forget. The top group is what Save your details
+  // writes, the bottom group is what Save the lists writes, and nothing
+  // belongs to both.
+  const setFields = marking(setFieldsState, setProfileDirty);
+  const setLongBio = marking(setLongBioState, setProfileDirty);
+  const setPortrait = marking(setPortraitState, setProfileDirty);
+  const setCv = marking(setCvState, setProfileDirty);
+  const setPortfolio = marking(setPortfolioState, setProfileDirty);
+
+  const setFacts = marking(setFactsState, setListsDirty);
+  const setSocial = marking(setSocialState, setListsDirty);
+  const setExperience = marking(setExperienceState, setListsDirty);
+  const setEducation = marking(setEducationState, setListsDirty);
+  const setSkillGroups = marking(setSkillGroupsState, setListsDirty);
+  const setLanguages = marking(setLanguagesState, setListsDirty);
+  const setEntries = marking(setEntriesState, setListsDirty);
 
   const setField = (field: keyof ProfileFields, value: string) =>
     setFields((current) => ({ ...current, [field]: value }));
@@ -357,7 +418,7 @@ export function ResumeForm({ data }: { data: ResumeData }) {
     }
 
     startProfileSave(async () => {
-      const result = await saveProfile(input);
+      const result = await runAction(() => saveProfile(input));
 
       if (!result.ok) {
         setProfileErrors(result.errors ?? {});
@@ -367,6 +428,7 @@ export function ResumeForm({ data }: { data: ResumeData }) {
 
       setProfileErrors({});
       setProfileNotice(result.warning ?? null);
+      setProfileDirty(false);
       push('Your details are saved.');
     });
   }
@@ -431,7 +493,7 @@ export function ResumeForm({ data }: { data: ResumeData }) {
     };
 
     startListsSave(async () => {
-      const result = await saveResumeLists(lists);
+      const result = await runAction(() => saveResumeLists(lists));
 
       if (!result.ok) {
         push(result.message ?? 'The lists were not saved. Try again in a moment.', 'error');
@@ -439,6 +501,7 @@ export function ResumeForm({ data }: { data: ResumeData }) {
       }
 
       setListsNotice(result.warning ?? null);
+      setListsDirty(false);
       push('Your resume lists are saved.');
     });
   }
@@ -451,6 +514,7 @@ export function ResumeForm({ data }: { data: ResumeData }) {
           description="Your name, how you describe yourself, your portrait, your PDFs and how people reach you. This button saves everything in this half. The lists below have their own button."
           label="Save your details"
           busy={savingProfile}
+          dirty={profileDirty}
           onSave={onSaveProfile}
         />
 
@@ -744,6 +808,7 @@ export function ResumeForm({ data }: { data: ResumeData }) {
           description="Everything the resume page lists out. Drag the handle on the left of any row to move it, or focus the handle and use the arrow keys. This button saves all of the lists at once."
           label="Save the lists"
           busy={savingLists}
+          dirty={listsDirty}
           onSave={onSaveLists}
         />
 
@@ -1243,12 +1308,14 @@ function SaveBar({
   description,
   label,
   busy,
+  dirty,
   onSave,
 }: {
   title: string;
   description: string;
   label: string;
   busy: boolean;
+  dirty: boolean;
   onSave: () => void;
 }) {
   return (
@@ -1257,9 +1324,14 @@ function SaveBar({
         <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
         <p className="mt-1 max-w-3xl text-sm text-neutral-600">{description}</p>
       </div>
-      <Button type="button" onClick={onSave} disabled={busy}>
-        {busy ? 'Saving' : label}
-      </Button>
+      {/* Beside this button and no other, because the flag behind it belongs to
+          this half alone. */}
+      <div className="flex items-center gap-3">
+        {dirty && <Badge variant="warning">Not saved yet</Badge>}
+        <Button type="button" onClick={onSave} disabled={busy}>
+          {busy ? 'Saving' : label}
+        </Button>
+      </div>
     </div>
   );
 }

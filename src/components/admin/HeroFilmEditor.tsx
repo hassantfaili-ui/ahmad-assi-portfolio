@@ -11,7 +11,9 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
+import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
 import type { UploadedFilm, UploadedItem } from '@/hooks/use-uploads';
+import { runAction } from '@/lib/action-result';
 import { deleteFilm, saveFilm } from '@/lib/mutations';
 import { mediaUrl } from '@/lib/media-url';
 import { formatBytes } from '@/lib/upload-policy';
@@ -114,8 +116,26 @@ export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
   const smallest = sources[sources.length - 1];
 
   const hasFilm = sources.length > 0 || Boolean(poster) || Boolean(youtubeId);
+
+  /* The unsaved flag for this screen. One flag, because the one Save button
+     covers both things that can be waiting: a caption typed into the field, and
+     a film dropped into the box above. Comparing the caption against the saved
+     one rather than latching a boolean means typing a word and taking it back
+     again counts as nothing to save, which is what it is. It is cleared in the
+     success branch of that save, and by a successful removal, which leaves
+     nothing left to save. */
   const changed = waiting || caption.trim() !== savedCaption.trim();
+  useRegisterUnsaved('hero:film', changed);
+
   const canSave = changed && (sources.length > 0 || Boolean(youtubeId));
+
+  /* Why Save is greyed out, in the row beside it. A disabled button with
+     nothing next to it reads as broken rather than as nothing to do. */
+  const whyNoSave = canSave
+    ? null
+    : sources.length === 0
+      ? 'Nothing to save yet. Drop a film above first.'
+      : 'Nothing has changed since you last saved.';
 
   const handleUploaded = useCallback(
     (items: UploadedItem[]) => {
@@ -139,12 +159,14 @@ export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
 
   const save = useCallback(() => {
     startWork(async () => {
-      const result = await saveFilm(null, {
-        posterMediaId: poster?.id ?? null,
-        youtubeId,
-        caption: caption.trim() || null,
-        sources: sources.map((source) => ({ mediaId: source.media.id, height: source.height })),
-      });
+      const result = await runAction(() =>
+        saveFilm(null, {
+          posterMediaId: poster?.id ?? null,
+          youtubeId,
+          caption: caption.trim() || null,
+          sources: sources.map((source) => ({ mediaId: source.media.id, height: source.height })),
+        }),
+      );
 
       if (!result.ok) {
         const listed = Object.values(result.errors ?? {});
@@ -164,7 +186,7 @@ export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
 
   const remove = useCallback(() => {
     startWork(async () => {
-      const result = await deleteFilm(null);
+      const result = await runAction(() => deleteFilm(null));
 
       if (!result.ok) {
         setProblems([result.message ?? 'The film was not removed. Try again.']);
@@ -377,9 +399,10 @@ export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
         <Button type="button" onClick={save} disabled={busy || !canSave}>
           {busy ? 'Saving' : 'Save'}
         </Button>
-        {changed && !busy && (
+        {changed && <Badge variant="warning">Not saved yet</Badge>}
+        {!busy && (
           <p className="text-sm text-neutral-600">
-            You have changes that are not on the home page yet.
+            {whyNoSave ?? 'You have changes that are not on the home page yet.'}
           </p>
         )}
       </div>

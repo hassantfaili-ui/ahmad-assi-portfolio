@@ -1,6 +1,7 @@
 import { requireAdmin } from '@/lib/access';
 import { ToastProvider } from '@/components/ui/toast';
 import { AdminNav } from '@/components/admin/AdminNav';
+import { UnsavedWorkProvider } from '@/components/admin/UnsavedWork';
 
 /**
  * The gate on the whole administration area.
@@ -41,10 +42,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <ToastProvider>
-      <div className="min-h-screen bg-neutral-50 text-neutral-900">
-        <AdminNav email={identity.email} />
-        <main className="mx-auto w-full max-w-6xl px-6 py-8">{children}</main>
-      </div>
+      {/* Above the navigation on purpose. The bar is the route out that Ahmad
+          is most likely to take by habit, and it can only ask before discarding
+          his work if it can see that there is any. */}
+      <UnsavedWorkProvider>
+        <div className="min-h-screen bg-neutral-50 text-neutral-900">
+          <AdminNav email={identity.email} />
+          <main className="mx-auto w-full max-w-6xl px-6 py-8">{children}</main>
+        </div>
+      </UnsavedWorkProvider>
     </ToastProvider>
   );
 }

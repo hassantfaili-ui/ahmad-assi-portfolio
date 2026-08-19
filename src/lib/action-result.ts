@@ -37,11 +37,18 @@ export async function runAction<T>(
     return await call();
   } catch (error) {
     console.error('A save failed before it could answer', error);
+    /* Careful about what this claims. A rejection covers a response lost on the
+       way back just as much as a request that never arrived, and in that case
+       the save may well have gone through. saveResumeLists in particular is a
+       delete everything then recreate transaction, so telling him to simply try
+       again could be telling him to redo work that already happened. The one
+       thing that is certainly true is that the page still holds what he
+       typed. */
     return {
       ok: false,
       message:
-        'Nothing was saved, and nothing was lost: your work is still on this page. ' +
-        'Check your connection and try again.',
+        'The save did not come back, so it is not clear whether it went through. ' +
+        'Your work is still on this page. Reload to see what saved before trying again.',
     };
   }
 }

@@ -16,7 +16,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "cf:build": "opennextjs-cloudflare build",
+    "cf:build": "node scripts/cf-build.mjs",
     "cf:preview": "opennextjs-cloudflare preview",
     "cf:deploy": "opennextjs-cloudflare deploy",
     "db:generate": "prisma generate",

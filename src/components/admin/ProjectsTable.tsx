@@ -14,6 +14,7 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { useToast } from '@/components/ui/toast';
+import { runAction } from '@/lib/action-result';
 import type { AdminProjectRow } from '@/lib/admin-queries';
 import {
   createProject,
@@ -33,7 +34,10 @@ import { TIERS } from '@/lib/validation';
  * has already clicked makes a working screen feel broken, so the change lands
  * first and the previous list is kept in hand: if the write comes back refused,
  * the list goes back exactly as it was and a message says so. A silent failure
- * here would leave him believing a project is live when it is not.
+ * here would leave him believing a project is live when it is not. Every write
+ * goes out through runAction for the same reason: a dropped connection then
+ * arrives as an ordinary refusal, which puts the row back, instead of as a
+ * rejection escaping the transition and taking the whole screen with it.
  *
  * That same worry is why an unpublished row does not merely say so. It is
  * dimmed, its cover is greyed, and it carries a badge, because "published" is
@@ -77,9 +81,28 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
   const [title, setTitle] = useState('');
   const [titleError, setTitleError] = useState<string | undefined>(undefined);
 
-  const [saving, startSaving] = useTransition();
+  const [, startSaving] = useTransition();
   const [deleting, startDeleting] = useTransition();
   const [creating, startCreating] = useTransition();
+
+  /* Which rows have a write in flight, by id. The transition's own pending flag
+     is one flag for the whole list, so wiring it to every row's controls greyed
+     out all of them at once whenever any single save was slow, which reads as
+     the page having crashed rather than as one row being written. A row only
+     disables its own select and its own switch. */
+  const [busyRows, setBusyRows] = useState<ReadonlySet<string>>(() => new Set());
+
+  const markBusy = useCallback((id: string) => {
+    setBusyRows((current) => new Set(current).add(id));
+  }, []);
+
+  const clearBusy = useCallback((id: string) => {
+    setBusyRows((current) => {
+      const next = new Set(current);
+      next.delete(id);
+      return next;
+    });
+  }, []);
 
   /* Which reorder is the current one. Holding the arrow key down sends several
      in a row, and without this an earlier one coming back refused would revert
@@ -101,7 +124,7 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
       const ticket = latestOrder.current;
 
       startSaving(async () => {
-        const result = await reorderProjects(idsInOrder);
+        const result = await runAction(() => reorderProjects(idsInOrder));
         if (ticket !== latestOrder.current) return;
         if (result.ok) return;
 
@@ -122,9 +145,12 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
 
       const previous = rows;
       setRows(rows.map((row) => (row.id === target.id ? { ...row, tier } : row)));
+      markBusy(target.id);
 
       startSaving(async () => {
-        const result = await setProjectTier(target.id, tier);
+        const result = await runAction(() => setProjectTier(target.id, tier));
+        clearBusy(target.id);
+
         if (!result.ok) {
           setRows(previous);
           push(result.message ?? PUT_BACK, 'error');
@@ -140,7 +166,7 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
         push(`${target.title} now sits in ${TIER_PHRASES[tier]}.`);
       });
     },
-    [rows, push],
+    [rows, push, markBusy, clearBusy],
   );
 
   const handlePublish = useCallback(
@@ -148,9 +174,12 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
       const published = !target.published;
       const previous = rows;
       setRows(rows.map((row) => (row.id === target.id ? { ...row, published } : row)));
+      markBusy(target.id);
 
       startSaving(async () => {
-        const result = await setProjectPublished(target.id, published);
+        const result = await runAction(() => setProjectPublished(target.id, published));
+        clearBusy(target.id);
+
         if (!result.ok) {
           setRows(previous);
           push(result.message ?? PUT_BACK, 'error');
@@ -164,7 +193,7 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
         );
       });
     },
-    [rows, push],
+    [rows, push, markBusy, clearBusy],
   );
 
   const handleDelete = useCallback(() => {
@@ -172,7 +201,7 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
     if (!target) return;
 
     startDeleting(async () => {
-      const result = await deleteProject(target.id);
+      const result = await runAction(() => deleteProject(target.id));
       if (!result.ok) {
         push(result.message ?? 'That project was not deleted. Please try again.', 'error');
         return;
@@ -196,7 +225,7 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
       setTitleError(undefined);
 
       startCreating(async () => {
-        const result = await createProject(trimmed);
+        const result = await runAction(() => createProject(trimmed));
         if (!result.ok || !result.data) {
           setTitleError(
             result.errors?.title ??
@@ -279,7 +308,8 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
         <div className="grid gap-3">
           <p className="text-xs text-neutral-500">
             Drag a project by its handle to change the running order, or focus the handle and use
-            the arrow keys. The order is saved as soon as you drop it.
+            the arrow keys. Either way the new order is saved straight away: on the drop with the
+            mouse, and on every arrow press with the keyboard.
           </p>
 
           <SortableList
@@ -351,7 +381,7 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
                   <Select
                     aria-label={`Where ${row.title} sits on the home page`}
                     value={row.tier}
-                    disabled={saving}
+                    disabled={busyRows.has(row.id)}
                     onChange={(event) =>
                       handleTier(row, event.target.value as AdminProjectRow['tier'])
                     }
@@ -368,7 +398,7 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
                     type="button"
                     role="switch"
                     aria-checked={row.published}
-                    disabled={saving}
+                    disabled={busyRows.has(row.id)}
                     onClick={() => handlePublish(row)}
                     className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-xs text-neutral-700 transition-colors hover:bg-neutral-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900 disabled:cursor-not-allowed disabled:opacity-50"
                   >
