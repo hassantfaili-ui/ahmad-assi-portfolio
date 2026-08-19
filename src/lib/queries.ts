@@ -1,21 +1,23 @@
 import 'server-only';
 
-import { unstable_cache } from 'next/cache';
 import { db } from '@/lib/db';
-import { TAGS } from '@/lib/cache-tags';
 
 /**
  * Every read the public site performs.
  *
- * Each one is wrapped in unstable_cache and tagged, so a save in the
- * administration area can invalidate exactly what it changed. Without that
- * every visitor causes a database query, and with a coarser tag every save
- * throws away the whole site's cache.
+ * Deliberately unwrapped by any data cache. The pages that call these are
+ * statically rendered and held as HTML in KV through the OpenNext incremental
+ * cache, so a visitor never reaches this code at all: a render only happens
+ * when a page is first requested or when a save revalidates its path. Caching
+ * the queries underneath that would be a second cache layer guarding something
+ * already cached, with its own invalidation to keep in step.
  *
- * unstable_cache rather than the "use cache" directive on purpose: "use cache"
- * needs the cacheComponents flag, which is still experimental, and this has to
- * deploy reliably to Workers through OpenNext. The migration between them is
- * mechanical if that changes.
+ * That layer was tried and removed. Next 16 changed revalidateTag to require a
+ * cacheLife profile and introduced updateTag for the "use cache" world, while
+ * unstable_cache belongs to the older tag manifest, and betting on the two
+ * interoperating is not worth what it would buy here. Path revalidation is one
+ * mechanism instead of two, and it is the one that decides what a visitor
+ * actually sees.
  */
 
 // ------------------------------------------------------------- selections ---
@@ -110,76 +112,61 @@ export type ProjectDetail = ProjectSummary & {
 
 // ---------------------------------------------------------------- queries ---
 
-export const getPublishedProjects = unstable_cache(
-  async (): Promise<ProjectSummary[]> => {
-    const rows = await db.project.findMany({
-      where: { published: true },
-      select: summarySelect,
-      orderBy: [{ order: 'asc' }, { id: 'asc' }],
-    });
-    return rows as unknown as ProjectSummary[];
-  },
-  ['published-projects'],
-  { tags: [TAGS.projects] },
-);
+export async function getPublishedProjects(): Promise<ProjectSummary[]> {
+  const rows = await db.project.findMany({
+    where: { published: true },
+    select: summarySelect,
+    orderBy: [{ order: 'asc' }, { id: 'asc' }],
+  });
+  return rows as unknown as ProjectSummary[];
+}
 
-export const getProjectSlugs = unstable_cache(
-  async (): Promise<string[]> => {
-    const rows = await db.project.findMany({
-      where: { published: true },
-      select: { slug: true },
-      orderBy: [{ order: 'asc' }, { id: 'asc' }],
-    });
-    return rows.map((r) => r.slug);
-  },
-  ['project-slugs'],
-  { tags: [TAGS.projects] },
-);
+export async function getProjectSlugs(): Promise<string[]> {
+  const rows = await db.project.findMany({
+    where: { published: true },
+    select: { slug: true },
+    orderBy: [{ order: 'asc' }, { id: 'asc' }],
+  });
+  return rows.map((row) => row.slug);
+}
 
 export async function getProjectBySlug(slug: string): Promise<ProjectDetail | null> {
-  const load = unstable_cache(
-    async (s: string) => {
-      const row = await db.project.findFirst({
-        where: { slug: s, published: true },
+  const row = await db.project.findFirst({
+    where: { slug, published: true },
+    select: {
+      ...summarySelect,
+      sheet: true,
+      area: true,
+      contribution: true,
+      body: true,
+      film: { select: filmInclude },
+      imageGroups: {
         select: {
-          ...summarySelect,
-          sheet: true,
-          area: true,
-          contribution: true,
-          body: true,
-          film: { select: filmInclude },
-          imageGroups: {
-            select: {
-              id: true,
-              layout: true,
-              caption: true,
-              images: {
-                select: { id: true, alt: true, media: { select: mediaSelect } },
-                orderBy: { order: 'asc' },
-              },
-            },
-            orderBy: { order: 'asc' },
-          },
-          drawings: {
-            select: { id: true, alt: true, drawingType: true, media: { select: mediaSelect } },
+          id: true,
+          layout: true,
+          caption: true,
+          images: {
+            select: { id: true, alt: true, media: { select: mediaSelect } },
             orderBy: { order: 'asc' },
           },
         },
-      });
-      return row as unknown as ProjectDetail | null;
+        orderBy: { order: 'asc' },
+      },
+      drawings: {
+        select: { id: true, alt: true, drawingType: true, media: { select: mediaSelect } },
+        orderBy: { order: 'asc' },
+      },
     },
-    ['project-by-slug', slug],
-    { tags: [TAGS.project(slug), TAGS.projects] },
-  );
-  return load(slug);
+  });
+  return row as unknown as ProjectDetail | null;
 }
 
 /**
  * The previous and next project, wrapping around at both ends.
  *
  * Wrapping is what the Astro build did with a modulo over the sorted list, and
- * it is the right behaviour: the pager is a way to browse the whole set, so a
- * dead end at either end is a worse answer than looping.
+ * it is the right behaviour: the pager exists to browse the whole set, so a dead
+ * end at either end is a worse answer than looping.
  */
 export async function getAdjacentProjects(
   slug: string,
@@ -187,7 +174,7 @@ export async function getAdjacentProjects(
   const projects = await getPublishedProjects();
   if (projects.length === 0) return null;
 
-  const index = projects.findIndex((p) => p.slug === slug);
+  const index = projects.findIndex((project) => project.slug === slug);
   if (index === -1) return null;
 
   const count = projects.length;
@@ -197,9 +184,9 @@ export async function getAdjacentProjects(
   };
 }
 
-export type ProfileView = Awaited<ReturnType<typeof loadProfile>>;
+export type ProfileView = Awaited<ReturnType<typeof getProfile>>;
 
-async function loadProfile() {
+export async function getProfile() {
   const [profile, facts, social, experience, education, skillGroups, languages, entries] =
     await Promise.all([
       db.profile.findUnique({
@@ -225,17 +212,11 @@ async function loadProfile() {
   return { profile, facts, social, experience, education, skillGroups, languages, entries };
 }
 
-export const getProfile = unstable_cache(loadProfile, ['profile'], { tags: [TAGS.profile] });
-
 /** The site hero film is the one Film row with no project attached. */
-export const getHeroFilm = unstable_cache(
-  async (): Promise<FilmView | null> => {
-    const row = await db.film.findFirst({
-      where: { projectId: null },
-      select: filmInclude,
-    });
-    return row as unknown as FilmView | null;
-  },
-  ['hero-film'],
-  { tags: [TAGS.hero] },
-);
+export async function getHeroFilm(): Promise<FilmView | null> {
+  const row = await db.film.findFirst({
+    where: { projectId: null },
+    select: filmInclude,
+  });
+  return row as unknown as FilmView | null;
+}
