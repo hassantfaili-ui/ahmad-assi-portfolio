@@ -11,9 +11,6 @@
    never break in the wrong place.
    ========================================================================== */
 
-@import '@fontsource-variable/big-shoulders-display/wght';
-@import '@fontsource-variable/archivo/wdth.css';
-
 :root {
   --ink: #0b0b0b;
   --ink-2: #4a4a4a;

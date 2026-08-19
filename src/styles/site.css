@@ -12,9 +12,6 @@
    Two families only: Big Shoulders for display, Archivo for everything else.
    ========================================================================== */
 
-@import '@fontsource-variable/big-shoulders-display/wght';
-@import '@fontsource-variable/archivo/wdth.css';
-
 /* light, the default */
 :root {
   --paper: #ffffff;
@@ -67,7 +64,6 @@
   --t-body: 1rem;
   --t-data: 0.6875rem;
 
-
   --pad: clamp(1.25rem, 5vw, 4.5rem);
   --ease: cubic-bezier(0.16, 0.84, 0.28, 1);
 }
@@ -119,7 +115,6 @@ button {
   background: var(--mark);
   color: var(--mark-ink);
 }
-
 
 /* ------------------------------------------------------------- skip link --- */
 
@@ -1499,8 +1494,6 @@ button {
     padding-top: 0;
   }
 }
-
-
 
 /* ---------------------------------------------------------- theme switch --- */
 
