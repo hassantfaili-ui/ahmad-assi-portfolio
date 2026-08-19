@@ -11,7 +11,7 @@ import typescript from 'eslint-config-next/typescript';
  * line of source. That made `npm run lint` a gate nothing could pass, which is
  * worse than no gate at all because it looks like one.
  */
-export default [
+const config = [
   ...coreWebVitals,
   ...typescript,
   {
@@ -25,3 +25,5 @@ export default [
     ],
   },
 ];
+
+export default config;

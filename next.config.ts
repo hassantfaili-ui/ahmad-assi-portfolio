@@ -10,6 +10,11 @@ import type { NextConfig } from 'next';
  */
 const nextConfig: NextConfig = {
   devIndicators: false,
+  /* The Astro build wrote /resume/index.html, so every canonical it published
+     carried a trailing slash and that is what has been indexed. Dropping it
+     would point every canonical at a URL that disagrees with the one already in
+     the index, which is a real change rather than a cosmetic one. */
+  trailingSlash: true,
   images: {
     loader: 'custom',
     loaderFile: './src/lib/image-loader.ts',

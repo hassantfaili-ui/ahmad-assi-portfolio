@@ -1,5 +1,3 @@
-import type { Metadata } from 'next';
-
 import { requireAdmin } from '@/lib/access';
 import { ToastProvider } from '@/components/ui/toast';
 import { AdminNav } from '@/components/admin/AdminNav';
@@ -25,11 +23,6 @@ import { AdminNav } from '@/components/admin/AdminNav';
  * at the edge before it reaches the Worker at all. This is what makes a
  * misconfigured Access policy fail closed rather than publishing the editor.
  */
-
-export const metadata: Metadata = {
-  title: 'Editing, Ahmad Assi',
-  robots: { index: false, follow: false },
-};
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const identity = await requireAdmin();

@@ -50,13 +50,42 @@ const summarySelect = {
   leadImage: { select: mediaSelect },
 } as const;
 
+/**
+ * Every field a film needs on the page.
+ *
+ * youtubeId and caption are here because they were once missing and nothing
+ * caught it: FilmView declared them, the select did not fetch them, and an
+ * `as unknown as` cast in between told the compiler not to look. The caption
+ * under the Lincoln Beach walkthrough silently disappeared and both posters
+ * rendered empty. The casts are gone now, so this shape is checked.
+ */
 const filmInclude = {
+  youtubeId: true,
+  caption: true,
   posterMedia: { select: mediaSelect },
   sources: {
     select: { height: true, media: { select: mediaSelect } },
     orderBy: { height: 'desc' },
   },
 } as const;
+
+interface FilmRow {
+  youtubeId: string | null;
+  caption: string | null;
+  posterMedia: MediaRef | null;
+  sources: { height: number; media: MediaRef }[];
+}
+
+/** posterMedia is the column, poster is what the page reads. */
+function toFilmView(row: FilmRow | null): FilmView | null {
+  if (!row) return null;
+  return {
+    youtubeId: row.youtubeId,
+    caption: row.caption,
+    poster: row.posterMedia,
+    sources: row.sources,
+  };
+}
 
 // ------------------------------------------------------------------ types ---
 
@@ -158,7 +187,10 @@ export async function getProjectBySlug(slug: string): Promise<ProjectDetail | nu
       },
     },
   });
-  return row as unknown as ProjectDetail | null;
+  if (!row) return null;
+
+  const { film, ...rest } = row as unknown as Omit<ProjectDetail, 'film'> & { film: FilmRow | null };
+  return { ...rest, film: toFilmView(film) };
 }
 
 /**
@@ -218,5 +250,5 @@ export async function getHeroFilm(): Promise<FilmView | null> {
     where: { projectId: null },
     select: filmInclude,
   });
-  return row as unknown as FilmView | null;
+  return toFilmView(row);
 }

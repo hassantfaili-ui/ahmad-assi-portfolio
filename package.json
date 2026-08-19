@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/check-database.mjs && next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -23,7 +23,9 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "migrate:content": "node scripts/migrate-content.mjs"
+    "migrate:content": "node scripts/migrate-content.mjs",
+    "build:only": "next build",
+    "db:check": "node scripts/check-database.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1033.0",
@@ -45,6 +47,7 @@
     "clsx": "^2.1.1",
     "jose": "^6.2.9",
     "lucide-react": "^1.8.0",
+    "markdown-it": "^15.0.0",
     "mediabunny": "^1.55.1",
     "next": "^16.3.1",
     "pg": "^8.20.0",
@@ -58,6 +61,7 @@
     "@opennextjs/cloudflare": "^1.20.2",
     "@playwright/test": "^1.50.0",
     "@tailwindcss/postcss": "^4.3.3",
+    "@types/markdown-it": "^14.2.0",
     "@types/node": "^22.10.0",
     "@types/pg": "^8.11.0",
     "@types/react": "^19",
