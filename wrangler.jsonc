@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ahmadassi",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-19",
+  // Not optional. Prisma, the AWS SDK and jose all reach for Node built-ins.
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": { "enabled": true },
+  // The rendered page cache. Filled in by `wrangler kv namespace create`.
+  "kv_namespaces": [
+    { "binding": "NEXT_INC_CACHE_KV", "id": "PLACEHOLDER_KV_ID" }
+  ],
+  // Pools and caches the Neon connection so @prisma/adapter-pg works from a
+  // Worker. Filled in by `wrangler hyperdrive create`.
+  "hyperdrive": [
+    { "binding": "HYPERDRIVE", "id": "PLACEHOLDER_HYPERDRIVE_ID" }
+  ],
+  "vars": {
+    "MEDIA_ORIGIN": "https://media.ahmadassi.ca"
+  }
+}
