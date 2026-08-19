@@ -85,7 +85,8 @@ written for Ahmad rather than for a developer.
 
 ## Deploying
 
-Cloudflare Workers.
+Cloudflare Workers. The step by step version is in
+[docs/DEPLOYING.md](docs/DEPLOYING.md); this is the summary.
 
 **Bindings**, all in `wrangler.jsonc` and all needing real ids before the first
 deploy:
