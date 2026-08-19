@@ -4,7 +4,9 @@
   "description": "Portfolio website for Ahmad Assi, architectural designer",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22.12.0" },
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -48,6 +50,7 @@
     "pg": "^8.20.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "server-only": "^0.0.1",
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
@@ -58,6 +61,7 @@
     "@types/pg": "^8.11.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "^16.3.1",
     "gray-matter": "^4.0.3",
