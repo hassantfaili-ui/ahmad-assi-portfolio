@@ -32,6 +32,21 @@ export const MEDIA_ORIGIN = (
 /** True when media is coming off local disk rather than out of the bucket. */
 const LOCAL_MEDIA = MEDIA_ORIGIN === '';
 
+/**
+ * Whether this origin can resize an image.
+ *
+ * Cloudflare Image Transformations live at /cdn-cgi/image on a zone, which
+ * means a domain on the account. A bucket's own pub-....r2.dev address is not
+ * one: it serves objects and nothing else, and a transformation URL against it
+ * returns 404, verified rather than assumed.
+ *
+ * That matters because r2.dev is exactly what a preview deploy uses before the
+ * custom domain is attached. Emitting a transformation URL there would break
+ * every image on the page while looking like a code fault rather than a missing
+ * piece of setup.
+ */
+const ORIGIN_CAN_TRANSFORM = !LOCAL_MEDIA && !/\.r2\.dev$/i.test(MEDIA_ORIGIN);
+
 /** The public URL of an object, given its key. */
 export function mediaUrl(key: string): string {
   if (!key) return '';
@@ -62,10 +77,13 @@ export interface ImageLoaderArgs {
 export function imageLoader({ src, width, quality }: ImageLoaderArgs): string {
   const key = src.replace(/^\/+/, '');
 
-  /* No transformations off local disk: /cdn-cgi/image only exists on a
-     Cloudflare zone. The dev server serves the original, which is the right
-     trade for development and is why the loader has to know the difference. */
+  /* The dev server serves the original off disk. */
   if (LOCAL_MEDIA) return `/api/media-dev/${key}`;
+
+  /* An origin that cannot resize serves the original too. Full size rather than
+     right size is a cost a visitor pays, but a broken image is worse, and this
+     only happens on a preview origin. */
+  if (!ORIGIN_CAN_TRANSFORM) return `${MEDIA_ORIGIN}/${key}`;
 
   const params = `width=${width},format=auto,quality=${quality ?? 82}`;
   return `${MEDIA_ORIGIN}/cdn-cgi/image/${params}/${key}`;

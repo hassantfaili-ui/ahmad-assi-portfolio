@@ -112,3 +112,42 @@ describe('imageLoader', () => {
     );
   });
 });
+
+/**
+ * Origins that cannot resize.
+ *
+ * Cloudflare Image Transformations live on a zone. A bucket's own
+ * pub-....r2.dev address is not one, and a transformation URL against it
+ * returns 404, which was verified against the real bucket rather than assumed.
+ * That origin is exactly what a preview deploy uses before the custom domain is
+ * attached, so getting this wrong breaks every image on the preview and looks
+ * like a code fault rather than missing setup.
+ */
+describe('imageLoader, against an origin that cannot transform', () => {
+  it('serves the original from an r2.dev origin instead of a 404', async () => {
+    vi.resetModules();
+    vi.stubEnv('NEXT_PUBLIC_MEDIA_ORIGIN', 'https://pub-abc123.r2.dev');
+    const { imageLoader: loader } = await import('./media-url');
+
+    expect(loader({ src: 'projects/a/b.jpg', width: 800 })).toBe(
+      'https://pub-abc123.r2.dev/projects/a/b.jpg',
+    );
+    expect(loader({ src: 'projects/a/b.jpg', width: 800 })).not.toContain('cdn-cgi');
+
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it('still transforms on a real zone', async () => {
+    vi.resetModules();
+    vi.stubEnv('NEXT_PUBLIC_MEDIA_ORIGIN', 'https://media.ahmadassi.ca');
+    const { imageLoader: loader } = await import('./media-url');
+
+    expect(loader({ src: 'projects/a/b.jpg', width: 800 })).toBe(
+      'https://media.ahmadassi.ca/cdn-cgi/image/width=800,format=auto,quality=82/projects/a/b.jpg',
+    );
+
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+})
