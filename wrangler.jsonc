@@ -28,6 +28,6 @@
   // build, which means .env or the CI environment. Verified by building with a
   // probe value and finding it in the emitted chunks.
   "vars": {
-    "MEDIA_ORIGIN": "https://media.ahmadassi.ca"
+    "MEDIA_ORIGIN": "https://pub-a254722ed465461099b646f0d39d458b.r2.dev"
   }
 }

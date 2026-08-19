@@ -1,28 +1,32 @@
 import 'server-only';
 
+import { cache } from 'react';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 /**
- * The Prisma client.
+ * The Prisma client, one per request.
  *
- * Two ways in, depending on where this is running. On Cloudflare Workers the
- * connection string comes from the Hyperdrive binding, which pools and caches
- * the Neon connection so a Worker that lives for one request does not open a
- * new Postgres connection every time. Locally there is no binding, so it falls
- * back to DATABASE_URL.
+ * Two things here are Workers specific and both were learned the hard way.
  *
- * Exported as a proxy rather than an instance because the Hyperdrive binding is
- * only readable inside a request, so the client cannot be built at module load.
- * The proxy defers construction to the first property access, which is always
- * inside a request, and memoises it for the life of the isolate.
+ * A pooled connection cannot be shared between requests. A Worker is not a long
+ * lived server: reusing one client across requests means a later request
+ * inheriting a connection from an invocation that has already been torn down,
+ * and it fails in ways that look intermittent. So the client is built per
+ * request, and the pool is told maxUses: 1 so a connection is never handed out
+ * twice.
+ *
+ * React's cache() is what makes that affordable. It memoises for the life of a
+ * single request, so all fifty odd call sites across a render share one client
+ * and one connection, and the next request gets its own. Outside a request, at
+ * build time, it simply memoises per render, which is also what is wanted.
+ *
+ * The connection string comes from the Hyperdrive binding on Workers, which
+ * pools and caches on Cloudflare's side, and falls back to DATABASE_URL
+ * everywhere else.
  */
 
-let client: PrismaClient | undefined;
-
 function resolveConnectionString(): string {
-  // Workers first. This import is dynamic in effect: on a Node host the
-  // binding is absent and the catch is the normal path, not an error case.
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getCloudflareContext } = require('@opennextjs/cloudflare') as {
@@ -31,7 +35,7 @@ function resolveConnectionString(): string {
     const hyperdrive = getCloudflareContext().env.HYPERDRIVE;
     if (hyperdrive?.connectionString) return hyperdrive.connectionString;
   } catch {
-    /* not running on Workers, or called outside a request */
+    /* Not on Workers, or called outside a request. Both fall through. */
   }
 
   const url = process.env.DATABASE_URL;
@@ -41,10 +45,14 @@ function resolveConnectionString(): string {
   return url;
 }
 
-function build(): PrismaClient {
+/** One client for the life of one request. */
+const getClient = cache((): PrismaClient => {
   const connectionString = resolveConnectionString();
+
   const adapter = new PrismaPg({
     connectionString,
+    /* Never hand the same connection to a second request. */
+    maxUses: 1,
     ...(connectionString.includes('sslmode=require') || process.env.DATABASE_SSL === 'true'
       ? { ssl: { rejectUnauthorized: false } }
       : {}),
@@ -54,15 +62,19 @@ function build(): PrismaClient {
     adapter,
     log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
   });
-}
+});
 
 export function getDb(): PrismaClient {
-  if (!client) client = build();
-  return client;
+  return getClient();
 }
 
+/**
+ * Exported as a proxy so every call site reads `db.project.findMany()` while
+ * still resolving a fresh client per request underneath. The alternative was
+ * awaiting a getter at fifty two call sites for no gain in clarity.
+ */
 export const db = new Proxy({} as PrismaClient, {
   get(_target, property, receiver) {
-    return Reflect.get(getDb(), property, receiver);
+    return Reflect.get(getClient(), property, receiver);
   },
 });

@@ -1,0 +1,14 @@
+# Cloudflare Workers Assets reads this from the published output.
+
+/_next/static/*
+# Turbopack emits content hashed filenames here, so the bytes behind a name can
+# never change. They were being served with max-age=0, must-revalidate, which
+# made a browser issue a conditional request for all fourteen chunks on every
+# navigation, roughly 200KB of round trips buying nothing.
+  Cache-Control: public, max-age=31536000, immutable
+
+/_next/image*
+  Cache-Control: public, max-age=3600, must-revalidate
+
+/*.woff2
+  Cache-Control: public, max-age=31536000, immutable
