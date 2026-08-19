@@ -61,7 +61,7 @@ export function isCurrent(pathname: string, path: string): boolean {
  * is the default on purpose: the site has to build for somebody who has not set
  * up a bucket.
  */
-const MEDIA_ORIGIN = (import.meta.env.PUBLIC_MEDIA_ORIGIN || '').replace(/\/+$/, '');
+const MEDIA_ORIGIN = (import.meta.env.PUBLIC_MEDIA_ORIGIN || 'https://pub-a254722ed465461099b646f0d39d458b.r2.dev').replace(/\/+$/, '');
 
 export function filmUrl(path: string | undefined | null): string {
   if (!path) return '';

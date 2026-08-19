@@ -19,9 +19,9 @@ import shrinkMedia from './src/integrations/shrink-media.mjs';
  * shipping a login page that cannot work.
  */
 const editing = process.env.npm_lifecycle_event === 'dev';
-const editorOnline = Boolean(
-  process.env.PUBLIC_KEYSTATIC_CLOUD_PROJECT || process.env.PUBLIC_KEYSTATIC_GITHUB_REPO,
-);
+/* Always true now that the cloud project is committed in keystatic.config.ts.
+   Kept as a flag so a build can still be made without the editor by clearing it. */
+const editorOnline = true;
 
 /**
  * Served from the root of its own domain.

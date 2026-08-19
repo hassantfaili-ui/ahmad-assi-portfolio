@@ -79,7 +79,14 @@ const dated = (label: string) =>
  * process.env here throws "process is not defined" and the editor fails to
  * hydrate with a blank screen.
  */
-const cloudProject = import.meta.env.PUBLIC_KEYSTATIC_CLOUD_PROJECT;
+/* Committed rather than set in the host dashboard, because neither is a secret.
+   Both are PUBLIC_ values that Vite bakes into the client bundle at build time,
+   so they are already visible to anyone who views source. Keeping them here also
+   sidesteps a real chicken and egg on Cloudflare: a Worker with only static
+   assets refuses variables, and this project has no server code until the editor
+   is switched on, which is what the first of these switches on. An environment
+   variable still wins if one is set. */
+const cloudProject = import.meta.env.PUBLIC_KEYSTATIC_CLOUD_PROJECT || 'assi/ahmad-assi-portfolio';
 const repo = import.meta.env.PUBLIC_KEYSTATIC_GITHUB_REPO;
 
 export default config({

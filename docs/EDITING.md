@@ -22,13 +22,11 @@ needs accounts. It takes about ten minutes, once.
 3. Install the Keystatic Cloud GitHub App when it asks, granting it access to
    that one repository.
 4. Copy the project identifier it gives you. It looks like `team-name/project-name`.
-5. In Cloudflare, open the project, then **Settings → Variables and secrets**,
-   and add:
-
-   ```
-   PUBLIC_KEYSTATIC_CLOUD_PROJECT = assi/ahmad-assi-portfolio
-   ```
-
+5. Nothing to set in the host. The project key and the R2 origin are committed in
+   `keystatic.config.ts` and `src/lib/url.ts`, because neither is a secret: both
+   are `PUBLIC_` values that end up in the page source anyway. Cloudflare also
+   refuses variables on a Worker that has only static assets, which this one is
+   until the editor is switched on, so setting them there is circular.
 6. Redeploy. **Deployments → Retry deployment**, or push any commit.
 7. Check it took:
 
