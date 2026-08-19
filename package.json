@@ -15,7 +15,8 @@
     "check": "astro check",
     "portfolio": "./scripts/build-portfolio.sh",
     "hero": "./scripts/build-hero.sh",
-    "walkthrough": "./scripts/build-walkthrough.sh"
+    "walkthrough": "./scripts/build-walkthrough.sh",
+    "editor:check": "node scripts/check-editor.mjs"
   },
   "keywords": [],
   "author": "",

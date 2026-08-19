@@ -5,8 +5,9 @@ The editor is [Keystatic](https://keystatic.com). It writes ordinary files back
 to the repository, so every change is a normal commit that can be read and
 undone, and Netlify rebuilds the site within a minute or two of a save.
 
-The editor lives at **`/keystatic`** on the site, for example
-`https://ahmadassi.netlify.app/keystatic`.
+The editor lives at **`/admin`**, for example `https://ahmadassi.netlify.app/admin`.
+That is the address to give Ahmad and the one to bookmark. It hands straight on
+to `/keystatic`, which is where the editor actually runs.
 
 ---
 
@@ -29,6 +30,18 @@ needs accounts. It takes about ten minutes, once.
    ```
 
 6. Redeploy. **Deploys → Trigger deploy → Deploy site.**
+7. Check it took:
+
+   ```bash
+   npm run editor:check -- https://ahmadassi.netlify.app
+   ```
+
+   That reports what is configured and whether the deployed site is actually
+   serving the editor. It exists because the failure is otherwise silent: with
+   the variable missing or malformed the site still builds and every page still
+   works, and only `/keystatic` is quietly absent. Pasting the Keystatic Cloud
+   URL instead of the bare `team-name/project-name` is the usual slip, and the
+   check names it.
 
 After that, `/keystatic` shows a login screen. Sign in with an email address and
 password, or a passkey. The free tier covers three people.
