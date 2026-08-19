@@ -4,7 +4,7 @@ import resume from '../data/resume.json';
 import { url } from '../lib/url';
 
 /**
- * Email first, form second.
+ * Email only.
  *
  * Netlify Forms handles the submission, which is why a form exists here at all.
  * It is rendered ONLY in a Netlify build. The same repository can be built for
@@ -19,7 +19,6 @@ import { url } from '../lib/url';
  * hidden form-name input. Spam is handled by a honeypot rather than a CAPTCHA,
  * which visitors should not have to solve to say hello.
  */
-const netlifyForms = process.env.NETLIFY === 'true';
 /* Empty in the data today, so TypeScript infers never[]. Typed here so the block
    below starts working the moment a link is added in the editor. */
 const social = resume.social as { label: string; href: string }[];
@@ -53,53 +52,6 @@ const mailto = `mailto:${resume.email}?subject=${subject}`;
             {resume.email} <span class="i" aria-hidden="true">&rarr;</span>
           </a>
         </p>
-
-        {
-          netlifyForms && (
-            <form
-              class="form"
-              name="enquiry"
-              method="POST"
-              action={url('/contact/sent')}
-              data-netlify="true"
-              netlify-honeypot="bot-field"
-              data-contact
-            >
-              <p class="form-or">Or send a short note from here</p>
-
-              {/* Netlify matches the submission to the form by this name. */}
-              <input type="hidden" name="form-name" value="enquiry" />
-
-              {/* Honeypot. Hidden from people, irresistible to bots. */}
-              <p class="hp" aria-hidden="true">
-                <label>
-                  Do not fill this in
-                  <input name="bot-field" tabindex="-1" autocomplete="off" />
-                </label>
-              </p>
-
-              <div class="field">
-                <label for="name">Name</label>
-                <input id="name" name="name" type="text" autocomplete="name" required />
-                <span class="err" data-err-for="name" hidden />
-              </div>
-
-              <div class="field">
-                <label for="email">Email</label>
-                <input id="email" name="email" type="email" autocomplete="email" required />
-                <span class="err" data-err-for="email" hidden />
-              </div>
-
-              <div class="field">
-                <label for="message">Message</label>
-                <textarea id="message" name="message" rows="4" required />
-                <span class="err" data-err-for="message" hidden />
-              </div>
-
-              <button class="btn" type="submit">Send</button>
-            </form>
-          )
-        }
       </div>
 
       <div class="reveal">

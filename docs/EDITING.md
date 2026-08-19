@@ -3,9 +3,9 @@
 Everything on this site is editable from a browser, with a login and no code.
 The editor is [Keystatic](https://keystatic.com). It writes ordinary files back
 to the repository, so every change is a normal commit that can be read and
-undone, and Netlify rebuilds the site within a minute or two of a save.
+undone, and Cloudflare rebuilds the site within a minute or two of a save.
 
-The editor lives at **`/admin`**, for example `https://ahmadassi.netlify.app/admin`.
+The editor lives at **`/admin`**, for example `https://ahmad-assi.pages.dev/admin`.
 That is the address to give Ahmad and the one to bookmark. It hands straight on
 to `/keystatic`, which is where the editor actually runs.
 
@@ -22,18 +22,18 @@ needs accounts. It takes about ten minutes, once.
 3. Install the Keystatic Cloud GitHub App when it asks, granting it access to
    that one repository.
 4. Copy the project identifier it gives you. It looks like `team-name/project-name`.
-5. In Netlify, open the site, then **Site configuration → Environment variables**,
+5. In Cloudflare, open the project, then **Settings → Variables and secrets**,
    and add:
 
    ```
    PUBLIC_KEYSTATIC_CLOUD_PROJECT = team-name/project-name
    ```
 
-6. Redeploy. **Deploys → Trigger deploy → Deploy site.**
+6. Redeploy. **Deployments → Retry deployment**, or push any commit.
 7. Check it took:
 
    ```bash
-   npm run editor:check -- https://ahmadassi.netlify.app
+   npm run editor:check -- https://ahmad-assi.pages.dev
    ```
 
    That reports what is configured and whether the deployed site is actually
@@ -106,3 +106,27 @@ by order. Move one of the existing three down first if you want to swap.
 projects, in the same order, by `npm run portfolio`, which needs a computer with
 Node, Chrome and ffmpeg. Editing a project in the browser updates the website
 immediately and leaves the PDF as it was until someone rebuilds it.
+
+---
+
+## Hosting
+
+Cloudflare, connected to this repository.
+
+| setting | value |
+| --- | --- |
+| Build command | `npm run build` |
+| Output directory | `dist` |
+| `NODE_VERSION` | `22` |
+
+`NODE_VERSION` is not optional. Astro 7 requires 22.12 or newer and the default
+build image is older, which fails before a single page is emitted. It is also
+declared in `package.json` engines.
+
+**Nothing served may exceed 25 MiB.** That is a hard platform limit and it is
+what the two films were re-encoded to fit. If a large file is ever added, the
+build fails with "Asset too large" and names the file. `public/_headers`
+carries the caching rules that used to live in `netlify.toml`.
+
+There is no contact form. It was Netlify Forms and there is no equivalent here,
+so the contact page is the email link, which was always the primary route.

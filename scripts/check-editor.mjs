@@ -44,7 +44,7 @@ if (cloud) {
 /* The adapter is what gives the editor somewhere to run. Without it Astro
    emits a pure file deploy and the route cannot exist at all. */
 const cfg = readFileSync('astro.config.mjs', 'utf8');
-if (cfg.includes('adapter: netlify()')) ok('Server adapter is wired in astro.config.mjs');
+if (cfg.includes('adapter: cloudflare()')) ok('Server adapter is wired in astro.config.mjs');
 else { bad('No server adapter found in astro.config.mjs'); fail = true; }
 
 const url = process.argv[2];

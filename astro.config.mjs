@@ -1,13 +1,13 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import keystatic from '@keystatic/astro';
-import netlify from '@astrojs/netlify';
+import cloudflare from '@astrojs/cloudflare';
 import shrinkMedia from './src/integrations/shrink-media.mjs';
 
 /**
  * The editor.
  *
- * Keystatic's admin UI and its API need to run on a server, so the Netlify
+ * Keystatic's admin UI and its API need to run on a server, so the Cloudflare
  * adapter is here to give them somewhere to run. Everything else stays static:
  * `output: 'static'` is unchanged, and only the two Keystatic routes opt out of
  * prerendering. A visitor to any page of the portfolio is still served a plain
@@ -36,10 +36,13 @@ const editorOnline = Boolean(
  * a root base, and it is what would make a subpath host work again if one is ever
  * needed, without touching a single link or asset path.
  *
- * A custom domain needs no change here: Netlify updates URL once it is attached.
+ * A custom domain needs no change here: Cloudflare Pages updates CF_PAGES_URL
+ * once it is attached.
  */
 export default defineConfig({
-  site: process.env.URL || 'https://ahmadassi.netlify.app',
+  /* Cloudflare Pages publishes the deploy URL as CF_PAGES_URL. URL is kept as a
+     fallback so a Netlify build, or a local `netlify dev`, still resolves. */
+  site: process.env.CF_PAGES_URL || process.env.URL || 'https://ahmad-assi.pages.dev',
   output: 'static',
   trailingSlash: 'ignore',
   build: { inlineStylesheets: 'auto' },
@@ -47,7 +50,7 @@ export default defineConfig({
   /* The adapter is only needed when the editor is being built, and adding it
      unconditionally would turn a pure file deploy into one with functions
      attached for no reason. */
-  ...(editorOnline ? { adapter: netlify() } : {}),
+  ...(editorOnline ? { adapter: cloudflare() } : {}),
   /* shrink-media runs on every build, editor or not. It is the backstop that
      keeps an oversized upload from reaching a visitor, so it must not be
      conditional on the thing that lets uploads happen. */
