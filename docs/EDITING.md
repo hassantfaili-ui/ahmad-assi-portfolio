@@ -5,7 +5,7 @@ The editor is [Keystatic](https://keystatic.com). It writes ordinary files back
 to the repository, so every change is a normal commit that can be read and
 undone, and Cloudflare rebuilds the site within a minute or two of a save.
 
-The editor lives at **`/admin`**, for example `https://ahmad-assi.pages.dev/admin`.
+The editor lives at **`/admin`**, for example `https://ahmad-assi-portfolio.hassan-tfaili.workers.dev/admin`.
 That is the address to give Ahmad and the one to bookmark. It hands straight on
 to `/keystatic`, which is where the editor actually runs.
 
@@ -26,14 +26,14 @@ needs accounts. It takes about ten minutes, once.
    and add:
 
    ```
-   PUBLIC_KEYSTATIC_CLOUD_PROJECT = team-name/project-name
+   PUBLIC_KEYSTATIC_CLOUD_PROJECT = assi/ahmad-assi-portfolio
    ```
 
 6. Redeploy. **Deployments → Retry deployment**, or push any commit.
 7. Check it took:
 
    ```bash
-   npm run editor:check -- https://ahmad-assi.pages.dev
+   npm run editor:check -- https://ahmad-assi-portfolio.hassan-tfaili.workers.dev
    ```
 
    That reports what is configured and whether the deployed site is actually
