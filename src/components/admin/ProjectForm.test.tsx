@@ -9,10 +9,12 @@ import userEvent from '@testing-library/user-event';
    handed, which is the whole point: the bug being guarded against was a caption
    that never reached one. */
 const { saveWholeProject } = vi.hoisted(() => ({
-  saveWholeProject: vi.fn(async (_id: string, _input: unknown) => ({
-    ok: true as const,
-    data: { slug: 'garden-heights' },
-  })),
+  saveWholeProject: vi.fn(
+    async (...args: [string, unknown]): Promise<{ ok: true; data: { slug: string } }> => {
+      void args;
+      return { ok: true, data: { slug: 'garden-heights' } };
+    },
+  ),
 }));
 vi.mock('@/lib/mutations', () => ({ saveWholeProject }));
 

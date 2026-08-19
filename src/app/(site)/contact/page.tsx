@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import type { CSSProperties } from 'react';
 
 import Reveal from '@/components/site/Reveal';
+import { CONTACT_DEFAULTS } from '@/lib/contact-defaults';
 import { mediaUrl } from '@/lib/media-url';
 import { getProfile } from '@/lib/queries';
 
@@ -46,6 +47,13 @@ export default async function ContactPage() {
 
   const email = profile?.email ?? '';
   const phone = profile?.phone ?? '';
+
+  /* Falling back rather than rendering nothing. An empty row, or a database
+     that has not been migrated yet, would otherwise leave the contact page with
+     a blank where its heading goes. */
+  const status = profile?.contactStatus?.trim() || CONTACT_DEFAULTS.status;
+  const heading = profile?.contactHeading?.trim() || CONTACT_DEFAULTS.heading;
+  const blurb = profile?.contactBlurb?.trim() || CONTACT_DEFAULTS.blurb;
   const mailto = `mailto:${email}?subject=${SUBJECT}`;
 
   return (
@@ -54,7 +62,7 @@ export default async function ContactPage() {
         <p className="eyebrow" style={{ '--i': 0 } as CSSProperties}>
           {/* Written as escapes: a literal non-breaking space in source is invisible. */}
           {`${profile?.location ?? ''} \u00a0/\u00a0 `}
-          <em>Available now</em>
+          <em>{status}</em>
         </p>
         <h1 className="page-title" style={{ '--i': 1 } as CSSProperties}>
           Contact
@@ -67,11 +75,9 @@ export default async function ContactPage() {
       <section className="band">
         <div className="contact-grid">
           <Reveal>
-            <h2 className="closing-heading">Write to me</h2>
+            <h2 className="closing-heading">{heading}</h2>
             <p className="closing-prose" style={{ marginTop: '1rem' }}>
-              Email is best, and it reaches me directly. Attach the brief, the job description or
-              the drawing set and I will reply with whatever is useful, including work that is not
-              on this site.
+              {blurb}
             </p>
             {email && (
               <p style={{ marginTop: '2rem' }}>

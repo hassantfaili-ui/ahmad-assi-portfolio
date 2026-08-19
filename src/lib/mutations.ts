@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 
 import { getIdentity } from '@/lib/access';
 import { PATHS, profilePaths, projectPaths } from '@/lib/cache-tags';
+import { CONTACT_DEFAULTS } from '@/lib/contact-defaults';
 import { db } from '@/lib/db';
 import { toSlug, uniqueSlug } from '@/lib/slug';
 import {
@@ -454,6 +455,9 @@ export interface ProfileInput {
   email: string;
   phone: string;
   references: string;
+  contactStatus: string;
+  contactHeading: string;
+  contactBlurb: string;
 }
 
 export async function saveProfile(input: ProfileInput): Promise<SaveResult> {
@@ -481,6 +485,12 @@ export async function saveProfile(input: ProfileInput): Promise<SaveResult> {
     email: input.email.trim(),
     phone: input.phone.trim(),
     references: input.references.trim() || 'Available upon request',
+    /* Blank falls back to what the page used to say rather than publishing an
+       empty heading, because a contact page with no words on it is worse than
+       one Ahmad has not got round to rewriting. */
+    contactStatus: input.contactStatus.trim() || CONTACT_DEFAULTS.status,
+    contactHeading: input.contactHeading.trim() || CONTACT_DEFAULTS.heading,
+    contactBlurb: input.contactBlurb.trim() || CONTACT_DEFAULTS.blurb,
   };
 
   await db.profile.upsert({

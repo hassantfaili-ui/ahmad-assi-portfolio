@@ -20,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/toast';
 import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
 import { useSaveFlag } from '@/hooks/use-save-flag';
+import { CONTACT_DEFAULTS } from '@/lib/contact-defaults';
 import type { UploadedItem } from '@/hooks/use-uploads';
 import { runAction } from '@/lib/action-result';
 import { mediaUrl } from '@/lib/media-url';
@@ -86,6 +87,9 @@ export interface ResumeData {
     email: string;
     phone: string;
     references: string;
+    contactStatus: string;
+    contactHeading: string;
+    contactBlurb: string;
   } | null;
   facts: { label: string; items: string[] }[];
   social: { label: string; href: string }[];
@@ -166,6 +170,9 @@ type ProfileFields = {
   email: string;
   phone: string;
   references: string;
+  contactStatus: string;
+  contactHeading: string;
+  contactBlurb: string;
 };
 
 // ---------------------------------------------------------------- helpers ---
@@ -322,6 +329,9 @@ export function ResumeForm({ data }: { data: ResumeData }) {
     email: data.profile?.email ?? '',
     phone: data.profile?.phone ?? '',
     references: data.profile?.references ?? '',
+    contactStatus: data.profile?.contactStatus ?? '',
+    contactHeading: data.profile?.contactHeading ?? '',
+    contactBlurb: data.profile?.contactBlurb ?? '',
   }));
 
   const [longBio, setLongBioState] = useState<TextRow[]>(() =>
@@ -818,6 +828,48 @@ export function ResumeForm({ data }: { data: ResumeData }) {
                 value={fields.references}
                 placeholder="Available upon request"
                 onChange={(event) => setField('references', event.target.value)}
+              />
+            </Field>
+          </Panel>
+
+          <Panel
+            title="What the contact page says"
+            description="The words on the contact page itself. Your email address, telephone number, where you are and the links to elsewhere all come from the boxes above, and appear there automatically."
+          >
+            <Field
+              label="Line above the title"
+              htmlFor="profile-contact-status"
+              hint="Sits beside where you are, at the top of the contact page. Left blank it reads Available now."
+            >
+              <Input
+                value={fields.contactStatus}
+                placeholder={CONTACT_DEFAULTS.status}
+                onChange={(event) => setField('contactStatus', event.target.value)}
+              />
+            </Field>
+
+            <Field
+              label="Heading"
+              htmlFor="profile-contact-heading"
+              hint="Above the invitation to write. Left blank it reads Write to me."
+            >
+              <Input
+                value={fields.contactHeading}
+                placeholder={CONTACT_DEFAULTS.heading}
+                onChange={(event) => setField('contactHeading', event.target.value)}
+              />
+            </Field>
+
+            <Field
+              label="The invitation itself"
+              htmlFor="profile-contact-blurb"
+              hint="A short paragraph under the heading, saying what to send you and what you will send back. Left blank it falls back to the wording the site launched with."
+            >
+              <Textarea
+                rows={4}
+                value={fields.contactBlurb}
+                placeholder={CONTACT_DEFAULTS.blurb}
+                onChange={(event) => setField('contactBlurb', event.target.value)}
               />
             </Field>
           </Panel>
