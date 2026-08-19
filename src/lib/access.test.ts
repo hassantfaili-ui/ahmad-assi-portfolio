@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { SignJWT, exportJWK, generateKeyPair } from 'jose';
 
-import { getIdentity, verifyAccessJwt } from './access';
+import { verifyAccessJwt } from './access';
 
 /**
  * The tokens here are real: signed by a key pair generated in beforeAll, and
@@ -65,6 +65,32 @@ beforeAll(async () => {
   vi.stubEnv('ACCESS_DEV_BYPASS', '');
 });
 
+/**
+ * Run something as though it were inside a request.
+ *
+ * getIdentity awaits headers() before anything else, so every test of it needs
+ * a request scope. Stubbing the module rather than faking getIdentity keeps the
+ * real ordering under test, which is the thing that broke.
+ */
+async function withRequest<T>(
+  run: (identity: typeof import('./access')) => Promise<T>,
+  header: string | null = null,
+): Promise<T> {
+  vi.doMock('next/headers', () => ({
+    headers: async () => ({ get: () => header }),
+  }));
+  vi.resetModules();
+  try {
+    // Imported fresh inside the mock. The module bound at the top of this file
+    // still holds the real next/headers, so calling that copy would defeat the
+    // stub entirely.
+    return await run(await import('./access'));
+  } finally {
+    vi.doUnmock('next/headers');
+    vi.resetModules();
+  }
+}
+
 describe('verifyAccessJwt', () => {
   it('returns the identity from a token Access would have issued', async () => {
     const identity = await verifyAccessJwt(await mint());
@@ -121,9 +147,14 @@ describe('getIdentity', () => {
   it('returns the local development identity when the bypass is set', async () => {
     vi.stubEnv('ACCESS_DEV_BYPASS', 'true');
     try {
-      // No request scope here at all, which is the point: the bypass has to be
-      // decided before anything reads the headers, or local development throws.
-      expect(await getIdentity()).toEqual({ email: 'dev@localhost', sub: 'dev' });
+      // Inside a request scope, which is now required. The bypass used to be
+      // decided before the headers were touched, and that is what let it fire
+      // during `next build`, where NODE_ENV is always production, and fail the
+      // deploy build on a machine configured exactly as the README says.
+      expect(await withRequest((access) => access.getIdentity())).toEqual({
+        email: 'dev@localhost',
+        sub: 'dev',
+      });
     } finally {
       vi.stubEnv('ACCESS_DEV_BYPASS', '');
     }
@@ -211,10 +242,12 @@ describe('the development bypass', () => {
     vi.stubEnv('ACCESS_DEV_BYPASS', 'true');
     vi.stubEnv('NODE_ENV', 'production');
 
+    vi.doMock('next/headers', () => ({ headers: async () => ({ get: () => null }) }));
     vi.resetModules();
     const { getIdentity: freshGetIdentity } = await import('./access');
 
     await expect(freshGetIdentity()).rejects.toThrow(/ACCESS_DEV_BYPASS/);
+    vi.doUnmock('next/headers');
 
     vi.stubEnv('ACCESS_DEV_BYPASS', '');
     vi.stubEnv('NODE_ENV', 'test');
@@ -225,9 +258,11 @@ describe('the development bypass', () => {
     vi.stubEnv('ACCESS_DEV_BYPASS', 'true');
     vi.stubEnv('NODE_ENV', 'development');
 
+    vi.doMock('next/headers', () => ({ headers: async () => ({ get: () => null }) }));
     vi.resetModules();
     const { getIdentity: freshGetIdentity } = await import('./access');
     expect(await freshGetIdentity()).toEqual({ email: 'dev@localhost', sub: 'dev' });
+    vi.doUnmock('next/headers');
 
     vi.stubEnv('ACCESS_DEV_BYPASS', '');
     vi.stubEnv('NODE_ENV', 'test');

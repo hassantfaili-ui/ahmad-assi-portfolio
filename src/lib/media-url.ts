@@ -15,10 +15,17 @@
  * where /api/media-dev serves the same files off disk. Somebody cloning this
  * repository can then run it and see the real site without an R2 account, real
  * credentials, or a 98MB download.
+ *
+ * NEXT_PUBLIC_ and nothing else. This module is imported by client components,
+ * so whatever it reads at module scope is compiled into the browser bundle. It
+ * used to fall back to the server only MEDIA_ORIGIN, which is always empty in a
+ * browser, so the client silently baked in the hard coded default instead. That
+ * happened to match production and so broke nothing, while making the claim
+ * that moving the bucket is one variable false: changing it would have left the
+ * server rendering one origin and the browser hydrating with another.
  */
 export const MEDIA_ORIGIN = (
-  process.env.NEXT_PUBLIC_MEDIA_ORIGIN ||
-  process.env.MEDIA_ORIGIN ||
+  process.env.NEXT_PUBLIC_MEDIA_ORIGIN ??
   (process.env.NODE_ENV === 'development' ? '' : 'https://media.ahmadassi.ca')
 ).replace(/\/+$/, '');
 

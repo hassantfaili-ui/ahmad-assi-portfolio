@@ -94,7 +94,19 @@ deploy:
 | --- | --- |
 | `HYPERDRIVE` | Pools the Neon connection. `wrangler hyperdrive create` |
 | `NEXT_INC_CACHE_KV` | The rendered page cache. `wrangler kv namespace create` |
-| `MEDIA_ORIGIN` | The bucket's public origin, `https://media.ahmadassi.ca` |
+| `MEDIA_ORIGIN` | The bucket's public origin, read by the server at runtime |
+
+`NEXT_PUBLIC_MEDIA_ORIGIN` must be set to the same origin **in the environment
+the build runs in**, not as a Worker variable. Next inlines every
+`NEXT_PUBLIC_` value into the browser bundle at build time, so one set on the
+Worker arrives too late to have any effect and the browser keeps whatever was
+compiled in.
+
+**`media.ahmadassi.ca` does not exist yet.** The bucket is real and holds the
+three films, but it is still only reachable at its `pub-….r2.dev` address, which
+Cloudflare says not to use in production. Attach a custom domain to the bucket
+before the first deploy, and upload the images: the migration has only been run
+with `--skip-upload` so far.
 
 **Secrets**, set with `wrangler secret put`, never committed:
 `CLOUDFLARE_R2_ACCOUNT_ID`, `CLOUDFLARE_R2_ACCESS_KEY_ID`,

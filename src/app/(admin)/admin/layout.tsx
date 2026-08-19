@@ -24,6 +24,18 @@ import { AdminNav } from '@/components/admin/AdminNav';
  * misconfigured Access policy fail closed rather than publishing the editor.
  */
 
+/**
+ * Never prerendered.
+ *
+ * These pages are per person and behind a login, so there is no such thing as a
+ * correct static version of one. Rendering them at build time was not a
+ * theoretical waste either: it ran requireAdmin during `next build`, where
+ * NODE_ENV is always production, which tripped the guard that refuses to let
+ * ACCESS_DEV_BYPASS be set in production and failed the deploy build outright.
+ * A machine set up exactly as the README describes could not produce a worker.
+ */
+export const dynamic = 'force-dynamic';
+
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const identity = await requireAdmin();
 

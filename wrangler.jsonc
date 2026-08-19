@@ -19,6 +19,14 @@
   "hyperdrive": [
     { "binding": "HYPERDRIVE", "id": "PLACEHOLDER_HYPERDRIVE_ID" }
   ],
+  // MEDIA_ORIGIN is read by the server at runtime, so it belongs here.
+  //
+  // NEXT_PUBLIC_MEDIA_ORIGIN deliberately does NOT. Next inlines every
+  // NEXT_PUBLIC_ value into the browser bundle when `next build` runs, so a
+  // Worker variable set here would arrive far too late and the browser would
+  // keep whatever was compiled in. It has to be in the environment of the
+  // build, which means .env or the CI environment. Verified by building with a
+  // probe value and finding it in the emitted chunks.
   "vars": {
     "MEDIA_ORIGIN": "https://media.ahmadassi.ca"
   }

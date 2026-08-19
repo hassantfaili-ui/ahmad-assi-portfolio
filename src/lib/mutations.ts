@@ -168,13 +168,16 @@ export async function deleteProject(id: string): Promise<SaveResult> {
 export async function setProjectPublished(id: string, published: boolean): Promise<SaveResult> {
   if (!(await authorised())) return DENIED;
 
-  const project = await db.project.update({
-    where: { id },
-    data: { published },
-    select: { slug: true },
-  });
+  /* Looked up first, so a row deleted in another tab comes back as a refusal
+     rather than a thrown P2025. The caller keeps an optimistic copy of the list
+     and puts it back when this returns ok: false, and that revert is dead code
+     if the failure arrives as a rejection instead. */
+  const existing = await db.project.findUnique({ where: { id }, select: { slug: true } });
+  if (!existing) return { ok: false, message: 'That project no longer exists. Reload the page.' };
 
-  revalidateProject(project.slug);
+  await db.project.update({ where: { id }, data: { published } });
+
+  revalidateProject(existing.slug);
   return { ok: true };
 }
 
@@ -189,16 +192,37 @@ export async function setProjectPublished(id: string, published: boolean): Promi
 export async function reorderProjects(idsInOrder: string[]): Promise<SaveResult> {
   if (!(await authorised())) return DENIED;
 
+  /* Filtered against what actually exists before the transaction is built. One
+     id that has since been deleted, which is exactly the state after removing a
+     project in a second tab, would otherwise abort the whole transaction: no
+     project reordered at all, and a list left showing an order that was never
+     written. */
+  const live = await db.project.findMany({
+    where: { id: { in: idsInOrder } },
+    select: { id: true },
+  });
+  const known = new Set(live.map((project) => project.id));
+  const usable = idsInOrder.filter((id) => known.has(id));
+
+  if (usable.length === 0) {
+    return { ok: false, message: 'None of those projects exist any more. Reload the page.' };
+  }
+
   await db.$transaction(
-    idsInOrder.map((id, index) =>
-      db.project.update({ where: { id }, data: { order: index + 1 } }),
-    ),
+    usable.map((id, index) => db.project.update({ where: { id }, data: { order: index + 1 } })),
   );
 
   revalidatePath(PATHS.home);
   revalidatePath(PATHS.architecture);
   revalidatePath(PATHS.print);
-  return { ok: true };
+
+  const missing = idsInOrder.length - usable.length;
+  return {
+    ok: true,
+    message: missing
+      ? `The new order is saved. ${missing} ${missing === 1 ? 'project was' : 'projects were'} skipped because they no longer exist.`
+      : undefined,
+  };
 }
 
 export async function setProjectTier(
@@ -207,10 +231,13 @@ export async function setProjectTier(
 ): Promise<SaveResult> {
   if (!(await authorised())) return DENIED;
 
-  const project = await db.project.update({ where: { id }, data: { tier }, select: { slug: true } });
+  const existing = await db.project.findUnique({ where: { id }, select: { slug: true } });
+  if (!existing) return { ok: false, message: 'That project no longer exists. Reload the page.' };
+
+  await db.project.update({ where: { id }, data: { tier } });
   const leadCount = await db.project.count({ where: { tier: 'lead', published: true } });
 
-  revalidateProject(project.slug);
+  revalidateProject(existing.slug);
 
   /* Said out loud rather than left to be discovered. tiers() already makes sure
      a fourth lead falls through into the strip instead of vanishing, which is
@@ -456,40 +483,51 @@ export interface ResumeLists {
 export async function saveResumeLists(lists: ResumeLists): Promise<SaveResult> {
   if (!(await authorised())) return DENIED;
 
-  await db.$transaction([
-    db.fact.deleteMany({}),
-    db.socialLink.deleteMany({}),
-    db.experienceEntry.deleteMany({}),
-    db.educationEntry.deleteMany({}),
-    db.skillGroup.deleteMany({}),
-    db.language.deleteMany({}),
-    db.resumeEntry.deleteMany({}),
+  /* One interactive transaction over the whole rewrite, skill groups included.
+     They used to be created in a plain loop after the transaction committed,
+     because createMany cannot express their nested items. That made the delete
+     durable and the recreate unprotected: a single failure between the two, or
+     a Worker killed mid request, left every skill group and every skill
+     permanently gone, with the form still showing them and nothing saying so. */
+  await db.$transaction(async (tx) => {
+    await Promise.all([
+      tx.fact.deleteMany({}),
+      tx.socialLink.deleteMany({}),
+      tx.experienceEntry.deleteMany({}),
+      tx.educationEntry.deleteMany({}),
+      tx.skillGroup.deleteMany({}),
+      tx.language.deleteMany({}),
+      tx.resumeEntry.deleteMany({}),
+    ]);
 
-    db.fact.createMany({
+    await tx.fact.createMany({
       data: lists.facts.map((fact, order) => ({
         label: fact.label.trim(),
-        items: fact.items.map((i) => i.trim()).filter(Boolean),
+        items: fact.items.map((item) => item.trim()).filter(Boolean),
         order,
       })),
-    }),
-    db.socialLink.createMany({
+    });
+
+    await tx.socialLink.createMany({
       data: lists.social.map((link, order) => ({
         label: link.label.trim(),
         href: link.href.trim(),
         order,
       })),
-    }),
-    db.experienceEntry.createMany({
+    });
+
+    await tx.experienceEntry.createMany({
       data: lists.experience.map((entry, order) => ({
         role: entry.role.trim(),
         firm: entry.firm.trim(),
         location: entry.location.trim(),
         period: entry.period.trim(),
-        contributions: entry.contributions.map((c) => c.trim()).filter(Boolean),
+        contributions: entry.contributions.map((line) => line.trim()).filter(Boolean),
         order,
       })),
-    }),
-    db.educationEntry.createMany({
+    });
+
+    await tx.educationEntry.createMany({
       data: lists.education.map((entry, order) => ({
         credential: entry.credential.trim(),
         institution: entry.institution.trim(),
@@ -497,11 +535,15 @@ export async function saveResumeLists(lists: ResumeLists): Promise<SaveResult> {
         note: entry.note?.trim() || null,
         order,
       })),
-    }),
-    db.language.createMany({
-      data: lists.languages.map((text, order) => ({ text: text.trim(), order })).filter((l) => l.text),
-    }),
-    db.resumeEntry.createMany({
+    });
+
+    await tx.language.createMany({
+      data: lists.languages
+        .map((text, order) => ({ text: text.trim(), order }))
+        .filter((language) => language.text),
+    });
+
+    await tx.resumeEntry.createMany({
       data: lists.entries.map((entry, order) => ({
         section: entry.section,
         title: entry.title.trim(),
@@ -509,24 +551,25 @@ export async function saveResumeLists(lists: ResumeLists): Promise<SaveResult> {
         year: entry.year.trim(),
         order,
       })),
-    }),
-  ]);
-
-  /* Skill groups are created outside the transaction list above because each one
-     writes its own nested items, which createMany cannot express. */
-  for (const [order, group] of lists.skillGroups.entries()) {
-    await db.skillGroup.create({
-      data: {
-        label: group.label.trim(),
-        order,
-        items: {
-          create: group.items
-            .map((name, i) => ({ name: name.trim(), order: i }))
-            .filter((item) => item.name),
-        },
-      },
     });
-  }
+
+    // Inside the transaction with everything else. Each group writes its own
+    // nested items, which createMany cannot express, so it is a loop rather
+    // than one call. That is the only reason it looks different.
+    for (const [order, group] of lists.skillGroups.entries()) {
+      await tx.skillGroup.create({
+        data: {
+          label: group.label.trim(),
+          order,
+          items: {
+            create: group.items
+              .map((name, index) => ({ name: name.trim(), order: index }))
+              .filter((item) => item.name),
+          },
+        },
+      });
+    }
+  });
 
   revalidatePath(PATHS.resume);
   return { ok: true };

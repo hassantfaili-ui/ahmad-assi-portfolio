@@ -112,12 +112,19 @@ export async function verifyAccessJwt(
  * handlers. Null when there is no valid assertion.
  */
 export async function getIdentity(): Promise<AccessIdentity | null> {
-  // Checked before the headers are touched, so local development works with no
-  // request scope and no tunnel. isAccessBypassed throws if it is ever set in
-  // production, which is why that decision lives in env.ts rather than here.
+  /* The headers are read first, and the order is deliberate.
+     isAccessBypassed throws when the bypass is set in production, which is the
+     behaviour that matters: it means a deployment carrying the development
+     escape hatch fails loudly rather than publishing the editor. But `next
+     build` sets NODE_ENV to production for every build, including one on a
+     laptop, so checking it before entering the request scope made that guard
+     fire during prerendering and fail the build itself.
+     Awaiting headers() first means this can only run while actually serving a
+     request, which is the only time the guard has anything to say. */
+  const requestHeaders = await headers();
+
   if (isAccessBypassed()) return { email: 'dev@localhost', sub: 'dev' };
 
-  const requestHeaders = await headers();
   return verifyAccessJwt(requestHeaders.get(ACCESS_JWT_HEADER));
 }
 

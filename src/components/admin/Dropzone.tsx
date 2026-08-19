@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useSyncExternalStore } from 'react';
 import { AlertCircle, CheckCircle2, RotateCcw, Upload, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,24 @@ import { cn } from '@/lib/utils';
  * and one is a .heic; being told which one while the other twenty nine upload
  * is a better answer than being told to start again.
  */
+
+/**
+ * Whether this browser can encode video, asked in a way that survives
+ * hydration.
+ *
+ * canTranscode reads window, so calling it during render makes the server say
+ * one thing and the browser another: the server has no window, so it renders
+ * the amber cannot compress notice, and the browser then throws that HTML away.
+ * Ahmad saw the warning flash on every load of a screen where it did not apply.
+ *
+ * useSyncExternalStore is the answer rather than an effect, because it gives a
+ * server snapshot separately from the client one, which is exactly the shape of
+ * the problem. Nothing subscribes: a browser does not gain a video encoder
+ * while the page is open.
+ */
+const NOTHING_TO_SUBSCRIBE_TO = () => () => {};
+const IN_THE_BROWSER = () => canTranscode();
+const ON_THE_SERVER = () => true;
 
 export interface DropzoneProps {
   destination: UploadDestination;
@@ -71,7 +89,12 @@ export function Dropzone({
     [add],
   );
 
-  const videoUnsupported = (accept === 'video' || accept === 'any') && !canTranscode();
+  const encoderAvailable = useSyncExternalStore(
+    NOTHING_TO_SUBSCRIBE_TO,
+    IN_THE_BROWSER,
+    ON_THE_SERVER,
+  );
+  const videoUnsupported = (accept === 'video' || accept === 'any') && !encoderAvailable;
 
   return (
     <div className="grid gap-3">
