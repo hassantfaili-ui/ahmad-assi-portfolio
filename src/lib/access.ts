@@ -1,6 +1,5 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
 
 import { getAccessEnv, isAccessBypassed } from '@/lib/env';
 
@@ -128,17 +127,7 @@ export async function getIdentity(): Promise<AccessIdentity | null> {
   return verifyAccessJwt(requestHeaders.get(ACCESS_JWT_HEADER));
 }
 
-/**
- * The identity, or no page at all.
- *
- * Redirects home rather than rendering a 401, because there is nothing useful
- * to say: Access owns the sign in flow, and anyone who lands here without an
- * assertion either has no business in the administration area or has to go back
- * through the Access login first. redirect throws, so nothing after it runs and
- * the return type stays non nullable for the caller.
- */
-export async function requireAdmin(): Promise<AccessIdentity> {
-  const identity = await getIdentity();
-  if (!identity) redirect('/');
-  return identity;
+/** The identity, or null when there is no valid assertion. */
+export async function requireAdmin(): Promise<AccessIdentity | null> {
+  return getIdentity();
 }

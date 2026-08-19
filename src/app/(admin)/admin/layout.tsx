@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { requireAdmin } from '@/lib/access';
 import { ToastProvider } from '@/components/ui/toast';
 import { AdminNav } from '@/components/admin/AdminNav';
@@ -39,6 +41,43 @@ export const dynamic = 'force-dynamic';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const identity = await requireAdmin();
+
+  /**
+   * No identity, so nothing below this renders.
+   *
+   * A page rather than a redirect, for two reasons. Bouncing somebody silently
+   * to the home page tells them nothing: they asked for the editor and got the
+   * portfolio, with no indication whether they typed the wrong address, are
+   * signed out, or are not allowed. And redirecting from a layout turned into a
+   * 500 on Workers rather than a redirect, so the safe behaviour was arriving
+   * as an error page anyway.
+   *
+   * This is not the security boundary. Cloudflare Access refuses the request at
+   * the edge long before it reaches here, and this is what makes a misconfigured
+   * policy fail closed instead of publishing the editor.
+   */
+  if (!identity) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-neutral-50 px-6">
+        <main className="max-w-md text-center">
+          <h1 className="text-xl font-semibold text-neutral-900">You are not signed in</h1>
+          <p className="mt-3 text-sm text-neutral-600">
+            This is the editing area for ahmadassi.ca. It sits behind a sign in, and this browser
+            does not have one. Open it from ahmadassi.ca/admin and Cloudflare will ask you for a
+            code by email.
+          </p>
+          <p className="mt-6">
+            <Link
+              href="/"
+              className="text-sm font-medium text-neutral-900 underline underline-offset-4"
+            >
+              Back to the site
+            </Link>
+          </p>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <ToastProvider>
