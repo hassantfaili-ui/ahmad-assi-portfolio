@@ -397,6 +397,170 @@ export async function deleteFilm(projectId: string | null): Promise<SaveResult> 
   return { ok: true };
 }
 
+
+export interface WholeProjectInput {
+  fields: ProjectInput;
+  groups: GroupInput[];
+  drawings: DrawingInput[];
+  /** null means the project has no film, and any existing one is removed. */
+  film: FilmInput | null;
+}
+
+/**
+ * Save everything about a project at once.
+ *
+ * This replaces four separate saves, and the reason is a real failure rather
+ * than tidiness. The editing screen had a button for the fields, one for the
+ * pictures, one for the drawings and one for the film. Editing a group caption
+ * and then pressing the obvious button at the top of the screen, the one
+ * labelled Save the details, sent everything except the caption. The work was
+ * never lost, exactly: it was never sent. That is worse, because nothing failed
+ * and nothing warned.
+ *
+ * It is also atomic, which the four separate saves were not. Under those, a
+ * refused picture save after an accepted field save left the project half
+ * written, with the screen showing one state and the site another. Here, either
+ * all of it lands or none of it does.
+ *
+ * Errors come back keyed the way the form expects: bare names for the fields,
+ * and prefixed for the rest, so a missing description on the third picture of
+ * the second group lands on that picture and not in a toast.
+ */
+export async function saveWholeProject(
+  id: string,
+  input: WholeProjectInput,
+): Promise<SaveResult<{ slug: string }>> {
+  if (!(await authorised())) return DENIED;
+
+  const errors: FieldErrors = { ...validateProject(input.fields) };
+
+  /* Namespaced, so two pictures in different groups cannot collide on
+     images.0.alt and quietly show one error for both. */
+  input.groups.forEach((group, groupIndex) => {
+    const found = validateImages(group.images);
+    for (const [key, message] of Object.entries(found)) {
+      errors[`groups.${groupIndex}.${key}`] = message;
+    }
+  });
+
+  input.drawings.forEach((drawing, index) => {
+    if (!drawing.alt.trim()) {
+      errors[`drawings.${index}.alt`] =
+        'Alt text is required. It is what a screen reader announces.';
+    }
+  });
+
+  if (input.film) {
+    Object.assign(
+      errors,
+      validateFilm({
+        sourceMediaIds: input.film.sources.map((source) => source.mediaId),
+        youtubeId: input.film.youtubeId,
+        posterMediaId: input.film.posterMediaId,
+      }),
+    );
+  }
+
+  if (hasErrors(errors)) return { ok: false, errors };
+
+  const existing = await db.project.findUnique({ where: { id }, select: { slug: true } });
+  if (!existing) return { ok: false, message: 'That project no longer exists.' };
+
+  /* The slug is only recomputed when Ahmad actually edited it. A published URL
+     is a promise, and renaming one because a title changed would break every
+     link to it. */
+  let slug = existing.slug;
+  if (input.fields.slug.trim() && input.fields.slug.trim() !== existing.slug) {
+    const taken = (
+      await db.project.findMany({ where: { NOT: { id } }, select: { slug: true } })
+    ).map((project) => project.slug);
+    slug = uniqueSlug(toSlug(input.fields.slug), taken);
+  }
+
+  await db.$transaction(async (tx) => {
+    await tx.project.update({
+      where: { id },
+      data: {
+        slug,
+        title: input.fields.title.trim(),
+        sheet: input.fields.sheet.trim(),
+        category: input.fields.category as never,
+        year: input.fields.year,
+        location: input.fields.location.trim(),
+        buildingType: input.fields.buildingType.trim(),
+        area: input.fields.area?.trim() || null,
+        status: input.fields.status as never,
+        role: input.fields.role.trim(),
+        contribution: input.fields.contribution.trim(),
+        summary: input.fields.summary.trim(),
+        body: (input.fields.body ?? '').trim(),
+        credit: input.fields.credit.trim(),
+        tier: input.fields.tier as never,
+        order: input.fields.order,
+        leadImageId: input.fields.leadImageId ?? null,
+        leadImageAlt: input.fields.leadImageAlt ?? '',
+      },
+    });
+
+    await tx.imageGroup.deleteMany({ where: { projectId: id } });
+    for (const [groupIndex, group] of input.groups.entries()) {
+      await tx.imageGroup.create({
+        data: {
+          projectId: id,
+          layout: group.layout,
+          caption: group.caption?.trim() || null,
+          order: groupIndex,
+          images: {
+            create: group.images.map((image, imageIndex) => ({
+              mediaId: image.mediaId,
+              alt: image.alt.trim(),
+              order: imageIndex,
+            })),
+          },
+        },
+      });
+    }
+
+    await tx.drawing.deleteMany({ where: { projectId: id } });
+    if (input.drawings.length > 0) {
+      await tx.drawing.createMany({
+        data: input.drawings.map((drawing, index) => ({
+          projectId: id,
+          mediaId: drawing.mediaId,
+          alt: drawing.alt.trim(),
+          drawingType: drawing.drawingType.trim() || 'Drawing',
+          order: index,
+        })),
+      });
+    }
+
+    await tx.film.deleteMany({ where: { projectId: id } });
+    if (input.film) {
+      await tx.film.create({
+        data: {
+          projectId: id,
+          posterMediaId: input.film.posterMediaId ?? null,
+          youtubeId: input.film.youtubeId?.trim() || null,
+          caption: input.film.caption?.trim() || null,
+          sources: {
+            create: input.film.sources.map((source) => ({
+              mediaId: source.mediaId,
+              height: source.height,
+            })),
+          },
+        },
+      });
+    }
+  });
+
+  revalidateProject(existing.slug);
+  if (slug !== existing.slug) revalidatePath(PATHS.project(slug));
+
+  const leadCount = await db.project.count({ where: { tier: 'lead', published: true } });
+
+  return { ok: true, data: { slug }, warning: leadOverflowWarning(leadCount) ?? undefined };
+}
+
 // ---------------------------------------------------------------- resume ---
 
 export interface ProfileInput {

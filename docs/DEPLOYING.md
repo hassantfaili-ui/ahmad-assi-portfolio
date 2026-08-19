@@ -80,6 +80,23 @@ roughly 300 images sits well inside.
 **Create an S3 API token** for the bucket, with object read and write. You need
 the account id, the access key id and the secret.
 
+**Allow the browser to upload to it.** This step is easy to miss and the symptom
+is baffling: Ahmad drags a photograph in, waits, and gets "connection error".
+Nothing is wrong with the file, the network or the credentials. The browser
+uploads straight to R2, which is a different origin from ahmadassi.ca, and
+without a CORS policy on the bucket the browser refuses to send it at all.
+
+```bash
+npx wrangler r2 bucket cors set ahmadassi --file infra/r2-cors.json
+```
+
+The policy is in the repository so it can be re-applied and reviewed. Check it
+took, because a missing one only shows up when somebody tries to upload:
+
+```bash
+npx wrangler r2 bucket cors list ahmadassi
+```
+
 The bucket is called **`ahmadassi`**, and it already holds the three films under
 a `media/` prefix: `hero-1440.mp4` at 44.8MB, `hero-720.mp4` at 8.2MB, and
 `lincoln-beach-walkthrough.mp4` at 76.5MB. The migration matches those by key

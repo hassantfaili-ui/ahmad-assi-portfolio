@@ -12,7 +12,23 @@
   "observability": { "enabled": true },
   // The rendered page cache. Filled in by `wrangler kv namespace create`.
   "kv_namespaces": [
-    { "binding": "NEXT_INC_CACHE_KV", "id": "16f75036435c4717afd84d98a443eaad" }
+    { "binding": "NEXT_INC_CACHE_KV", "id": "16f75036435c4717afd84d98a443eaad" },
+    // The tag cache. Without it revalidatePath has nowhere to record that a
+    // page is stale, so an edit saves to the database and the site keeps
+    // serving the old copy, silently and for a year.
+    { "binding": "NEXT_TAG_CACHE_KV", "id": "4e8fa232d5b145029ee56e432c47ee01" }
+  ],
+
+  // The revalidation queue. A Durable Object, because the work has to survive
+  // the request that scheduled it.
+  "durable_objects": {
+    "bindings": [
+      { "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" }
+    ]
+  },
+
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["DOQueueHandler"] }
   ],
   // Pools and caches the Neon connection so @prisma/adapter-pg works from a
   // Worker. Filled in by `wrangler hyperdrive create`.
