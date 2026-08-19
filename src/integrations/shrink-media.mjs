@@ -136,6 +136,26 @@ export default function shrinkMedia() {
            Cloudflare rejects any asset over 25 MiB and the hero is 42.8MB at
            full quality. Dropping them is what lets that quality be kept. */
         const origin = process.env.PUBLIC_MEDIA_ORIGIN;
+        if (!origin) {
+          /* The films are kept in the repository at full bitrate, which is what
+             R2 serves, and the hero alone is 42.8MB. Without an origin they get
+             published, and a host that caps a single asset then fails the build
+             with an error that names the file but not the cause. Say the cause
+             here, while the build still has something useful to say. */
+          const big = [];
+          for (const f of (await readdir(root).catch(() => []))) {
+            if (!f.toLowerCase().endsWith('.mp4')) continue;
+            const { size } = await stat(join(root, f));
+            if (size > 25 * 1024 * 1024) big.push(`${f} (${mb(size)})`);
+          }
+          if (big.length) {
+            logger.warn(
+              `PUBLIC_MEDIA_ORIGIN is not set, so these films will be published: ${big.join(', ')}. ` +
+                'Cloudflare rejects any asset over 25MB, so that build will fail. Set the variable ' +
+                'to the R2 origin and they are served from there instead.',
+            );
+          }
+        }
         if (origin) {
           const films = (await readdir(join(fileURLToPath(dir), 'media')).catch(() => []))
             .filter((f) => f.toLowerCase().endsWith('.mp4'));

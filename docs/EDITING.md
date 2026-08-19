@@ -123,10 +123,34 @@ Cloudflare, connected to this repository.
 build image is older, which fails before a single page is emitted. It is also
 declared in `package.json` engines.
 
-**Nothing served may exceed 25 MiB.** That is a hard platform limit and it is
-what the two films were re-encoded to fit. If a large file is ever added, the
-build fails with "Asset too large" and names the file. `public/_headers`
-carries the caching rules that used to live in `netlify.toml`.
+**Nothing served may exceed 25 MiB.** That is a hard platform limit. If a large
+file is added, the build fails with "Asset too large" and names it.
+`public/_headers` carries the caching rules that used to live in `netlify.toml`.
+
+### The films
+
+The three films are too big for that limit, so they are not served from here.
+They live in an R2 bucket and `PUBLIC_MEDIA_ORIGIN` points at it:
+
+```
+PUBLIC_MEDIA_ORIGIN = https://pub-a254722ed465461099b646f0d39d458b.r2.dev
+```
+
+With it set, the build rewrites the film URLs to that origin and deletes the
+files out of `dist`, so the largest published file is the portfolio PDF at
+9.3MB. The copies in `public/media` are the masters and match the bucket byte
+for byte; they are what local development serves. Unset the variable and the
+build warns that the films will be published and that a capped host will
+reject them.
+
+The bucket keys must stay under a `media/` prefix, because that is the path the
+site requests: `media/hero-1440.mp4`, `media/hero-720.mp4`,
+`media/lincoln-beach-walkthrough.mp4`.
+
+**Before handover, move off the `pub-….r2.dev` address.** Cloudflare rate limits
+it and says not to use it in production. Add a custom domain to the bucket, for
+example `media.ahmadassi.com`, and change the variable to that. Same bucket,
+same keys, nothing else to do.
 
 There is no contact form. It was Netlify Forms and there is no equivalent here,
 so the contact page is the email link, which was always the primary route.
