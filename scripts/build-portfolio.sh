@@ -16,9 +16,9 @@
 #      and application portals reject it. 1400px at quality 72 is past what an A4
 #      page resolves and lands the whole document around 5MB.
 #   3. Build again so dist carries the new images.
-#   4. Serve dist with astro preview, which honours the /ahmad-assi-portfolio base
-#      path. Chrome cannot resolve absolute asset paths over file://, so a real
-#      server is needed.
+#   4. Serve dist with astro preview, which honours whatever base the config sets.
+#      Chrome cannot resolve absolute asset paths over file://, so a real server
+#      is needed.
 #   5. Print with headless Chrome, then put public/print back the way it was.
 #
 # The PDF lands in public/portfolio/ and is committed. Everything in public/print
@@ -34,7 +34,7 @@ PORT=4399
 # ESM import is needed: require() cannot load an .mjs file.
 BASE=$(node --input-type=module -e \
   "import c from './astro.config.mjs'; const b = c.base ?? '/'; process.stdout.write(b === '/' ? '' : b.replace(/\/$/, ''))" \
-  2>/dev/null || echo "/ahmad-assi-portfolio")
+  2>/dev/null || echo "")
 OUT="$ROOT/public/portfolio/Ahmad_Assi_Portfolio.pdf"
 MAXW=1400
 QUALITY=3          # ffmpeg -q:v, roughly quality 72
