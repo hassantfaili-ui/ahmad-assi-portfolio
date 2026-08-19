@@ -1,5 +1,5 @@
 ---
-import { url } from '../lib/url';
+import { filmUrl, url } from '../lib/url';
 
 /**
  * A project walkthrough, from either a file in this repo or YouTube.
@@ -50,7 +50,7 @@ const id = youtube ? youtubeId(youtube) : null;
   ) : (
     src && (
       <figure class="film-frame reveal">
-        <video controls preload="none" playsinline poster={url(poster)} src={url(src)} />
+        <video controls preload="none" playsinline poster={url(poster)} src={filmUrl(src)} />
         {caption && <figcaption>{caption}</figcaption>}
       </figure>
     )

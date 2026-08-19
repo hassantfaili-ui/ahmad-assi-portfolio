@@ -41,7 +41,7 @@ interface Props {
   ctaHref: string;
 }
 
-import { url } from '../lib/url';
+import { filmUrl, url } from '../lib/url';
 
 const { eyebrow, name, surname, intro, ctaLabel, ctaHref } = Astro.props;
 ---
@@ -50,8 +50,8 @@ const { eyebrow, name, surname, intro, ctaLabel, ctaHref } = Astro.props;
   <video
     class="film-media"
     data-hero
-    data-src-large={url("/media/hero-1440.mp4")}
-    data-src-small={url("/media/hero-720.mp4")}
+    data-src-large={filmUrl("/media/hero-1440.mp4")}
+    data-src-small={filmUrl("/media/hero-720.mp4")}
     poster={url("/media/hero-poster.jpg")}
     muted
     loop

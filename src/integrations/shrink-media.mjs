@@ -1,4 +1,4 @@
-import { readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { join, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -130,6 +130,23 @@ export default function shrinkMedia() {
            directory is a legitimate "nothing to do" here, so it is worth being
            explicit about. */
         const root = join(fileURLToPath(dir), 'media');
+        /* When the films are served from object storage they must not also be
+           published here. Left in place they are dead weight, and on a host with
+           a per-file cap they fail the build even though nothing links to them:
+           Cloudflare rejects any asset over 25 MiB and the hero is 42.8MB at
+           full quality. Dropping them is what lets that quality be kept. */
+        const origin = process.env.PUBLIC_MEDIA_ORIGIN;
+        if (origin) {
+          const films = (await readdir(join(fileURLToPath(dir), 'media')).catch(() => []))
+            .filter((f) => f.toLowerCase().endsWith('.mp4'));
+          for (const f of films) {
+            const p = join(fileURLToPath(dir), 'media', f);
+            const { size } = await stat(p);
+            await rm(p);
+            logger.info(`served from ${origin}, dropped from the build: ${f} (${mb(size)})`);
+          }
+        }
+
         const files = await walk(root);
         if (files.length === 0) {
           logger.warn(`no images found under ${root}`);

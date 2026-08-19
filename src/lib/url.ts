@@ -42,3 +42,30 @@ export function isCurrent(pathname: string, path: string): boolean {
   const norm = (s: string) => (s.length > 1 ? s.replace(/\/+$/, '') : s);
   return norm(pathname) === norm(url(path));
 }
+
+/**
+ * URL for a film.
+ *
+ * The two films are the only files on this site big enough to run into a host's
+ * per-file limit, and Cloudflare's is 25 MiB: the 42.8MB hero failed the build
+ * outright. Rather than let that dictate the encode quality forever, films go
+ * through here so they can be served from object storage instead, where there is
+ * no such cap and, on R2, no egress charge either.
+ *
+ * Set PUBLIC_MEDIA_ORIGIN to the bucket's custom domain, for example
+ * https://media.example.com, and the films are fetched from there. The build
+ * then also drops them out of dist, in src/integrations/shrink-media.mjs, so the
+ * published bundle cannot trip the limit with files nothing references.
+ *
+ * Leave it unset and everything behaves as before, served from this site. That
+ * is the default on purpose: the site has to build for somebody who has not set
+ * up a bucket.
+ */
+const MEDIA_ORIGIN = (import.meta.env.PUBLIC_MEDIA_ORIGIN || '').replace(/\/+$/, '');
+
+export function filmUrl(path: string | undefined | null): string {
+  if (!path) return '';
+  if (external(path)) return path;
+  if (!MEDIA_ORIGIN) return url(path);
+  return `${MEDIA_ORIGIN}${path.startsWith('/') ? path : `/${path}`}`;
+}
