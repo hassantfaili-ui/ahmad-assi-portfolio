@@ -13,6 +13,7 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
 import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
+import { useSaveFlag } from '@/hooks/use-save-flag';
 import type { UploadedImage, UploadedItem } from '@/hooks/use-uploads';
 import { runAction } from '@/lib/action-result';
 import { saveDrawings, saveImageGroups } from '@/lib/mutations';
@@ -145,17 +146,28 @@ export function MediaPanel({
 
   const [groups, setGroups] = useState<EditorGroup[]>(initialGroups);
   const [groupErrors, setGroupErrors] = useState<FieldErrors>({});
-  const [groupsUnsaved, setGroupsUnsaved] = useState(false);
+  const {
+    dirty: groupsUnsaved,
+    markDirty: markGroupsDirty,
+    snapshot: snapshotGroups,
+    settle: settleGroups,
+  } = useSaveFlag();
   const [savingGroups, startGroupSave] = useTransition();
 
   const [drawings, setDrawings] = useState<EditorDrawing[]>(initialDrawings);
   const [drawingErrors, setDrawingErrors] = useState<FieldErrors>({});
-  const [drawingsUnsaved, setDrawingsUnsaved] = useState(false);
+  const {
+    dirty: drawingsUnsaved,
+    markDirty: markDrawingsDirty,
+    snapshot: snapshotDrawings,
+    settle: settleDrawings,
+  } = useSaveFlag();
   const [savingDrawings, startDrawingSave] = useTransition();
 
   /* Two halves, two flags, and each is cleared only by the button that saves
-     it. One warning covers both, because the browser asks the same question
-     whichever of them is outstanding. */
+     it, and only for what that button actually sent. One warning covers both,
+     because the browser asks the same question whichever of them is
+     outstanding. */
   useRegisterUnsaved('project:media', groupsUnsaved || drawingsUnsaved);
 
   /**
@@ -167,10 +179,13 @@ export function MediaPanel({
    * existed when the files were dropped throws away every description typed
    * since, which looks exactly like the interface losing his work.
    */
-  const applyToGroups = useCallback((change: (current: EditorGroup[]) => EditorGroup[]) => {
-    setGroups(change);
-    setGroupsUnsaved(true);
-  }, []);
+  const applyToGroups = useCallback(
+    (change: (current: EditorGroup[]) => EditorGroup[]) => {
+      setGroups(change);
+      markGroupsDirty();
+    },
+    [markGroupsDirty],
+  );
 
   const changeGroups = useCallback(
     (next: EditorGroup[]) => applyToGroups(() => next),
@@ -210,14 +225,23 @@ export function MediaPanel({
   }, [applyToGroups]);
 
   const saveArrangement = useCallback(() => {
-    const flat = groups.flatMap((group) =>
-      group.images.map((image) => ({ mediaId: image.mediaId, alt: image.alt })),
-    );
+    /* The payload and the snapshot are taken together, in that order, so the
+       number stands for exactly this list and nothing later. That is the whole
+       point of the pair here: an upload started ten minutes ago can land while
+       this request is out, and its handler appends a group the payload above
+       does not contain. The count moves past the snapshot, settle declines to
+       clear, and the new group keeps its badge and its guard. */
+    const payload = groups.map((group) => ({
+      layout: group.layout,
+      caption: group.caption,
+      images: group.images.map((image) => ({ mediaId: image.mediaId, alt: image.alt })),
+    }));
+    const at = snapshotGroups();
 
     /* Checked here as well as on the server, and blocking rather than warning.
        A picture with no description is not something to save and fix later: on
        the page it is a blank a screen reader reads as nothing at all. */
-    const found = validateImages(flat);
+    const found = validateImages(payload.flatMap((group) => group.images));
     if (hasErrors(found)) {
       setGroupErrors(found);
       push('Every picture needs a line saying what it shows. The ones missing it are marked.', 'error');
@@ -225,16 +249,7 @@ export function MediaPanel({
     }
 
     startGroupSave(async () => {
-      const result = await runAction(() =>
-        saveImageGroups(
-          projectId,
-          groups.map((group) => ({
-            layout: group.layout,
-            caption: group.caption,
-            images: group.images.map((image) => ({ mediaId: image.mediaId, alt: image.alt })),
-          })),
-        ),
-      );
+      const result = await runAction(() => saveImageGroups(projectId, payload));
 
       if (!result.ok) {
         setGroupErrors(result.errors ?? {});
@@ -243,18 +258,18 @@ export function MediaPanel({
       }
 
       setGroupErrors({});
-      setGroupsUnsaved(false);
+      settleGroups(at);
       push('Pictures saved.');
     });
-  }, [groups, projectId, push]);
+  }, [groups, projectId, push, snapshotGroups, settleGroups]);
 
   /** As above: a drawing that lands late joins the list as it stands then. */
   const applyToDrawings = useCallback(
     (change: (current: EditorDrawing[]) => EditorDrawing[]) => {
       setDrawings(change);
-      setDrawingsUnsaved(true);
+      markDrawingsDirty();
     },
-    [],
+    [markDrawingsDirty],
   );
 
   const changeDrawings = useCallback(
@@ -305,7 +320,17 @@ export function MediaPanel({
   );
 
   const saveDrawingList = useCallback(() => {
-    const found = validateImages(drawings.map((drawing) => ({ mediaId: drawing.mediaId, alt: drawing.alt })));
+    /* As above: the sheets this save is carrying, and the count at the moment
+       it was built. A drawing dropped while the request is out is not in the
+       payload, so it is not what settle clears. */
+    const payload = drawings.map((drawing) => ({
+      mediaId: drawing.mediaId,
+      alt: drawing.alt,
+      drawingType: drawing.drawingType,
+    }));
+    const at = snapshotDrawings();
+
+    const found = validateImages(payload);
     if (hasErrors(found)) {
       setDrawingErrors(found);
       push('Every drawing needs a line saying what it shows. The ones missing it are marked.', 'error');
@@ -313,16 +338,7 @@ export function MediaPanel({
     }
 
     startDrawingSave(async () => {
-      const result = await runAction(() =>
-        saveDrawings(
-          projectId,
-          drawings.map((drawing) => ({
-            mediaId: drawing.mediaId,
-            alt: drawing.alt,
-            drawingType: drawing.drawingType,
-          })),
-        ),
-      );
+      const result = await runAction(() => saveDrawings(projectId, payload));
 
       if (!result.ok) {
         setDrawingErrors(result.errors ?? {});
@@ -331,10 +347,10 @@ export function MediaPanel({
       }
 
       setDrawingErrors({});
-      setDrawingsUnsaved(false);
+      settleDrawings(at);
       push('Drawings saved.');
     });
-  }, [drawings, projectId, push]);
+  }, [drawings, projectId, push, snapshotDrawings, settleDrawings]);
 
   const choices = coverChoices(groups, leadImage);
   const imageCount = countImages(groups);

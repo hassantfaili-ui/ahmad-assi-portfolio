@@ -7,6 +7,7 @@ import { useCallback, useRef, useState, useTransition, type FormEvent } from 're
 import { Clapperboard, ImageOff, Plus, Trash2, TriangleAlert } from 'lucide-react';
 
 import { SortableList } from '@/components/admin/SortableList';
+import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -78,12 +79,22 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
   const [rows, setRows] = useState(projects);
   const [notice, setNotice] = useState<string | null>(initialNotice);
   const [pendingDelete, setPendingDelete] = useState<AdminProjectRow | null>(null);
-  const [title, setTitle] = useState('');
+  const [newTitle, setNewTitle] = useState('');
   const [titleError, setTitleError] = useState<string | undefined>(undefined);
 
   const [, startSaving] = useTransition();
   const [deleting, startDeleting] = useTransition();
   const [creating, startCreating] = useTransition();
+
+  /* A typed title is work, and until now it was the only editable thing in the
+     admin area behind no flag at all: typing one and then clicking Media in the
+     bar above threw it away without a word. It needs no save flag of its own,
+     because there is no round trip it can drift during. The create either
+     answers refused, in which case the box still holds the title, or it answers
+     ok, in which case the box is emptied and the screen leaves for the new
+     project. So the box itself is the whole truth about whether anything is
+     outstanding. */
+  useRegisterUnsaved('projects:new', newTitle.trim().length > 0);
 
   /* Which rows have a write in flight, by id. The transition's own pending flag
      is one flag for the whole list, so wiring it to every row's controls greyed
@@ -217,7 +228,7 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
     (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
 
-      const trimmed = title.trim();
+      const trimmed = newTitle.trim();
       if (!trimmed) {
         setTitleError('Give the project a title to start with. You can change it later.');
         return;
@@ -227,6 +238,9 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
       startCreating(async () => {
         const result = await runAction(() => createProject(trimmed));
         if (!result.ok || !result.data) {
+          // The box keeps the title, so it is still outstanding and still
+          // registered. Emptying it here would lose the very thing the refusal
+          // is asking him to try again with.
           setTitleError(
             result.errors?.title ??
               result.message ??
@@ -235,10 +249,14 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
           return;
         }
 
+        // The title is written now, so it is no longer unsaved work. Cleared
+        // before the move so the guard does not stop the screen from going to
+        // the project it has just made.
+        setNewTitle('');
         router.push(`/admin/projects/${result.data.id}`);
       });
     },
-    [title, router],
+    [newTitle, router],
   );
 
   const total = rows.length;
@@ -281,8 +299,8 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
           hint="A new project starts unpublished, so nothing appears on the site until you publish it. Everything else, the title included, can be changed afterwards."
         >
           <Input
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
+            value={newTitle}
+            onChange={(event) => setNewTitle(event.target.value)}
             placeholder="Lincoln Beach Center"
             autoComplete="off"
             disabled={creating}

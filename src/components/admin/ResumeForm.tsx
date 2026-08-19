@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/toast';
 import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
+import { useSaveFlag } from '@/hooks/use-save-flag';
 import type { UploadedItem } from '@/hooks/use-uploads';
 import { runAction } from '@/lib/action-result';
 import { mediaUrl } from '@/lib/media-url';
@@ -270,13 +271,17 @@ function blankIn(section: string, noun: string, values: string[], what: string):
  * covered the moment it is written, and no call site is left that can change a
  * savable value quietly, which is the whole failure this guards against: the
  * badge stays off, the leave warning never arms, and the work goes.
+ *
+ * markDirty is the save flag's own, so every edit also bumps the counter a save
+ * in flight is measured against. That is what stops a save that left before the
+ * edit from reporting the edit as saved when it comes back.
  */
 function marking<T>(
   set: Dispatch<SetStateAction<T>>,
-  markDirty: Dispatch<SetStateAction<boolean>>,
+  markDirty: () => void,
 ): Dispatch<SetStateAction<T>> {
   return (next) => {
-    markDirty(true);
+    markDirty();
     set(next);
   };
 }
@@ -291,11 +296,16 @@ export function ResumeForm({ data }: { data: ResumeData }) {
   // was. A single flag would clear the badge over work that is still only on
   // the page, which is the trap this screen already sets by having the header
   // say the halves are independent.
-  const [profileDirty, setProfileDirty] = useState(false);
-  const [listsDirty, setListsDirty] = useState(false);
+  //
+  // Each is a save flag rather than a boolean because this is the longest form
+  // in the product and its two writes are the slowest, so the seconds between a
+  // payload leaving and its answer arriving are seconds Ahmad spends still
+  // typing. A boolean cleared on success would call all of that saved.
+  const profileFlag = useSaveFlag();
+  const listsFlag = useSaveFlag();
 
-  useRegisterUnsaved('resume:profile', profileDirty);
-  useRegisterUnsaved('resume:lists', listsDirty);
+  useRegisterUnsaved('resume:profile', profileFlag.dirty);
+  useRegisterUnsaved('resume:lists', listsFlag.dirty);
 
   const [fields, setFieldsState] = useState<ProfileFields>(() => ({
     name: data.profile?.name ?? '',
@@ -378,19 +388,19 @@ export function ResumeForm({ data }: { data: ResumeData }) {
   // something a call site can forget. The top group is what Save your details
   // writes, the bottom group is what Save the lists writes, and nothing
   // belongs to both.
-  const setFields = marking(setFieldsState, setProfileDirty);
-  const setLongBio = marking(setLongBioState, setProfileDirty);
-  const setPortrait = marking(setPortraitState, setProfileDirty);
-  const setCv = marking(setCvState, setProfileDirty);
-  const setPortfolio = marking(setPortfolioState, setProfileDirty);
+  const setFields = marking(setFieldsState, profileFlag.markDirty);
+  const setLongBio = marking(setLongBioState, profileFlag.markDirty);
+  const setPortrait = marking(setPortraitState, profileFlag.markDirty);
+  const setCv = marking(setCvState, profileFlag.markDirty);
+  const setPortfolio = marking(setPortfolioState, profileFlag.markDirty);
 
-  const setFacts = marking(setFactsState, setListsDirty);
-  const setSocial = marking(setSocialState, setListsDirty);
-  const setExperience = marking(setExperienceState, setListsDirty);
-  const setEducation = marking(setEducationState, setListsDirty);
-  const setSkillGroups = marking(setSkillGroupsState, setListsDirty);
-  const setLanguages = marking(setLanguagesState, setListsDirty);
-  const setEntries = marking(setEntriesState, setListsDirty);
+  const setFacts = marking(setFactsState, listsFlag.markDirty);
+  const setSocial = marking(setSocialState, listsFlag.markDirty);
+  const setExperience = marking(setExperienceState, listsFlag.markDirty);
+  const setEducation = marking(setEducationState, listsFlag.markDirty);
+  const setSkillGroups = marking(setSkillGroupsState, listsFlag.markDirty);
+  const setLanguages = marking(setLanguagesState, listsFlag.markDirty);
+  const setEntries = marking(setEntriesState, listsFlag.markDirty);
 
   const setField = (field: keyof ProfileFields, value: string) =>
     setFields((current) => ({ ...current, [field]: value }));
@@ -399,6 +409,12 @@ export function ResumeForm({ data }: { data: ResumeData }) {
     setEntries((current) => ({ ...current, [section]: rows }));
 
   function onSaveProfile() {
+    // Taken before the payload is read out of state, and handed to settle when
+    // the answer comes back. Anything typed into these boxes in between bumps
+    // the counter past this number, settle then leaves the badge up, and the
+    // work that never went is still marked as work.
+    const at = profileFlag.snapshot();
+
     const input: ProfileInput = {
       ...fields,
       longBio: longBio.map((row) => row.text),
@@ -428,12 +444,18 @@ export function ResumeForm({ data }: { data: ResumeData }) {
 
       setProfileErrors({});
       setProfileNotice(result.warning ?? null);
-      setProfileDirty(false);
+      profileFlag.settle(at);
       push('Your details are saved.');
     });
   }
 
   function onSaveLists() {
+    // The same reading, taken before the lists are read out of state. This half
+    // is the slower of the two, since the write deletes every list and puts it
+    // back, so the window in which a row can be typed into or dragged while the
+    // save is out is the wider one.
+    const at = listsFlag.snapshot();
+
     const problem =
       blankIn('At a glance', 'Block', facts.map((fact) => fact.label), 'heading') ??
       blankIn('Experience', 'Role', experience.map((entry) => entry.role), 'job title') ??
@@ -501,7 +523,7 @@ export function ResumeForm({ data }: { data: ResumeData }) {
       }
 
       setListsNotice(result.warning ?? null);
-      setListsDirty(false);
+      listsFlag.settle(at);
       push('Your resume lists are saved.');
     });
   }
@@ -514,7 +536,7 @@ export function ResumeForm({ data }: { data: ResumeData }) {
           description="Your name, how you describe yourself, your portrait, your PDFs and how people reach you. This button saves everything in this half. The lists below have their own button."
           label="Save your details"
           busy={savingProfile}
-          dirty={profileDirty}
+          dirty={profileFlag.dirty}
           onSave={onSaveProfile}
         />
 
@@ -808,7 +830,7 @@ export function ResumeForm({ data }: { data: ResumeData }) {
           description="Everything the resume page lists out. Drag the handle on the left of any row to move it, or focus the handle and use the arrow keys. This button saves all of the lists at once."
           label="Save the lists"
           busy={savingLists}
-          dirty={listsDirty}
+          dirty={listsFlag.dirty}
           onSave={onSaveLists}
         />
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState, useTransition } from 'react';
+import { useCallback, useRef, useState, useTransition } from 'react';
 
 import { FilmEditor, type EditorFilm } from '@/components/admin/FilmEditor';
 import { GuardedLink } from '@/components/admin/GuardedLink';
@@ -18,6 +18,7 @@ import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/toast';
 import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
+import { useSaveFlag } from '@/hooks/use-save-flag';
 import { runAction } from '@/lib/action-result';
 import { saveProject, setProjectPublished } from '@/lib/mutations';
 import {
@@ -156,20 +157,30 @@ export function ProjectForm({ project, groups, drawings, film }: ProjectFormProp
   const [values, setValues] = useState<FormValues>(() => initialValues(project));
   const [errors, setErrors] = useState<FieldErrors>({});
   const [warning, setWarning] = useState<string | null>(null);
-  const [unsaved, setUnsaved] = useState(false);
+  const { dirty: unsaved, markDirty, snapshot, settle } = useSaveFlag();
   const [published, setPublished] = useState(project.published);
   const [saving, startSave] = useTransition();
   const [publishing, startPublish] = useTransition();
+
+  /* What the web address box holds right now, which is not what a save in
+     flight is holding. That save closed over the values as they were when it
+     built its payload, and the box stayed live for the whole round trip, so
+     anything that has to reason about the box afterwards asks this. */
+  const slugOnScreen = useRef(project.slug);
 
   /* Covers closing the tab, reloading, and leaving the site. Clicking a link
      inside the admin is a client side route change the browser cannot see, so
      that case is GuardedLink's, below. */
   useRegisterUnsaved('project:fields', unsaved);
 
-  const update = useCallback((changes: Partial<FormValues>) => {
-    setValues((current) => ({ ...current, ...changes }));
-    setUnsaved(true);
-  }, []);
+  const update = useCallback(
+    (changes: Partial<FormValues>) => {
+      if (changes.slug !== undefined) slugOnScreen.current = changes.slug;
+      setValues((current) => ({ ...current, ...changes }));
+      markDirty();
+    },
+    [markDirty],
+  );
 
   const chooseLeadImage = useCallback(
     (mediaId: string | null) => {
@@ -186,6 +197,11 @@ export function ProjectForm({ project, groups, drawings, film }: ProjectFormProp
   );
 
   const save = useCallback(() => {
+    /* Taken where the payload is built, so the number stands for exactly what
+       is being sent. Anything typed while the request is out moves the count
+       past it, and settle then leaves the flag set for the characters this save
+       is not carrying. */
+    const at = snapshot();
     const input = toInput(values);
 
     /* Checked here first so the answer is instant and nothing is sent that is
@@ -209,21 +225,34 @@ export function ProjectForm({ project, groups, drawings, film }: ProjectFormProp
 
       setErrors({});
       setWarning(result.warning ?? null);
-      setUnsaved(false);
+      settle(at);
 
-      /* The web address that came back can differ from the one typed, because
-         another project already had it. Showing the old one would leave him
-         with a link that does not work. */
+      /* The web address that came back can differ from the one that was sent,
+         because another project already had it. Showing the old one would leave
+         him with a link that does not work, so it is worth writing back, but
+         only into a box that still holds what was sent. The box is never
+         disabled while the save runs, so it can just as easily hold something
+         typed since, and that is his and not the server's to overwrite. */
       const savedSlug = result.data?.slug;
       if (savedSlug && savedSlug !== input.slug) {
-        setValues((current) => ({ ...current, slug: savedSlug }));
-        push(`Saved. Another project already used that web address, so this one is ${savedSlug}.`);
+        if (slugOnScreen.current === input.slug) {
+          slugOnScreen.current = savedSlug;
+          setValues((current) => ({ ...current, slug: savedSlug }));
+          push(`Saved. Another project already used that web address, so this one is ${savedSlug}.`);
+        } else {
+          push(
+            `Saved, but not at the web address you asked for: another project already used it, ` +
+              `so this one is now ${savedSlug}. What you have since typed in the address box is ` +
+              `still there, and still needs saving.`,
+            'info',
+          );
+        }
         return;
       }
 
       push('Saved.');
     });
-  }, [values, project.id, push]);
+  }, [values, project.id, push, snapshot, settle]);
 
   const togglePublished = useCallback(() => {
     const next = !published;

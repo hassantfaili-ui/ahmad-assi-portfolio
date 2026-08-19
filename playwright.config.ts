@@ -44,7 +44,17 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    /**
+     * Never reuse a server that is already running.
+     *
+     * reuseExistingServer was on, and it is how a suite reports on code that is
+     * not in the working tree. A dev server left over from forty minutes
+     * earlier served stale HTML, which produced two phantom hydration failures
+     * on one run and would just as easily have produced a green run over broken
+     * code. The suite has to test the tree, not whatever happens to hold the
+     * port.
+     */
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 });

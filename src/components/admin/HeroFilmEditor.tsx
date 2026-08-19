@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useCallback, useState, useTransition } from 'react';
+import { useCallback, useRef, useState, useTransition } from 'react';
 
 import { Dropzone } from '@/components/admin/Dropzone';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,7 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
 import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
+import { useSaveFlag } from '@/hooks/use-save-flag';
 import type { UploadedFilm, UploadedItem } from '@/hooks/use-uploads';
 import { runAction } from '@/lib/action-result';
 import { deleteFilm, saveFilm } from '@/lib/mutations';
@@ -54,6 +55,22 @@ function tallestFirst(sources: { height: number; media: HeroMedia }[]) {
   return [...sources].sort((a, b) => b.height - a.height);
 }
 
+/**
+ * The videos of a film in one comparable string.
+ *
+ * A save sends the ids it read when the button was pressed. Comparing them
+ * against the ids on screen when the answer arrives is what tells a save that
+ * covered the film showing here from one that answered for a film that has
+ * since been replaced. Sorted, so the answer is about which files are in the
+ * film and not the order they are listed in.
+ */
+function sourceIds(sources: { media: { id: string } }[]): string {
+  return sources
+    .map((source) => source.media.id)
+    .sort()
+    .join(',');
+}
+
 function describeLength(seconds: number | null): string | null {
   if (seconds === null || !Number.isFinite(seconds) || seconds <= 0) return null;
 
@@ -94,12 +111,16 @@ export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
   );
 
   const [caption, setCaption] = useState(film?.caption ?? '');
-  const [savedCaption, setSavedCaption] = useState(film?.caption ?? '');
 
-  /* A film uploaded but not yet saved. Nothing reaches the home page until he
-     presses the button, and saying so is the difference between waiting and
-     uploading it a second time. */
-  const [waiting, setWaiting] = useState(false);
+  /* Which videos the home page is actually playing. Set from what a save sent,
+     never from what happens to be on screen when it answers, so a film uploaded
+     during the round trip is still counted as waiting afterwards. */
+  const [savedSourceIds, setSavedSourceIds] = useState(() => sourceIds(film?.sources ?? []));
+
+  /* The same reading, kept where a save or a removal that left before the
+     latest upload can still read it. Those run from a closure built when the
+     button was pressed, and that closure cannot see a film that landed after. */
+  const liveSourceIds = useRef(savedSourceIds);
 
   const [problems, setProblems] = useState<string[]>([]);
   const [warning, setWarning] = useState<string | null>(null);
@@ -119,15 +140,25 @@ export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
 
   /* The unsaved flag for this screen. One flag, because the one Save button
      covers both things that can be waiting: a caption typed into the field, and
-     a film dropped into the box above. Comparing the caption against the saved
-     one rather than latching a boolean means typing a word and taking it back
-     again counts as nothing to save, which is what it is. It is cleared in the
-     success branch of that save, and by a successful removal, which leaves
-     nothing left to save. */
-  const changed = waiting || caption.trim() !== savedCaption.trim();
-  useRegisterUnsaved('hero:film', changed);
+     a film dropped into the box above.
 
-  const canSave = changed && (sources.length > 0 || Boolean(youtubeId));
+     It counts edits rather than latching a boolean, because a save of a hero
+     film is a large payload on a slow line and everything here stays live while
+     it is out. Clearing on any ok answer would report a caption typed during
+     the round trip, or worse a film uploaded during it, as being on the home
+     page when neither was ever sent. */
+  const flag = useSaveFlag();
+  const { markDirty, snapshot, settle, reset } = flag;
+
+  useRegisterUnsaved('hero:film', flag.dirty);
+
+  /* A film uploaded but not yet on the home page. Read off the ids rather than
+     a boolean so it stays true for a film that landed while a save was out.
+     Saying so is the difference between waiting and uploading it a second
+     time. */
+  const waiting = sources.length > 0 && sourceIds(sources) !== savedSourceIds;
+
+  const canSave = flag.dirty && (sources.length > 0 || Boolean(youtubeId));
 
   /* Why Save is greyed out, in the row beside it. A disabled button with
      nothing next to it reads as broken rather than as nothing to do. */
@@ -147,24 +178,35 @@ export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
         return;
       }
 
-      setSources(tallestFirst(newest.sources));
+      const uploaded = tallestFirst(newest.sources);
+
+      liveSourceIds.current = sourceIds(uploaded);
+      markDirty();
+      setSources(uploaded);
       setPoster(newest.poster);
       setLength(newest.durationSeconds);
-      setWaiting(true);
       setProblems([]);
       setWarning(null);
     },
-    [push],
+    [markDirty, push],
   );
 
   const save = useCallback(() => {
+    /* Both taken before the payload is read out of state. The counter catches a
+       caption typed while the save is out, and the ids catch a film uploaded
+       while it is out: the answer is only about what went, and what went is
+       these ids. */
+    const at = snapshot();
+    const sent = sources.map((source) => ({ mediaId: source.media.id, height: source.height }));
+    const sentIds = sourceIds(sources);
+
     startWork(async () => {
       const result = await runAction(() =>
         saveFilm(null, {
           posterMediaId: poster?.id ?? null,
           youtubeId,
           caption: caption.trim() || null,
-          sources: sources.map((source) => ({ mediaId: source.media.id, height: source.height })),
+          sources: sent,
         }),
       );
 
@@ -177,14 +219,21 @@ export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
 
       setProblems([]);
       setWarning(result.warning ?? null);
-      setWaiting(false);
-      setSavedCaption(caption.trim());
+      /* The home page is playing what this payload carried. If a film landed
+         while it was out, the ids on screen are no longer these, the badge and
+         the Save button have to keep saying so, and the flag is not settled for
+         a film that was never sent. */
+      setSavedSourceIds(sentIds);
+      if (liveSourceIds.current === sentIds) settle(at);
       push('Saved. The home page is playing this film.');
       router.refresh();
     });
-  }, [caption, poster, push, router, sources, youtubeId]);
+  }, [caption, poster, push, router, settle, snapshot, sources, youtubeId]);
 
   const remove = useCallback(() => {
+    /* The film he answered the question about. */
+    const answered = sourceIds(sources);
+
     startWork(async () => {
       const result = await runAction(() => deleteFilm(null));
 
@@ -194,19 +243,32 @@ export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
         return;
       }
 
-      setSources([]);
-      setPoster(null);
-      setLength(null);
-      setCaption('');
-      setSavedCaption('');
-      setWaiting(false);
       setProblems([]);
       setWarning(null);
       setConfirming(false);
+      setSavedSourceIds('');
+
+      /* A film that landed while the removal was out was no part of what he
+         agreed to, and clearing the screen would throw away a compression
+         nothing here can repeat. It stays, and so does the flag. */
+      if (liveSourceIds.current !== answered) {
+        push(
+          'The film is off the home page. The one you uploaded while that was happening is still here and still needs saving.',
+        );
+        router.refresh();
+        return;
+      }
+
+      setSources([]);
+      liveSourceIds.current = '';
+      setPoster(null);
+      setLength(null);
+      setCaption('');
+      reset(false);
       push('The film is off the home page.');
       router.refresh();
     });
-  }, [push, router]);
+  }, [push, reset, router, sources]);
 
   return (
     <section className="grid gap-6" aria-labelledby="hero-film">
@@ -390,7 +452,10 @@ export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
       >
         <Input
           value={caption}
-          onChange={(event) => setCaption(event.target.value)}
+          onChange={(event) => {
+            markDirty();
+            setCaption(event.target.value);
+          }}
           placeholder="Lincoln Beach Center, walkthrough"
         />
       </Field>
@@ -399,7 +464,7 @@ export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
         <Button type="button" onClick={save} disabled={busy || !canSave}>
           {busy ? 'Saving' : 'Save'}
         </Button>
-        {changed && <Badge variant="warning">Not saved yet</Badge>}
+        {flag.dirty && <Badge variant="warning">Not saved yet</Badge>}
         {!busy && (
           <p className="text-sm text-neutral-600">
             {whyNoSave ?? 'You have changes that are not on the home page yet.'}
@@ -417,10 +482,23 @@ export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
               Your name will sit on the plain background, with no film and no still behind it, until
               you upload another one.
             </p>
-            <p className="mt-2">
-              The video files stay in your media library, so you can put this film back by uploading
-              it again.
-            </p>
+            {waiting ? (
+              /* The library line below is true of a film that has been saved and
+                 false of one that has only been uploaded, so it is not said
+                 here. What this takes off is the compression he has just waited
+                 through, and he is told that before he answers. */
+              <p className="mt-2">
+                The film you uploaded has not been saved yet, and this takes it off with the old
+                one. Its files are in your library, but nothing on this screen can put them back
+                together into a film, so keeping it would mean dropping the original in again and
+                waiting through the whole compression. Press Save first if you want to keep it.
+              </p>
+            ) : (
+              <p className="mt-2">
+                The video files stay in your media library, so you can put this film back by
+                uploading it again.
+              </p>
+            )}
           </>
         }
         confirmLabel="Take it off"

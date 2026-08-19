@@ -15,39 +15,91 @@ import { test, expect, type Page } from '@playwright/test';
  * assertion again itself; neither is testable from here.
  */
 
-test.skip(
-  process.env.ACCESS_DEV_BYPASS !== 'true',
-  'The editing area needs ACCESS_DEV_BYPASS to be reachable without a Cloudflare tunnel',
-);
+/**
+ * This suite needs ACCESS_DEV_BYPASS, and it FAILS rather than skips without it.
+ *
+ * A file level skip is how an entire suite disappears. The flag lives in .env,
+ * which is gitignored, so on any other machine or any CI runner every test here
+ * would quietly not run and the command would still exit 0. A green run would
+ * then mean the editing screens were never opened, which is the opposite of
+ * what a green run is supposed to mean.
+ *
+ * Set SKIP_ADMIN_E2E=true to opt out deliberately. Anything else is a failure.
+ */
+test.beforeAll(() => {
+  if (process.env.SKIP_ADMIN_E2E === 'true') {
+    test.skip(true, 'SKIP_ADMIN_E2E is set');
+    return;
+  }
+  if (process.env.ACCESS_DEV_BYPASS !== 'true') {
+    throw new Error(
+      'The editing area needs ACCESS_DEV_BYPASS="true" to be reachable without a Cloudflare ' +
+        'tunnel. Set it, or set SKIP_ADMIN_E2E=true to skip this suite on purpose.',
+    );
+  }
+});
 
 /** A title nothing else will collide with, so a stray run cannot break a real project. */
 function scratchTitle(): string {
   return `Test Project ${process.env.TEST_WORKER_INDEX ?? '0'} ${Math.floor(performance.now())}`;
 }
 
+/**
+ * Locators are asserted before they are used.
+ *
+ * The first version of this file guessed that the new project field was
+ * labelled something containing "title". It is labelled "Add a project", so the
+ * locator matched nothing and fill() sat there until the thirty second test
+ * timeout, then reported a failure in the cleanup block, pointing at the wrong
+ * line entirely. Three tests, including both of the ones that prove the unsaved
+ * work guard, never ran once.
+ *
+ * So every locator here is checked first. A renamed label now fails in a second
+ * with a message naming the control, instead of timing out somewhere else.
+ */
+async function expectVisible(page: Page, locator: ReturnType<Page['getByLabel']>, what: string) {
+  await expect(locator, `could not find ${what}`).toBeVisible({ timeout: 5000 });
+  return locator;
+}
+
 async function createProject(page: Page, title: string) {
   await page.goto('/admin');
-  await page.getByLabel(/title/i).first().fill(title);
-  await page.getByRole('button', { name: /new project|add|create/i }).first().click();
-  await page.waitForURL(/\/admin\/projects\//);
+
+  const field = await expectVisible(
+    page,
+    page.getByLabel('Add a project'),
+    'the new project title field',
+  );
+  await field.fill(title);
+
+  const button = page.getByRole('button', { name: 'Add project' });
+  await expect(button, 'could not find the add project button').toBeVisible({ timeout: 5000 });
+  await button.click();
+
+  await page.waitForURL(/\/admin\/projects\//, { timeout: 15_000 });
 }
 
 async function deleteProject(page: Page, title: string) {
   await page.goto('/admin');
-  const row = page.locator('li', { hasText: title }).first();
-  if ((await row.count()) === 0) return;
-  await row.getByRole('button', { name: /delete|remove/i }).first().click();
-  await page.getByRole('button', { name: new RegExp(`Delete ${title}`, 'i') }).click();
-  await expect(page.locator('li', { hasText: title })).toHaveCount(0);
+
+  const remove = page.getByRole('button', { name: `Delete ${title}` });
+  if ((await remove.count()) === 0) return;
+
+  await remove.first().click();
+  await page.getByRole('button', { name: `Delete ${title}`, exact: true }).last().click();
+  await expect(page.getByRole('link', { name: title })).toHaveCount(0);
 }
 
 test.describe('the projects list', () => {
   test('shows every project, published or not', async ({ page }) => {
     await page.goto('/admin');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    // The migrated set is eighteen. This asserts the screen reads the database
-    // rather than that the number is exactly right forever.
-    expect(await page.locator('[data-project-row], li').count()).toBeGreaterThan(5);
+    // Every project links to its own editor, so the links are the row count.
+    // Asserting more than a handful rather than exactly eighteen, because the
+    // point is that the screen reads the database, not that the number is
+    // frozen forever.
+    expect(await page.getByRole('link', { name: /./ }).count()).toBeGreaterThan(5);
+    await expect(page.getByRole('link', { name: 'Lincoln Beach Center' })).toBeVisible();
   });
 
   test('the navigation bar reaches every screen', async ({ page }) => {
@@ -89,7 +141,7 @@ test.describe('unsaved work', () => {
       await createProject(page, title);
 
       // Type into the form without saving.
-      const summary = page.getByLabel(/summary/i).first();
+      const summary = await expectVisible(page, page.getByLabel('Summary'), 'the summary field');
       await summary.fill('A sentence that has not been saved.');
       await expect(page.getByText(/not saved yet/i).first()).toBeVisible();
 
@@ -110,7 +162,8 @@ test.describe('unsaved work', () => {
     const title = scratchTitle();
     try {
       await createProject(page, title);
-      await page.getByLabel(/summary/i).first().fill('Unsaved.');
+      const summary = await expectVisible(page, page.getByLabel('Summary'), 'the summary field');
+      await summary.fill('Unsaved.');
 
       await page.getByRole('link', { name: 'Media', exact: true }).click();
       await page.getByRole('button', { name: 'Leave and lose the changes' }).click();
@@ -137,12 +190,16 @@ test.describe('a project round trip', () => {
       expect(page.url()).toMatch(/\/admin\/projects\//);
 
       await page.goto('/admin');
-      const row = page.locator('li', { hasText: title }).first();
-      await expect(row).toBeVisible();
+      await expect(page.getByRole('link', { name: title })).toBeVisible();
 
       // Unpublished, because a project with no images and no credit appearing
       // on the public site the moment it is named would be worse than either.
-      await expect(row.getByText(/not published|unpublished|draft/i).first()).toBeVisible();
+      //
+      // Asserted on the switch rather than on the words "Not published", which
+      // appear twice in the row: once as the badge and once as the switch's own
+      // label. The switch is the state; the badge is a description of it.
+      const row = page.locator('li', { has: page.getByRole('link', { name: title }) }).first();
+      await expect(row.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
     } finally {
       await deleteProject(page, title);
     }

@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useState, useTransition } from 'react';
+import { useCallback, useRef, useState, useTransition } from 'react';
 
 import { Dropzone } from '@/components/admin/Dropzone';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
 import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
+import { useSaveFlag } from '@/hooks/use-save-flag';
 import type { UploadedFilm, UploadedItem } from '@/hooks/use-uploads';
 import { runAction } from '@/lib/action-result';
 import { mediaUrl } from '@/lib/media-url';
@@ -52,6 +53,20 @@ function toEditorMedia(media: { id: string; key: string; bytes: number; width: n
   };
 }
 
+/**
+ * The videos of a film in one comparable string.
+ *
+ * It is what tells a film that exists only in this browser from the one the
+ * project page is actually showing. Sorted, so the answer is about which files
+ * are in the film and not about the order they happen to be listed in.
+ */
+function sourceIds(sources: { media: { id: string } }[]): string {
+  return sources
+    .map((source) => source.media.id)
+    .sort()
+    .join(',');
+}
+
 export interface FilmEditorProps {
   projectId: string;
   initialFilm: EditorFilm | null;
@@ -63,36 +78,73 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
   const [film, setFilm] = useState<EditorFilm>(initialFilm ?? EMPTY_FILM);
   const [onSite, setOnSite] = useState(initialFilm !== null);
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [unsaved, setUnsaved] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [blocked, setBlocked] = useState(false);
   const [saving, startSave] = useTransition();
   const [removing, startRemoval] = useTransition();
+
+  /* A counter rather than a boolean, because a save takes seconds to answer and
+     this screen stays live the whole time. The flag records where the edits
+     stood when the payload was built, and a save that comes back ok clears it
+     only if nothing has been typed or dropped since. A boolean would report a
+     caption written during the round trip as saved. */
+  const flag = useSaveFlag();
+  const { markDirty, snapshot, settle, reset } = flag;
+
+  /* Which videos the server has for this project. Compared against what is on
+     screen to tell an uploaded film apart from a saved one. */
+  const [savedSourceIds, setSavedSourceIds] = useState(() =>
+    sourceIds(initialFilm?.sources ?? []),
+  );
+
+  /* The same reading, kept where a save or a removal that left before the
+     latest upload can still read it. Those run from a closure built when the
+     button was pressed, and that closure cannot see a film that landed after. */
+  const liveSourceIds = useRef(savedSourceIds);
 
   /* The film's own flag, not the details form's. A caption typed here and a
      video dropped here are lost by the same reload, and neither is covered by
      the save button at the top of the screen. */
-  useRegisterUnsaved('project:film', unsaved);
+  useRegisterUnsaved('project:film', flag.dirty);
 
-  const change = useCallback((changes: Partial<EditorFilm>) => {
-    setFilm((current) => ({ ...current, ...changes }));
-    setUnsaved(true);
-  }, []);
+  const change = useCallback(
+    (changes: Partial<EditorFilm>) => {
+      markDirty();
+      setFilm((current) => ({ ...current, ...changes }));
+    },
+    [markDirty],
+  );
 
   const takeUpload = useCallback(
     (items: UploadedItem[]) => {
       const uploaded = items.find((item): item is UploadedFilm => item.kind === 'film');
       if (!uploaded) return;
 
-      change({
-        sources: uploaded.sources.map((source) => ({
-          height: source.height,
-          media: toEditorMedia(source.media),
-        })),
-        posterMedia: toEditorMedia(uploaded.poster),
-      });
+      const sources = uploaded.sources.map((source) => ({
+        height: source.height,
+        media: toEditorMedia(source.media),
+      }));
+
+      liveSourceIds.current = sourceIds(sources);
+      setBlocked(false);
+      change({ sources, posterMedia: toEditorMedia(uploaded.poster) });
     },
     [change],
   );
+
+  /* A film that exists nowhere but this browser: compressed here, uploaded, and
+     never saved. Taking the old film off the project would take this with it,
+     and nothing on this screen can put it back. */
+  const unsavedReplacement = film.sources.length > 0 && sourceIds(film.sources) !== savedSourceIds;
+
+  /* Said where the button is, rather than inside a dialog that promises the
+     files stay in the library. That promise holds for the film on the project
+     page and not for one that has only been uploaded. */
+  const refuseRemoval = useCallback(() => {
+    setConfirming(false);
+    setBlocked(true);
+    push('Save the film you just uploaded first, or it goes with the old one.', 'error');
+  }, [push]);
 
   const save = useCallback(() => {
     const found = validateFilm({
@@ -107,16 +159,23 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
       return;
     }
 
+    /* Taken before the payload is read out of state and handed to settle when
+       the answer comes back. A caption typed or a film dropped while this save
+       is out bumps the counter past this number, and settle then leaves the
+       badge up over the work that never went. */
+    const at = snapshot();
+    const sent = film.sources.map((source) => ({
+      mediaId: source.media.id,
+      height: source.height,
+    }));
+
     startSave(async () => {
       const result = await runAction(() =>
         saveFilm(projectId, {
           posterMediaId: film.posterMedia?.id ?? null,
           youtubeId: film.youtubeId,
           caption: film.caption,
-          sources: film.sources.map((source) => ({
-            mediaId: source.media.id,
-            height: source.height,
-          })),
+          sources: sent,
         }),
       );
 
@@ -127,13 +186,27 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
       }
 
       setErrors({});
-      setUnsaved(false);
+      setBlocked(false);
+      /* What the project page shows now is what this payload carried, not
+         whatever is on screen by the time it answers. */
+      setSavedSourceIds(sourceIds(film.sources));
       setOnSite(true);
+      settle(at);
       push('Film saved.');
     });
-  }, [film, projectId, push]);
+  }, [film, projectId, push, settle, snapshot]);
 
   const remove = useCallback(() => {
+    /* Asked again here, not only where the button opened the dialog: a
+       compression can finish while the question is on screen. */
+    if (unsavedReplacement) {
+      refuseRemoval();
+      return;
+    }
+
+    /* The videos he answered the question about. */
+    const answered = sourceIds(film.sources);
+
     startRemoval(async () => {
       const result = await runAction(() => deleteFilm(projectId));
 
@@ -142,14 +215,27 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
         return;
       }
 
-      setFilm(EMPTY_FILM);
       setErrors({});
-      setUnsaved(false);
       setOnSite(false);
       setConfirming(false);
+      setSavedSourceIds('');
+
+      /* A film that landed while the removal was out was no part of what he
+         agreed to, and emptying the editor would throw away a compression
+         nothing here can repeat. It stays on screen, and so does the flag. */
+      if (liveSourceIds.current !== answered) {
+        push(
+          'The old film is off this project. The one you uploaded while that was happening is still here and still needs saving.',
+        );
+        return;
+      }
+
+      setFilm(EMPTY_FILM);
+      liveSourceIds.current = '';
+      reset(false);
       push('Film taken off this project. The video files stay in your library.');
     });
-  }, [projectId, push]);
+  }, [film.sources, projectId, push, refuseRemoval, reset, unsavedReplacement]);
 
   const hasVideo = film.sources.length > 0;
   const dropLabel = hasVideo ? 'Drop a new video here to replace this one' : 'Drop a walkthrough here';
@@ -160,8 +246,8 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
         <h2 id="film-heading" className="text-base font-semibold">
           Walkthrough
         </h2>
-        {unsaved && <Badge variant="warning">Not saved yet</Badge>}
-        {onSite && !unsaved && <Badge variant="secondary">On the page</Badge>}
+        {flag.dirty && <Badge variant="warning">Not saved yet</Badge>}
+        {onSite && !flag.dirty && <Badge variant="secondary">On the page</Badge>}
 
         <div className="ml-auto flex gap-2">
           {onSite && (
@@ -169,7 +255,7 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setConfirming(true)}
+              onClick={() => (unsavedReplacement ? refuseRemoval() : setConfirming(true))}
               disabled={removing}
             >
               Take the film off
@@ -189,6 +275,22 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
         label={dropLabel}
         hint="It is made smaller in this browser before anything is sent, so a long film takes a few minutes and then uploads quickly."
       />
+
+      {blocked && unsavedReplacement && (
+        <div
+          role="alert"
+          className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+        >
+          <p className="font-medium">Save the new film first</p>
+          <p className="mt-1">
+            The film you dropped here has not been saved yet, so taking the old one off would take
+            this one with it. Its files are in your library, but nothing on this screen can put them
+            back together into a film, so you would be dropping the original in again and waiting
+            through the whole compression a second time. Press Save the film, then take it off. If
+            you do not want the new film at all, reload this page first.
+          </p>
+        </div>
+      )}
 
       {errors.film && (
         <p role="alert" className="text-sm font-medium text-red-600">
