@@ -115,7 +115,7 @@ export const getPublishedProjects = unstable_cache(
     const rows = await db.project.findMany({
       where: { published: true },
       select: summarySelect,
-      orderBy: { order: 'asc' },
+      orderBy: [{ order: 'asc' }, { id: 'asc' }],
     });
     return rows as unknown as ProjectSummary[];
   },
@@ -128,7 +128,7 @@ export const getProjectSlugs = unstable_cache(
     const rows = await db.project.findMany({
       where: { published: true },
       select: { slug: true },
-      orderBy: { order: 'asc' },
+      orderBy: [{ order: 'asc' }, { id: 'asc' }],
     });
     return rows.map((r) => r.slug);
   },
