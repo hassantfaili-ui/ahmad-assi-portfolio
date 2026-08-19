@@ -75,7 +75,7 @@ serves that output locally, and `npm run check` type checks the project.
 ## Editing content
 
 Ahmad edits the site in a browser at **/keystatic**. Saving commits to this
-repository, Netlify rebuilds, and the change is live in about a minute. Every edit
+repository, Cloudflare rebuilds, and the change is live in about a minute. Every edit
 is an ordinary reviewable commit rather than something that happened invisibly
 inside a database.
 
