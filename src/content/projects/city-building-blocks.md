@@ -59,6 +59,36 @@ imageGroups:
         alt: The same mid-rise block from the other corner with the glazing grid and the roof plant drawn
       - src: /media/city-building-blocks/blocks-type-19.jpg
         alt: A commercial block with its ground floor entrances dimensioned along an 18 metre depth
+  - layout: pair
+    caption: Exercise 2.4, the street design that followed the inventory. The block types are assembled into a piece of city and then tested.
+    images:
+      - src: /media/city-building-blocks/blocks-street-birdseye.jpg
+        alt: Bird's eye perspective of the assembled model from the southwest, the block types set out along the street grid with towers at the corners
+      - src: /media/city-building-blocks/blocks-street-topview.jpg
+        alt: Top view of the same model showing the courtyards inside each block and the street pattern between them
+  - layout: pair
+    caption: The two intersections, drawn inside a turning radius so the geometry can be checked rather than assumed.
+    images:
+      - src: /media/city-building-blocks/blocks-street-keyplan.jpg
+        alt: Key plan locating the four street sections and the two intersections across the block layout
+      - src: /media/city-building-blocks/blocks-intersection-1.jpg
+        alt: Intersection 1 drawn twice, at a forty metre radius and at a wider radius, with lane markings, crossings and street trees
+  - layout: pair
+    caption: The second intersection, and the first of the street sections.
+    images:
+      - src: /media/city-building-blocks/blocks-intersection-2.jpg
+        alt: Intersection 2 drawn as a four way crossing with the lane arrangement, planting and pedestrian crossings marked
+      - src: /media/city-building-blocks/blocks-section-1.jpg
+        alt: Street section 1 with the buildings hatched either side, the carriageway, footways, planting and street furniture drawn to scale
+  - layout: triptych
+    caption: The remaining street sections. Each one pairs a building height with a street width, which is the whole argument of the exercise.
+    images:
+      - src: /media/city-building-blocks/blocks-section-2.jpg
+        alt: Street section 2, a wider carriageway between taller blocks with a planted median and lighting
+      - src: /media/city-building-blocks/blocks-section-3.jpg
+        alt: Street section 3, a narrower street between a low block and a tower with seating along the footway
+      - src: /media/city-building-blocks/blocks-section-4.jpg
+        alt: Street section 4, the widest condition with parking, trees and a generous footway on both sides
 drawings:
   - src: /media/city-building-blocks/blocks-type-10.jpg
     alt: Row type with the front stairs and setbacks dimensioned, drawn to the same convention as the rest of the set
