@@ -48,6 +48,18 @@ npx wrangler kv namespace create NEXT_INC_CACHE_KV
 
 Put the id into `wrangler.jsonc`, replacing `PLACEHOLDER_KV_ID`.
 
+### Or do steps 1 and 2 in one command
+
+Once you have logged in and created the Neon project, this creates both
+resources and writes both ids into `wrangler.jsonc` for you:
+
+```bash
+npm run provision -- "postgresql://user:pass@host/db?sslmode=require"
+```
+
+It refuses to run if you are not logged in, because every step below fails in a
+different confusing way without it and none of them says so.
+
 ---
 
 ## 3. The bucket, and its domain
