@@ -1,17 +1,16 @@
 /**
  * Base-aware URL builder.
  *
- * GitHub Pages serves a project repo from a subfolder, so the site lives at
- * /ahmad-assi-portfolio rather than at the root. Astro does not rewrite absolute
- * paths in markup or content for you, so every internal link and every asset
- * path has to go through here.
+ * A host that serves the site from a subfolder rather than from the root of a
+ * domain puts every page under a prefix, and Astro does not rewrite absolute
+ * paths in markup or content for you. So every internal link and every asset
+ * path goes through here, and the site is not tied to being served from the root.
  *
- * Content files keep clean paths like /media/hero-1440.mp4, which is what the editor
- * shows and what a person would expect to type. The prefix is applied at render
- * time instead.
+ * Content files keep clean paths like /media/hero-1440.mp4, which is what a person
+ * would expect to type. The prefix is applied at render time instead.
  *
- * Moving to a custom domain later means setting base back to '/' in
- * astro.config.mjs. Nothing else has to change.
+ * The base is set in astro.config.mjs and is '/' today, which makes this a
+ * passthrough.
  */
 
 const BASE = import.meta.env.BASE_URL || '/';

@@ -8,8 +8,8 @@
  * handles for Illustrator, a dimension string for AutoCAD, a surface patch for
  * Rhino. One line weight, one grid, so the set reads as a set.
  *
- * Anything without a glyph falls back to its initials, so adding a tool in the
- * editor never leaves a hole.
+ * Anything without a glyph falls back to its initials, so adding a tool to the
+ * resume never leaves a hole.
  */
 interface Props {
   name: string;
@@ -127,7 +127,7 @@ const initials = (
     </>
   )}
 
-  {/* Anything the editor adds later */}
+  {/* Anything added to the resume later */}
   {
     ![
       'sketchup', 'd5render', 'illustrator', 'photoshop', 'indesign',

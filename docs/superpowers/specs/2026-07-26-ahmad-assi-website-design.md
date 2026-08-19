@@ -53,16 +53,16 @@ Five routes. No more.
 Rationale for the split between `/` and `/about`: the home page carries an abridged
 resume so a reviewer never has to click to see the substance, and `/about` carries the
 unabridged version for anyone who wants it. Duplication of content between the two is
-intentional and is handled by both reading the same CMS documents, not by copying text.
+intentional and is handled by both reading the same content files, not by copying text.
 
 Every project has its own URL so Ahmad can send a single project to a firm. This was the
 deciding factor against a one page site.
 
 ## 4. Content model
 
-Shaped for an editor from the start, because retrofitting hard coded HTML into editable
-content is the expensive mistake here. Two documents, no more: the thing Ahmad edits
-often, and the thing he edits rarely.
+Shaped as structured content from the start, because retrofitting hard coded HTML into
+editable content is the expensive mistake here. Two documents, no more: the thing Ahmad
+edits often, and the thing he edits rarely.
 
 **`projects`** (a collection, one markdown file per project, in `src/content/projects/`)
 - `title`, `slug`, `sheet` (validated against `A-\d{3}`), `category` (enum), `year`,
@@ -83,7 +83,7 @@ groups, languages, awards, publications and exhibitions.
 
 This is one document rather than the five collections an earlier draft proposed. It is one
 person's record, not a set of independent items, and splitting it would have meant five
-editor screens to change a job title. Sections whose arrays are empty do not render at
+screens to change a job title. Sections whose arrays are empty do not render at
 all, rather than rendering an empty heading.
 
 Every image slot requires alt text, enforced by the schema so the build fails without it.
@@ -92,7 +92,7 @@ adding content.
 
 ## 5. Technical approach
 
-**Astro, static output, with Keystatic as the editor.**
+**Astro, static output, content as files in the repository.**
 
 > Superseded on the editor only. Keystatic was replaced by TinaCMS in August 2026,
 > because Ahmad wanted to edit on the page rather than in a form beside it. The
@@ -105,30 +105,28 @@ adding content.
   matters more than any framework feature. Client JavaScript is one 170 line module
   covering the print toggle, the sheet index, the scrollspy, scroll reveals, the
   full screen drawing viewer and the category filter. No framework runtime is shipped.
-- **Keystatic, not Sanity.** The earlier draft of this spec recommended Sanity for its
-  image pipeline. That was reversed during implementation for one decisive reason: Sanity
-  requires creating an account, and this site is Ahmad's professional identity, so the
-  account must be his rather than an intermediary's. Keystatic stores content as files in
-  this repository and needs no third party account at all, which means the editor could be
-  built and verified now rather than described.
-- **The editor runs during `npm run dev` only.** Its admin UI needs server rendered
-  routes, which a static build cannot produce, so the integration is mounted only when the
-  dev server runs. `npm run build` stays fully static. Putting the editor online needs a
-  host adapter and GitHub storage mode, which needs Ahmad's own GitHub account and is
-  documented in the README as his step.
+- **Files, not a hosted CMS.** The earlier draft of this spec recommended Sanity for its
+  image pipeline. That was reversed for one decisive reason: a hosted service requires
+  creating an account, and this site is Ahmad's professional identity, so the account must
+  be his rather than an intermediary's. Content lives as markdown and JSON in this
+  repository and needs no third party account at all, so every edit is a reviewable commit
+  and nothing about the site depends on a service staying online.
+- **The schema is the guardrail.** `src/content.config.ts` validates every project field,
+  so a missing required field or a bad enum fails the build with the file named rather
+  than shipping a broken page. That is what replaces an admin form refusing to save.
 - **Images.** Every slot renders generated SVG line work while no real file is set, and a
   plain `<img>` from `public/media/` once one is. Real photographs are therefore served
   without responsive derivatives; if the portfolio grows past a handful of large images
   they should move to `src/assets/` and Astro's `<Image>` component. Recorded as an
   accepted trade-off rather than an oversight.
-- **Hosting:** Cloudflare Pages, Netlify or GitHub Pages, static, no adapter required.
+- **Hosting:** Cloudflare Pages, static output, any host that serves plain files.
 - **Contact form:** a `FORM_ENDPOINT` constant, empty until hosting is chosen. While it is
   empty the form validates and then states plainly that it is not connected, and gives the
   email address. It never displays a false success. Spam protection is a honeypot field and
   a timing check, not a CAPTCHA: making a hiring manager solve a puzzle to reach him is a
   worse outcome than a little spam.
-- **Accounts:** the host, the domain and any future CMS account should be registered to
-  Ahmad. An action item, not a technical task.
+- **Accounts:** the host and the domain should be registered to Ahmad. An action item,
+  not a technical task.
 
 ## 6. Visual direction
 
@@ -187,7 +185,7 @@ Real files replace them per slot with no redesign.
 Targets, verified rather than asserted:
 
 - WCAG 2.2 AA. Contrast checked in both themes.
-- Alt text required at the CMS layer, as above.
+- Alt text required by the content schema, as above.
 - Category filters are real buttons with `aria-pressed`, operable by keyboard, and the
   grid is announced as a live region when it changes.
 - Visible focus styles throughout. No focus trap in the mobile menu.

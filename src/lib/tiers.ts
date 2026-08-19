@@ -11,14 +11,14 @@ import type { Project } from './data';
  * but its tier kept it out of the strip and the index too, and at the same time
  * it appeared as a full spread in the PDF. Nothing warned about either.
  *
- * That matters now the editor is in Ahmad's hands. Marking a fourth project as
- * a lead is an obvious thing to try, and losing a project off the front page
- * with no error is the worst possible answer to it.
+ * That matters because marking a fourth project as a lead is an obvious thing to
+ * try, and losing a project off the front page with no error is the worst
+ * possible answer to it.
  *
  * So: only three can lead, and any beyond that fall through into the strip in
  * their normal order rather than disappearing. Worst case he gets a layout he
- * did not quite intend, which he can see and undo, instead of a project that is
- * silently gone.
+ * did not quite intend, which is visible and can be undone, instead of a project
+ * that is silently gone.
  *
  * An unset tier reads as 'set', matching what the editor offers as the default,
  * so a project created and saved before Ahmad reaches that field lands in the

@@ -66,8 +66,8 @@ names = sorted(set(re.findall(r'/print/([^"\'?\s>]+\.(?:jpg|jpeg|png))', html.re
 src_dir, out_dir = pathlib.Path('public/media'), pathlib.Path('public/print')
 out_dir.mkdir(exist_ok=True)
 
-# Each project's images live in public/media/<slug>/ so the editor can upload
-# into them, but the print page refers to images by basename alone. Index the
+# Each project's images live in public/media/<slug>/, one folder per project, but
+# the print page refers to images by basename alone. Index the
 # tree once and look up by name; basenames are unique across the library.
 index = {}
 for f in src_dir.rglob('*'):

@@ -5,8 +5,7 @@ import ContactBody from '../components/islands/ContactBody.astro';
 import { getResume } from '../lib/data';
 import { islands } from '../lib/islands';
 
-const resume = await getResume();
-const r = resume.data.resume;
+const r = (await getResume()).data.resume;
 ---
 
 <Site

@@ -6,11 +6,11 @@ import { url } from '../../lib/url';
 /**
  * The contact page, which is the resume record read a different way.
  *
- * Email only. There is no form: the previous host provided one, Cloudflare has
- * no equivalent, and markup that silently posts nowhere is worse than none.
- * Email was always the primary route anyway, because a practice writing to a
- * graduate attaches a brief or a job description and no form field takes an
- * attachment.
+ * Email only. There is no form: Cloudflare has nothing that accepts a submission
+ * without a third party service, and markup that silently posts nowhere is worse
+ * than none. Email was always the primary route anyway, because a practice
+ * writing to a graduate attaches a brief or a job description and no form field
+ * takes an attachment.
  */
 interface Props {
   data: ResumeDoc;

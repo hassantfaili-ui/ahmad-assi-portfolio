@@ -62,7 +62,7 @@ const no = () => String(++sheet).padStart(2, '0');
 /* Page numbers for the contents, worked out from the same shape the document is
    built in rather than typed in: two pages for each of the top three, then one
    for each of the set. Getting these from the structure means they cannot drift
-   when a project moves between tiers in the editor. */
+   when a project moves between tiers. */
 const FIRST_WORK_PAGE = 3;
 const leadPage = (i: number) => FIRST_WORK_PAGE + i * 2;
 const setPage = (i: number) => FIRST_WORK_PAGE + leads.length * 2 + i;

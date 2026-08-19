@@ -1,13 +1,12 @@
 # Cloudflare Pages reads this from the published output.
-# It replaces the [[headers]] blocks that were in netlify.toml.
 
 /media/*
 # Media is cached for an hour and then revalidated, deliberately not immutable.
-# Keystatic writes an uploaded photo under its own filename, so replacing a
-# render with a better version exported under the same name would otherwise
-# change nothing for anyone who had already visited, for a year, and that looks
-# exactly like the edit not having saved. An hour covers a browsing session;
-# after that the ETag answers with a 304 unless the file really did change.
+# A photograph is stored under its own filename, so replacing a render with a
+# better version exported under the same name would otherwise change nothing for
+# anyone who had already visited, for a year, and that looks exactly like the
+# edit not having saved. An hour covers a browsing session; after that the ETag
+# answers with a 304 unless the file really did change.
   Cache-Control: public, max-age=3600, must-revalidate
 
 /portfolio/*
@@ -21,10 +20,17 @@
   Cache-Control: public, max-age=0, must-revalidate
 
 /admin
-# The editor front door, and the editor itself, must never be cached.
+# The editor must never be cached and must never be indexed. It is a shell that
+# talks to TinaCloud, so a cached copy is a stale one signed in against nothing.
   Cache-Control: no-store
   X-Robots-Tag: noindex, nofollow
 
-/keystatic/*
+/admin/*
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+
+/tina-island/*
+# The editor's live preview endpoint. Nothing a visitor reaches, and its answers
+# are per-keystroke drafts, so caching one would be actively wrong.
   Cache-Control: no-store
   X-Robots-Tag: noindex, nofollow

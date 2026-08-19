@@ -39,18 +39,17 @@ films are well over it, so they are served from an R2 bucket instead and
 drops them from `dist`; without it the build warns, then fails on the host. See
 `docs/EDITING.md`.
 
-Two earlier hosts have been left behind.
-Nothing in the code assumes a host: `astro.config.mjs` reads `CF_PAGES_URL` with
-`URL` as a fallback, and every internal link and asset goes through `url()` in
+Nothing in the code assumes a particular host. `astro.config.mjs` reads
+`CF_PAGES_URL`, and every internal link and asset goes through `url()` in
 `src/lib/url.ts`, which is a passthrough at a root base and is what would make a
-subpath host work again without touching a single path.
+host that serves the site from a subfolder work without touching a single path.
+Content files keep clean paths like `/media/hero-1440.mp4`, which is what a person
+would expect to type; the prefix is added at render time.
 
-Every internal link and asset goes through `url()` in `src/lib/url.ts`. Content
-files keep clean paths like `/media/hero-1440.mp4`, which is what the editor shows and
-what a person would expect to type; the prefix is added at render time.
-
-The editor is deployed with the site, at `/admin`, and so is the one route it
-needs at runtime. Everything else is still a plain prerendered file.
+Every page of the site prerenders to a plain file. One route does not, and does
+not belong to the site: `/tina-island`, which the editor uses to re-render a
+fragment of a page from unsaved values while somebody is editing. That is what
+the Cloudflare adapter is for, and why `wrangler.jsonc` sets `nodejs_compat`.
 
 ## Running it
 
@@ -63,10 +62,11 @@ npm run dev
 ```
 
 That serves the site at http://localhost:4321 and the editor at
-http://localhost:4321/admin, both against the files in this checkout. It runs
-Tina's own CLI, which compiles the schema in `tina/` and starts a local content
-API before handing off to `astro dev`, so `astro dev` on its own is not enough.
-`npm run dev:site` is there for the times you want the site without the editor.
+http://localhost:4321/admin, both against the files in this checkout, and reloads
+as files are saved. It runs Tina's CLI, which compiles the schema in `tina/` and
+starts a local content API before handing off to `astro dev`, so `astro dev` on
+its own is not enough. `npm run dev:site` is there for the times you want the
+site without the editor.
 
 ```bash
 npm run build
@@ -75,55 +75,49 @@ npm run build
 Builds to `dist/`. `npm run preview` serves that output locally, and `npm run
 check` type checks the project.
 
-The build runs Tina first and then Astro. With TinaCloud credentials set it
-reads content from this checkout and emits an admin that saves to TinaCloud;
-without them it builds a local-only client, warns, and produces a complete site
-whose editor cannot save. Picking automatically rather than failing is
-deliberate: a missing credential should not turn a deploy red over something
-that has nothing to do with whether the website works. See `scripts/build.mjs`.
+The build runs Tina first and then Astro. With TinaCloud credentials set it reads
+content from this checkout and emits an admin that saves to TinaCloud; without
+them it builds a local-only client, warns, and produces a complete site whose
+editor cannot save. Picking automatically rather than failing is deliberate: a
+missing credential should not turn a deploy red over something that has nothing
+to do with whether the website works. See `scripts/build.mjs`.
 
 ## Editing content
 
-Ahmad edits the site in a browser at **/admin**, with the real page beside the
-fields. Clicking a heading or a photograph on that page opens the field that
-wrote it, and typing changes the page as he types. Saving commits to this
-repository, Cloudflare rebuilds, and the change is live in about a minute. Every
-edit is an ordinary reviewable commit rather than something that happened
-invisibly inside a database.
+Content is files in this repository, so every edit is an ordinary reviewable
+commit rather than something that happened invisibly inside a database. That is
+true whether the file was changed in an editor or in a text editor.
 
-The editor is TinaCMS. It replaced Keystatic, which worked but could only show
-him a form: he typed on a screen that looked nothing like the site, saved,
-waited for a rebuild and then went and looked. See `docs/EDITING.md`.
+Ahmad edits at **/admin**, with the real page beside the fields. Clicking a
+heading or a photograph on that page opens the field that wrote it, and typing
+changes the page as he types. Saving commits here and Cloudflare rebuilds within
+a minute or two. The editor is TinaCMS; the two limits worth stating are that he
+types into the field rather than into the page itself, which is true of every
+Git-backed editor today, and that the live update is a preview until Save.
 
 Two things to edit:
 
-- **Projects**, one entry per project. Add, reorder or delete them freely.
-- **Resume**, a single record holding the name, biography, experience, education,
-  skills and everything in the title block.
+- **Projects**, one markdown file each in `src/content/projects/`. Add, reorder or
+  delete them freely; `tina/collections/projects.ts` defines the fields and
+  `assertUsable` in `src/lib/data.ts` fails the build with the file named if one
+  is missing.
+- **Resume**, `src/data/resume.json`, a single record holding the name, biography,
+  experience, education, skills and everything in the title block.
 
-Photos are upload fields, not paths to type. Choosing a file writes it into
-`public/media/` and stores the path, and Remove takes it off the page. The
-existing per-project folders are kept because `scripts/build-portfolio.sh`
-indexes them, and because a flat folder of three hundred photographs is not
-something to hand anybody.
-
-`npm run dev` runs the same editor against the files on this machine instead,
-which is the way to make bulk changes without a hundred commits.
+Photographs go in `public/media/<project-slug>/`, one folder per project, and are
+referenced by path. Exports straight out of a renderer are fine: the build resizes
+anything oversized on its way into `dist`, so an enormous JPEG cannot reach a
+visitor.
 
 **Films are the exception.** They are far past both GitHub's 45MB per save and
-Cloudflare's 25 MiB per asset, so they cannot be committed whatever the editor
-is. They live in R2, and the film field uploads to it directly when the bucket
-is configured. See `docs/EDITING.md`.
+Cloudflare's 25 MiB per asset, so they cannot be committed whatever the editor is.
+They live in R2, and the film field uploads to it directly when the bucket is
+configured.
 
-Only `/tina-island`, the route that re-renders a fragment of a page from unsaved
-values while somebody is editing, runs on a server. Every page of the portfolio
-itself is still a plain prerendered file, and a visitor never touches that route:
-it answers only a same-origin POST carrying Tina's own preview content type.
+`npm run dev` serves the site and the editor from the files on this machine,
+which is the way to see a set of changes before pushing any of them.
 
-### Turning the editor on
-
-The code is in place; what is left needs a GitHub account and cannot be done for
-you. See [Putting the editor online](#putting-the-editor-online).
+See [docs/EDITING.md](docs/EDITING.md) for the field by field account.
 
 ## Images and drawings
 
@@ -133,8 +127,7 @@ is also what to type if you are editing the file by hand.
 
 Alt text is required on every slot, twice over: the editor refuses to save a slot
 without it, and `assertUsable` in `src/lib/data.ts` fails the build if one gets in
-another way. That second check is what the content collection's zod schema used to
-do, kept when the collection went.
+another way.
 
 ## The design
 
@@ -166,7 +159,7 @@ like data.
   bitrate that fits under GitHub's 100MB per file limit it is visually identical at
   matched display size, and it would leave 4MB of headroom. `Film.astro` keeps a YouTube
   path with a click to load facade for any future film that will not fit.
-- **Projects are in three tiers**, all set in the editor, with Ahmad's order kept inside
+- **Projects are in three tiers**, set by `tier` in each project's file, with Ahmad's order kept inside
   each one. Three leads take large cards, the set runs in a horizontal strip, and thin
   coursework sits in a ruled index below. The strip is a native scroll container, so
   trackpad, touch and keyboard work with no JavaScript; the two buttons are for a mouse
@@ -198,7 +191,7 @@ like data.
 | `src/content/projects/` | One markdown file per project. |
 | `src/data/resume.json` | The resume record. |
 | `tina/config.ts` | The editor, and where saving writes to. |
-| `tina/collections/` | The editor's schemas, one file per collection. |
+| `tina/collections/` | The project and resume fields, one file each. |
 | `tina/fields/film.tsx` | The one upload that goes to R2 rather than into Git. |
 | `src/pages/api/film-upload.ts` | Signs that upload. Answers 501 when R2 is not configured. |
 | `docs/wireframes/index.html` | The low-fidelity wireframes the layout came from. |
@@ -209,39 +202,21 @@ like data.
 These are known and deliberate, not oversights:
 
 1. **Confirm the inferred project details.** See below.
-2. **There is no contact form.** The previous host provided one; Cloudflare has no
-   equivalent, so it was removed rather than left to post nowhere. The page is the
-   email link, which was always the primary route: an attachment will not fit
-   through a form anyway. Adding one back means a third party service.
-3. **Add the CV PDF.** Put it in `public/cv/` and set `cvFile` in the editor. Until then
-   the resume page simply omits the download button rather than offering a broken one.
+2. **There is no contact form.** Cloudflare has nothing that accepts a submission
+   without a third party service, so it was removed rather than left to post
+   nowhere. The page is the email link, which was always the primary route: an
+   attachment will not fit through a form anyway.
+3. **Add the CV PDF.** Put it in `public/cv/` and set `cvFile` in
+   `src/data/resume.json`. Until then the resume page simply omits the download
+   button rather than offering a broken one.
 4. **Attach a domain.** Cloudflare handles the certificate. Nothing in the config changes.
    Do the same for the R2 bucket: the `pub-....r2.dev` address it uses today is rate
    limited and Cloudflare says not to use it in production.
-5. **Put the editor online** if Ahmad should edit without running a terminal.
-6. **Add tests.** No Playwright coverage is written yet: the routes, the projects strip, form validation, keyboard navigation and the empty states all deserve it.
-7. **Register accounts in Ahmad's own name.** The host, the domain and any CMS account
-   should be his, so keeping the site online never depends on anyone else.
-
-### What still needs Ahmad
-
-Work through the editor rather than the files.
-
-1. **Sts. Peter and Paul Church is deliberately not published.** The design development
-   set in that folder is the copyright of **Muzaiko Architecture**, is dated 2021-08, is
-   drawn by "P.A." rather than by him, and carries an explicit notice forbidding
-   reproduction without their written permission. Before any of it goes online we need to
-   know what his role actually was, and the Muzaiko sheets need their permission. The
-   outdoor renders may well be his own work and could go up crediting Muzaiko as project
-   architect, which is the normal and safe way to show it.
-2. **Confirm "Dave's House" is La Casa Aranas.** The drawings in that folder describe the
-   house his CV names, so they were merged into that project. If they are two different
-   houses, it is one file to split.
-3. **Two dates are inferred**, not stated in the material: the Lincoln Beach and La Casa
-   Aranas years both come from his graduation year.
-4. **A portrait**, if he wants one. There is no photograph of him in anything supplied.
-5. **Categories.** The set in `tina/collections/projects.ts` should be trimmed to
-   whatever his real work actually is.
+5. **Add tests.** No Playwright coverage is written yet: the routes, the projects strip, keyboard navigation and the empty states all deserve it.
+6. **Register accounts in Ahmad's own name.** The host, the domain and the
+   TinaCloud project should be his, so keeping the site online never depends on
+   anyone else.
+7. **Put the editor online.** Two variables and a redeploy. See below.
 
 ### Putting the editor online
 
@@ -265,7 +240,6 @@ Only the person doing step 1 touches GitHub, once.
 
 4. Invite Ahmad to the project by email.
 5. Ahmad opens `/admin`, signs in with his email, and edits the real page.
-   Cloudflare rebuilds, and the change is live in about a minute.
 
 `npm run editor:check -- https://ahmadassi.ca` reports what is configured and
 whether the deployed site is actually serving the editor and its live preview.
@@ -273,26 +247,42 @@ whether the deployed site is actually serving the editor and its live preview.
 Known rough edges, none of them blockers:
 
 - A single save cannot exceed 45 MiB, which is GitHub's own API limit rather than
-  Tina's. Images are not downscaled in the browser any more, the way the old
-  editor's custom field did, so a save of ten unresized renderer exports could
-  meet it. The build still refuses to publish an oversized image, in
+  Tina's. The build still refuses to publish an oversized image, in
   `src/integrations/shrink-media.mjs`, so this is a save that fails rather than a
   page that gets heavy.
 - `@tinacms/astro` is the newest part of this: 0.6.1, first published in May 2026.
-  The rest of Tina is not new, and the visual editing pieces it uses,
-  `tinaField` and the bridge, are the same ones every other framework uses.
+  The rest of Tina is not, and the visual editing pieces it uses are the same ones
+  every other framework it supports uses.
 - Uploading films needs five more variables and a CORS rule on the bucket. Left
-  unset, films stay a developer job exactly as they were. See `docs/EDITING.md`.
+  unset, films stay a developer job exactly as they were.
 
 #### If Ahmad wants to type on the page itself
 
 He cannot, and not because of a choice made here: no Git-backed editor does that
-today. Tina removed its own in-page typing (`react-tinacms-inline`) in the v1
-rewrite and every framework it supports now works the way this does, a form
-beside a live preview with click-to-focus between them. The one product that
-really does put a cursor in the rendered page for an Astro site is CloudCannon,
-at roughly USD 55 per site per month, and it wants to run the build on its own
-infrastructure. That is the trade, if it ever comes up.
+today. Tina removed its own in-page typing in the v1 rewrite and every framework
+it supports now works the way this does, a form beside a live preview with
+click-to-focus between them. The one product that really does put a cursor in the
+rendered page for an Astro site is CloudCannon, at roughly USD 55 per site per
+month, and it wants to run the build on its own infrastructure. That is the
+trade, if it ever comes up.
+
+### What still needs Ahmad
+
+1. **Sts. Peter and Paul Church is deliberately not published.** The design development
+   set in that folder is the copyright of **Muzaiko Architecture**, is dated 2021-08, is
+   drawn by "P.A." rather than by him, and carries an explicit notice forbidding
+   reproduction without their written permission. Before any of it goes online we need to
+   know what his role actually was, and the Muzaiko sheets need their permission. The
+   outdoor renders may well be his own work and could go up crediting Muzaiko as project
+   architect, which is the normal and safe way to show it.
+2. **Confirm "Dave's House" is La Casa Aranas.** The drawings in that folder describe the
+   house his CV names, so they were merged into that project. If they are two different
+   houses, it is one file to split.
+3. **Two dates are inferred**, not stated in the material: the Lincoln Beach and La Casa
+   Aranas years both come from his graduation year.
+4. **A portrait**, if he wants one. There is no photograph of him in anything supplied.
+5. **Categories.** The `category` options in `tina/collections/projects.ts` should
+   be trimmed to whatever his real work actually is.
 
 ## Accessibility and performance
 
