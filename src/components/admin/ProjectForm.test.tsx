@@ -84,7 +84,7 @@ afterEach(cleanup);
 
 describe('the one save button', () => {
   it('sends a caption typed into a group, which is what it did not do before', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
 
     const caption = screen.getByLabelText('Group 1 caption');
@@ -102,7 +102,7 @@ describe('the one save button', () => {
   });
 
   it('sends the words on the left in the same press as the pictures on the right', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
 
     const location = screen.getByLabelText('Where it is*');
@@ -125,7 +125,7 @@ describe('the one save button', () => {
   });
 
   it('does not put a project on the site behind the back of an unsaved edit', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
 
     const caption = screen.getByLabelText('Group 1 caption');
@@ -155,7 +155,7 @@ describe('the one save button', () => {
   });
 
   it('counts a change of mind about the site as unsaved work of its own', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
 
     /* Nothing typed. The toggle is the only thing pressed, so if it does not
@@ -169,7 +169,7 @@ describe('the one save button', () => {
   });
 
   it('says there is unsaved work as soon as something is typed', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
 
     expect(screen.queryByText('Not saved yet')).toBeNull();

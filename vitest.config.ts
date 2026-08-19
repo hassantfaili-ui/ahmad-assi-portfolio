@@ -20,6 +20,15 @@ export default defineConfig({
     include: ['src/**/*.test.{ts,tsx}'],
     exclude: ['e2e/**', 'node_modules/**'],
     setupFiles: ['./vitest.setup.ts'],
+
+    /* The default is 5s, and mounting the whole editing screen and typing into
+       it with real key events takes a third of that on an idle laptop. A CI
+       runner is slower and shares its cores, so the margin disappears and the
+       suite starts failing for want of time rather than for a defect, which is
+       the least useful kind of red there is.
+       This does not hide a broken save: an assertion that never comes true
+       fails on waitFor's own timeout with a real message, long before this. */
+    testTimeout: 20_000,
   },
   resolve: {
     alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },

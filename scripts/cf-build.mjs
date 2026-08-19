@@ -19,17 +19,75 @@
  * uploaded.
  */
 
+/* next build reads .env itself, so this wrapper has to read it too. Without
+   this the check below sees no DATABASE_URL at all and cannot tell which
+   database the build it is about to start will actually use. dotenv does not
+   overwrite what is already set, so an explicit DATABASE_URL=... on the command
+   line still wins. */
+import 'dotenv/config';
+
 import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { isLocalDatabase, withoutPassword } from './local-database.mjs';
+
 const ROOT = process.cwd();
 const BUNDLE = join(ROOT, '.open-next', 'server-functions', 'default');
+
+/**
+ * Refuse to prerender the live site from a database that is not the live one.
+ *
+ * `next build` renders all 29 pages by querying DATABASE_URL, so the HTML that
+ * ships is a photograph of whichever database the build happened to be pointed
+ * at. Point it at a laptop and the deploy publishes the laptop: every edit made
+ * in the admin since that copy was taken silently disappears from the site
+ * while sitting perfectly intact in the real database.
+ *
+ * That is not hypothetical. It shipped. Ahmad changed the lead photograph on a
+ * project, the deploy went out built from a local copy, and the site went back
+ * to the old photograph with nothing anywhere reporting a problem. The
+ * reachability check passed, because a local database is reachable, and the
+ * counts it printed matched, because the copy had the same number of rows.
+ *
+ * A local database is the one thing this build can never legitimately use, so
+ * that is what it refuses. Set DEPLOY_FROM_LOCAL_DATABASE=true to override,
+ * which is only ever right for testing the packaging itself.
+ */
+function refuseLocalDatabase() {
+  const url = process.env.DATABASE_URL ?? '';
+
+  if (!url) {
+    console.error('\nDATABASE_URL is not set, and the deploy build renders every page from it.\n');
+    process.exit(1);
+  }
+
+  if (!isLocalDatabase(url) || process.env.DEPLOY_FROM_LOCAL_DATABASE === 'true') return url;
+
+  console.error(
+    `\nThis build would publish the site from ${withoutPassword(url)}\n\n` +
+      'Every page is prerendered from DATABASE_URL at build time, so deploying\n' +
+      'this bundle would replace the live site with a copy of your local database\n' +
+      'and undo every edit made in the admin since that copy was taken.\n\n' +
+      'Build against the real database instead:\n\n' +
+      '  DATABASE_URL="<the production connection string>" npm run cf:build\n\n' +
+      'If you genuinely mean to package a local build, set\n' +
+      'DEPLOY_FROM_LOCAL_DATABASE=true\n',
+  );
+  process.exit(1);
+}
+
+const buildDatabase = refuseLocalDatabase();
 
 /* Explicitly emptied for the build, whatever the developer's .env says. This
    is a deploy artefact: there is no such thing as a correct value here other
    than absent. */
+function hostOf(url) {
+  const match = /@([^/:]+)/.exec(url);
+  return match ? match[1] : 'an unrecognised host';
+}
+
 function directorySize(path) {
   const info = statSync(path);
   if (!info.isDirectory()) return info.size;
@@ -118,3 +176,7 @@ console.log(
     required.length === 1 ? 'package' : 'packages'
   } present, no .env in the bundle.`,
 );
+
+/* Last line, because it is the one that would have caught this. The pages in
+   this bundle are a photograph of that database and of nothing else. */
+console.log(`Pages were prerendered from ${hostOf(buildDatabase)}.`);

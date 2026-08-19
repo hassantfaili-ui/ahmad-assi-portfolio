@@ -1,5 +1,9 @@
 import 'dotenv/config';
 
+/* A plain .mjs helper, shared with scripts/cf-build.mjs so the two guards
+   cannot disagree about what counts as a local database. */
+import { isLocalDatabase, withoutPassword } from '../scripts/local-database.mjs';
+
 /**
  * Refuse to run the browser suite against a database that is not disposable.
  *
@@ -24,11 +28,10 @@ export default function globalSetup() {
     throw new Error('DATABASE_URL is not set. The browser suite needs a database.');
   }
 
-  const isLocal = /@(localhost|127\.0\.0\.1|\[::1\])[:/]/.test(url);
   const allowed = process.env.E2E_ALLOW_REMOTE_DATABASE === 'true';
 
-  if (!isLocal && !allowed) {
-    const safe = url.replace(/:[^:@/]+@/, ':***@');
+  if (!isLocalDatabase(url) && !allowed) {
+    const safe = withoutPassword(url);
     throw new Error(
       `\nThe browser suite refuses to run against ${safe}\n\n` +
         'These tests create, edit and delete projects, and the teardown deletes\n' +
