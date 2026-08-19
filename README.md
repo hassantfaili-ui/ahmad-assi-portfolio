@@ -24,30 +24,26 @@ Static output, no server to run, no monthly cost.
 
 ## Live site
 
-**https://ahmadassi.netlify.app/**
+Cloudflare builds from `main` on every push. Build command `npm run build`,
+output directory `dist`. `public/_headers` carries the caching rules: media for an
+hour then revalidate, hashed assets pinned hard, HTML always revalidating.
 
-Netlify builds from `main` on every push. `netlify.toml` sets the build command,
-the publish directory and the Node version, and caches the film, the PDF and the
-hashed assets hard while leaving HTML revalidating.
+**Node 22 or newer is required.** Astro 7 needs `>=22.12.0` and the default build
+image is older, which fails before emitting a single page. Set `NODE_VERSION` to
+`22` in the project's variables; the requirement is also declared in
+`package.json` engines. Do not lower either.
 
-**Node 22 or newer is required.** Astro 7 needs `>=22.12.0` and Netlify's default
-image ships Node 20, which fails before emitting a single page. The version is
-pinned in `netlify.toml` and the requirement is declared in `package.json`
-engines. Do not lower either.
+**Nothing published may exceed 25 MiB.** That is a hard Cloudflare limit. The three
+films are well over it, so they are served from an R2 bucket instead and
+`PUBLIC_MEDIA_ORIGIN` points at it. With that set the build rewrites their URLs and
+drops them from `dist`; without it the build warns, then fails on the host. See
+`docs/EDITING.md`.
 
-GitHub Pages was the original host and has been unpublished. The workflow is
-deleted. Nothing in the code assumes one host over the other, so Pages or any
-other subpath host would still work: `astro.config.mjs` reads `NETLIFY` and picks
-the base accordingly.
-
-**The base path is the only thing that differs between hosts.** Pages serves a
-project repo from a subfolder; Netlify serves from the root of its own domain.
-Carrying the Pages prefix onto Netlify would 404 every stylesheet, script and
-image while the page itself still loaded, which reads as a broken site rather
-than a misconfigured one. So `astro.config.mjs` reads `NETLIFY`, which Netlify
-sets on every build, and picks the right `base` and `site` automatically. Neither
-host needs the config edited by hand, and a custom domain needs no change at all:
-Netlify updates `URL` once the domain is attached.
+GitHub Pages and Netlify were both used earlier and both have been left behind.
+Nothing in the code assumes a host: `astro.config.mjs` reads `CF_PAGES_URL` with
+`URL` as a fallback, and every internal link and asset goes through `url()` in
+`src/lib/url.ts`, which is a passthrough at a root base and is what would make a
+subpath host work again without touching a single path.
 
 Every internal link and asset goes through `url()` in `src/lib/url.ts`. Content
 files keep clean paths like `/media/hero-1440.mp4`, which is what the editor shows and
@@ -195,14 +191,15 @@ like data.
 These are known and deliberate, not oversights:
 
 1. **Confirm the inferred project details.** See below.
-2. **Watch the first form submissions.** The contact form posts through Netlify Forms
-   and is rendered only in a Netlify build, so it cannot appear on a host that has
-   nothing to receive it. Submissions arrive in the Netlify dashboard; turn on email
-   notifications there so they are not missed. Email is still the primary route on the
-   page, because an attachment will not fit through a form.
+2. **There is no contact form.** It was Netlify Forms and Cloudflare has no
+   equivalent, so it was removed rather than left to post nowhere. The page is the
+   email link, which was always the primary route: an attachment will not fit
+   through a form anyway. Adding one back means a third party service.
 3. **Add the CV PDF.** Put it in `public/cv/` and set `cvFile` in the editor. Until then
    the resume page simply omits the download button rather than offering a broken one.
-4. **Attach a domain.** Netlify handles the certificate. Nothing in the config changes.
+4. **Attach a domain.** Cloudflare handles the certificate. Nothing in the config changes.
+   Do the same for the R2 bucket: the `pub-....r2.dev` address it uses today is rate
+   limited and Cloudflare says not to use it in production.
 5. **Put the editor online** if Ahmad should edit without running a terminal.
 6. **Add tests.** No Playwright coverage is written yet: the routes, the projects strip, form validation, keyboard navigation and the empty states all deserve it.
 7. **Register accounts in Ahmad's own name.** The host, the domain and any CMS account
@@ -245,24 +242,24 @@ Free for up to 3 users per team; this needs 2.
    the only step that touches GitHub, and it is done by the repo owner, once.
 3. Install the Keystatic Cloud GitHub App on the repository when prompted.
 4. Invite Ahmad to the team by email.
-5. In Netlify, set one environment variable and redeploy:
+5. In Cloudflare, set one environment variable and redeploy:
 
    | Variable | Value |
    | --- | --- |
    | `PUBLIC_KEYSTATIC_CLOUD_PROJECT` | `your-team/your-project` |
 
 6. Ahmad opens `/keystatic`, signs in with his email, and edits. His saves arrive in
-   this repository as commits authored by `keystatic-cloud[bot]`, Netlify rebuilds,
+   this repository as commits authored by `keystatic-cloud[bot]`, Cloudflare rebuilds,
    and the change is live in about a minute.
 
 Known rough edges, none of them blockers:
 
-- Add photos in small batches. There is a 45MB limit on a single save, which is a
-  GitHub API limit rather than a Keystatic one, so plain GitHub mode has it too.
-- The films stay a developer job. The 73MB walkthrough and the 43MB hero exceed what
-  the editor can upload.
+- A single save cannot exceed 45 MiB, which is GitHub's own API limit rather than
+  Keystatic's. Photographs are downscaled in the browser before they are committed,
+  so roughly fifty fit in one save and this is unlikely to be met in practice.
+- The films stay a developer job. They live in R2, not in the editor.
 - The Cloud sign-in redirect is tied to the production origin, so the editor will not
-  work on Netlify deploy previews.
+  work on preview deployments.
 - Keystatic's docs for cloud mode have not been edited since March 2024 and there is
   no public pricing page, so the quoted free tier is documented rather than confirmed
   against live billing. The code and the service are current: `@keystatic/core` 0.6.5

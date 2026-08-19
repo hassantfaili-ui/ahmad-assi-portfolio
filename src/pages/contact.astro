@@ -6,18 +6,10 @@ import { url } from '../lib/url';
 /**
  * Email only.
  *
- * Netlify Forms handles the submission, which is why a form exists here at all.
- * It is rendered ONLY in a Netlify build. The same repository can be built for
- * GitHub Pages, which has nothing to post to, and a form that fails after
- * someone has typed their message is worse than no form. Gating it on the build
- * host means it cannot appear anywhere it would not work.
- *
- * Email stays the primary route because a practice writing to a graduate
- * attaches a brief or a job description, and no form field takes an attachment.
- *
- * Netlify needs the form present in the deployed HTML to register it, hence the
- * hidden form-name input. Spam is handled by a honeypot rather than a CAPTCHA,
- * which visitors should not have to solve to say hello.
+ * There is no form. It was Netlify Forms and Cloudflare has no equivalent, and
+ * markup that silently posts nowhere is worse than none. Email was always the
+ * primary route anyway: a practice writing to a graduate attaches a brief or a
+ * job description, and no form field takes an attachment.
  */
 /* Empty in the data today, so TypeScript infers never[]. Typed here so the block
    below starts working the moment a link is added in the editor. */
@@ -107,7 +99,6 @@ const mailto = `mailto:${resume.email}?subject=${subject}`;
 
 <script>
   /* Validation only, and only if the form is on the page at all. The submission
-     is Netlify's job. `novalidate` is deliberately not set, so with JavaScript
      off the browser's own required-field checks still apply. */
   const form = document.querySelector<HTMLFormElement>('[data-contact]');
 
