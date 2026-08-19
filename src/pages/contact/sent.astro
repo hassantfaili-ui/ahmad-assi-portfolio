@@ -1,15 +1,17 @@
 ---
 import Site from '../../layouts/Site.astro';
-import resume from '../../data/resume.json';
+import { getResume } from '../../lib/data';
 import { url } from '../../lib/url';
 
 /**
- * Where the contact form lands after Netlify accepts a submission.
+ * Where the contact form used to land after a submission was accepted.
  *
- * Netlify has a default success page, but it is Netlify's page rather than
- * Ahmad's, and being thrown onto an unstyled confirmation is a poor last
- * impression on the one page where someone has just decided to make contact.
+ * Nothing reaches it now: the form went with the move off Netlify, and the
+ * contact page is the email link. It is kept because the address may still be in
+ * somebody's history or a bookmark, and a styled page saying the message arrived
+ * is a better answer to that than a 404.
  */
+const resume = (await getResume()).data.resume;
 ---
 
 <Site

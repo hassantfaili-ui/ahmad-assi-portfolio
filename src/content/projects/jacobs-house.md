@@ -45,4 +45,4 @@ Frank Lloyd Wright built the Jacobs House in Madison in 1937: roughly 145 square
 
 That second part is the actual lesson. Drawing the same building twice in two conventions makes it obvious how much a drawing decides what you notice about a building, which is a useful thing to learn early and easy to forget later.
 
-The building is Wright's. The drawings are the group's, produced as A4G4.
+The building is Wright’s. The drawings are the group’s, produced as A4G4.

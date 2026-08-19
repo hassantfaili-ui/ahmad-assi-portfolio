@@ -9,7 +9,7 @@ area: Site study
 status: Academic
 role: Sole author
 contribution: The whole project. The parti, all four drawn layers, the block pattern, the model and every view.
-summary: A placemaking proposal for a site at Tunney's Pasture, organised around the relationship between public and private ground on both axes, and built up as four drawn layers.
+summary: A placemaking proposal for a site at Tunney’s Pasture, organised around the relationship between public and private ground on both axes, and built up as four drawn layers.
 leadImage:
   src: /media/urban-placemaking/rv-model-oval-1.jpg
   alt: Aerial along the oval path with the planted central strip running between the blocks and the water edge beyond
@@ -92,7 +92,7 @@ credit: Sole author
 order: 16
 ---
 
-The site sits at Tunney's Pasture, and the proposal is called River's View. The parti is a single relationship: how public ground meets private ground, and how that meeting can be made to connect the site north to south and east to west at the same time rather than choosing one axis.
+The site sits at Tunney’s Pasture, and the proposal is called River’s View. The parti is a single relationship: how public ground meets private ground, and how that meeting can be made to connect the site north to south and east to west at the same time rather than choosing one axis.
 
 The proposal is built as four layers, each drawn on the same plan. The parti sets the relationship, land use assigns it, the parks layer tests whether the public ground actually adds up to something, and circulation is where it all gets checked. A parti that only works on paper falls apart as soon as you draw the routes people would take across it, so the block pattern was redrawn more than once to keep both axes working.
 

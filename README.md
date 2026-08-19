@@ -49,8 +49,8 @@ Every internal link and asset goes through `url()` in `src/lib/url.ts`. Content
 files keep clean paths like `/media/hero-1440.mp4`, which is what the editor shows and
 what a person would expect to type; the prefix is added at render time.
 
-The Keystatic editor never reaches the deployed site: it is mounted only when
-`npm_lifecycle_event` is `dev`, and CI runs `build`.
+The editor is deployed with the site, at `/admin`, and so is the one route it
+needs at runtime. Everything else is still a plain prerendered file.
 
 ## Running it
 
@@ -62,22 +62,38 @@ npm install
 npm run dev
 ```
 
-That serves the site at http://localhost:4321 and the content editor at
-http://localhost:4321/keystatic.
+That serves the site at http://localhost:4321 and the editor at
+http://localhost:4321/admin, both against the files in this checkout. It runs
+Tina's own CLI, which compiles the schema in `tina/` and starts a local content
+API before handing off to `astro dev`, so `astro dev` on its own is not enough.
+`npm run dev:site` is there for the times you want the site without the editor.
 
 ```bash
 npm run build
 ```
 
-Builds to `dist/`, which is plain files any static host will serve. `npm run preview`
-serves that output locally, and `npm run check` type checks the project.
+Builds to `dist/`. `npm run preview` serves that output locally, and `npm run
+check` type checks the project.
+
+The build runs Tina first and then Astro. With TinaCloud credentials set it
+reads content from this checkout and emits an admin that saves to TinaCloud;
+without them it builds a local-only client, warns, and produces a complete site
+whose editor cannot save. Picking automatically rather than failing is
+deliberate: a missing credential should not turn a deploy red over something
+that has nothing to do with whether the website works. See `scripts/build.mjs`.
 
 ## Editing content
 
-Ahmad edits the site in a browser at **/keystatic**. Saving commits to this
-repository, Cloudflare rebuilds, and the change is live in about a minute. Every edit
-is an ordinary reviewable commit rather than something that happened invisibly
-inside a database.
+Ahmad edits the site in a browser at **/admin**, with the real page beside the
+fields. Clicking a heading or a photograph on that page opens the field that
+wrote it, and typing changes the page as he types. Saving commits to this
+repository, Cloudflare rebuilds, and the change is live in about a minute. Every
+edit is an ordinary reviewable commit rather than something that happened
+invisibly inside a database.
+
+The editor is TinaCMS. It replaced Keystatic, which worked but could only show
+him a form: he typed on a screen that looked nothing like the site, saved,
+waited for a rebuild and then went and looked. See `docs/EDITING.md`.
 
 Two things to edit:
 
@@ -86,22 +102,23 @@ Two things to edit:
   skills and everything in the title block.
 
 Photos are upload fields, not paths to type. Choosing a file writes it into
-`public/media/<project-slug>/` and stores the path, and Remove takes it off the
-page. **Each project's images live in its own folder for exactly this reason:**
-Keystatic scopes a collection's uploads to the entry slug, so with everything in
-one flat folder the editor showed every image field as empty and would have
-blanked them all on the first save.
+`public/media/` and stores the path, and Remove takes it off the page. The
+existing per-project folders are kept because `scripts/build-portfolio.sh`
+indexes them, and because a flat folder of three hundred photographs is not
+something to hand anybody.
 
 `npm run dev` runs the same editor against the files on this machine instead,
 which is the way to make bulk changes without a hundred commits.
 
-Two things worth knowing:
+**Films are the exception.** They are far past both GitHub's 45MB per save and
+Cloudflare's 25 MiB per asset, so they cannot be committed whatever the editor
+is. They live in R2, and the film field uploads to it directly when the bucket
+is configured. See `docs/EDITING.md`.
 
-- The editor keeps unsaved work in the browser. If a form opens **empty with an
-  "Unsaved" badge and a "Restored draft" message**, that is a stale draft, not lost
-  content: use the `...` menu to reset the entry and it reloads from the file.
-- Only the two `/keystatic` routes run on a server. Every page of the portfolio
-  itself is still a plain prerendered file.
+Only `/tina-island`, the route that re-renders a fragment of a page from unsaved
+values while somebody is editing, runs on a server. Every page of the portfolio
+itself is still a plain prerendered file, and a visitor never touches that route:
+it answers only a same-origin POST carrying Tina's own preview content type.
 
 ### Turning the editor on
 
@@ -110,17 +127,14 @@ you. See [Putting the editor online](#putting-the-editor-online).
 
 ## Images and drawings
 
-Every image slot renders one of two things:
+Every image slot is a real file. Uploading through the editor writes it into
+`public/media/` and stores its path, for example `/media/riverlot-01.jpg`, which
+is also what to type if you are editing the file by hand.
 
-1. **Generated line work.** While the `Image file` field says `generated`, the site draws
-   a plan, section, elevation, axonometric, site plan or interior perspective in SVG.
-   These are real geometry, deterministic per seed, and they restyle themselves for both
-   print types. Change the seed to redraw one differently.
-2. **A real file.** Put images in `public/media/` and set the field to its path, for
-   example `/media/riverlot-01.jpg`. Anything starting with `/` is treated as a file.
-
-Alt text is a required field on every slot, enforced by the content schema, so an image
-cannot ship without a description.
+Alt text is required on every slot, twice over: the editor refuses to save a slot
+without it, and `assertUsable` in `src/lib/data.ts` fails the build if one gets in
+another way. That second check is what the content collection's zod schema used to
+do, kept when the collection went.
 
 ## The design
 
@@ -175,14 +189,18 @@ like data.
 | `src/components/ProjectGrid.astro` | The three tiers: leads, the strip, the index. |
 | `src/components/ProjectCard.astro` | One project card, at either size. |
 | `src/components/SkillIcon.astro` | The drawn marks for the software list. |
-| `src/lib/url.ts` | Prefixes internal links with the host base path. |
-| `src/lib/drawing.ts` | Generated line work, used for any image slot with no real file. |
+| `src/lib/url.ts` | Prefixes internal links with the host base path, and points films at R2. |
+| `src/lib/data.ts` | Every read of the content, and the checks that used to be the zod schema. |
+| `src/lib/islands.ts` | The regions the editor can re-render on the page as you type. |
 | `src/scripts/site.ts` | All client behaviour, no framework. |
 | `scripts/build-hero.sh` | Rebuilds the front film from a full quality walkthrough. |
 | `scripts/build-portfolio.sh` | Renders the portfolio PDF from the site itself. |
 | `src/content/projects/` | One markdown file per project. |
 | `src/data/resume.json` | The resume record. |
-| `keystatic.config.ts` | The editor's schemas. |
+| `tina/config.ts` | The editor, and where saving writes to. |
+| `tina/collections/` | The editor's schemas, one file per collection. |
+| `tina/fields/film.tsx` | The one upload that goes to R2 rather than into Git. |
+| `src/pages/api/film-upload.ts` | Signs that upload. Answers 501 when R2 is not configured. |
 | `docs/wireframes/index.html` | The low-fidelity wireframes the layout came from. |
 | `docs/superpowers/specs/` | The design decisions and why. |
 
@@ -222,58 +240,59 @@ Work through the editor rather than the files.
 3. **Two dates are inferred**, not stated in the material: the Lincoln Beach and La Casa
    Aranas years both come from his graduation year.
 4. **A portrait**, if he wants one. There is no photograph of him in anything supplied.
-5. **Categories.** The set in `keystatic.config.ts` and the matching enum in
-   `src/content.config.ts` should be trimmed to whatever his real work actually is.
+5. **Categories.** The set in `tina/collections/projects.ts` should be trimmed to
+   whatever his real work actually is.
 
 ### Putting the editor online
 
-The code is done and all three storage modes are verified. What is left is account
+The code is done and both storage modes are verified. What is left is account
 work, which cannot be done on Ahmad's behalf.
 
-**Use Keystatic Cloud.** It is the only option that lets Ahmad sign in with an email
-address and a password, or a passkey, without a GitHub account, and it needs fewer
-secrets than GitHub mode, not more. In cloud mode every GitHub call is proxied
-through `api.keystatic.cloud` and the server side API route is a stub, so there is
-no OAuth app, no client id, no client secret and no `KEYSTATIC_SECRET` to manage.
-Free for up to 3 users per team; this needs 2.
+**Use TinaCloud.** Ahmad signs in with an email address and a password and never
+needs a GitHub account: TinaCloud holds the connection to this repository and
+commits on his behalf. Free for two users per project, which is what this needs.
+Only the person doing step 1 touches GitHub, once.
 
-1. Sign in at https://keystatic.cloud and create a team.
-2. Create a project in that team and connect this GitHub repository to it. This is
-   the only step that touches GitHub, and it is done by the repo owner, once.
-3. Install the Keystatic Cloud GitHub App on the repository when prompted.
-4. Invite Ahmad to the team by email.
-5. In Cloudflare, set one environment variable and redeploy:
+1. Sign in at https://app.tina.io and create a project, pointed at this GitHub
+   repository. Install the TinaCloud GitHub App when prompted.
+2. Copy the client id, and create a read/write token.
+3. In Cloudflare, set two variables and redeploy:
 
    | Variable | Value |
    | --- | --- |
-   | `PUBLIC_KEYSTATIC_CLOUD_PROJECT` | `your-team/your-project` |
+   | `PUBLIC_TINA_CLIENT_ID` | the client id from step 2 |
+   | `TINA_TOKEN` | the token from step 2 |
 
-6. Ahmad opens `/keystatic`, signs in with his email, and edits. His saves arrive in
-   this repository as commits authored by `keystatic-cloud[bot]`, Cloudflare rebuilds,
-   and the change is live in about a minute.
+4. Invite Ahmad to the project by email.
+5. Ahmad opens `/admin`, signs in with his email, and edits the real page.
+   Cloudflare rebuilds, and the change is live in about a minute.
+
+`npm run editor:check -- https://ahmadassi.ca` reports what is configured and
+whether the deployed site is actually serving the editor and its live preview.
 
 Known rough edges, none of them blockers:
 
 - A single save cannot exceed 45 MiB, which is GitHub's own API limit rather than
-  Keystatic's. Photographs are downscaled in the browser before they are committed,
-  so roughly fifty fit in one save and this is unlikely to be met in practice.
-- The films stay a developer job. They live in R2, not in the editor.
-- The Cloud sign-in redirect is tied to the production origin, so the editor will not
-  work on preview deployments.
-- Keystatic's docs for cloud mode have not been edited since March 2024 and there is
-  no public pricing page, so the quoted free tier is documented rather than confirmed
-  against live billing. The code and the service are current: `@keystatic/core` 0.6.5
-  shipped 11 August 2026.
+  Tina's. Images are not downscaled in the browser any more, the way the old
+  editor's custom field did, so a save of ten unresized renderer exports could
+  meet it. The build still refuses to publish an oversized image, in
+  `src/integrations/shrink-media.mjs`, so this is a save that fails rather than a
+  page that gets heavy.
+- `@tinacms/astro` is the newest part of this: 0.6.1, first published in May 2026.
+  The rest of Tina is not new, and the visual editing pieces it uses,
+  `tinaField` and the bridge, are the same ones every other framework uses.
+- Uploading films needs five more variables and a CORS rule on the bucket. Left
+  unset, films stay a developer job exactly as they were. See `docs/EDITING.md`.
 
-#### The GitHub fallback
+#### If Ahmad wants to type on the page itself
 
-`PUBLIC_KEYSTATIC_GITHUB_REPO` still works and is left in place, for two reasons: it
-is the path if the repository is ever transferred to Ahmad outright, and GitHub now
-supports "Continue with Google", so an account needs no new password. That route also
-needs a GitHub App and four more variables, documented in the git history of this file.
-
-Until one of those variables is set, the site builds exactly as it does now: pure
-static files, no adapter, no editor routes, nothing that can half work.
+He cannot, and not because of a choice made here: no Git-backed editor does that
+today. Tina removed its own in-page typing (`react-tinacms-inline`) in the v1
+rewrite and every framework it supports now works the way this does, a form
+beside a live preview with click-to-focus between them. The one product that
+really does put a cursor in the rendered page for an Astro site is CloudCannon,
+at roughly USD 55 per site per month, and it wants to run the build on its own
+infrastructure. That is the trade, if it ever comes up.
 
 ## Accessibility and performance
 

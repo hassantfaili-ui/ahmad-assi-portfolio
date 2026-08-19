@@ -1,0 +1,137 @@
+---
+import TinaMarkdown from '@tinacms/astro/TinaMarkdown.astro';
+import { tinaField } from '@tinacms/astro/tina-field';
+import Film from '../Film.astro';
+import { markdownComponents } from '../markdown/components';
+import type { Project } from '../../lib/data';
+import { drawingsOf, filmOf, imageGroupsOf, imagesOf } from '../../lib/data';
+import { url } from '../../lib/url';
+
+/**
+ * Everything on a project page that Ahmad can change.
+ *
+ * Split out of the page for one reason: this is the unit Tina re-renders. When
+ * he types into the summary in the editor, the admin posts the draft document
+ * to /tina-island/project, this component is rendered again on the server with
+ * the unsaved values, and the result is swapped into the page he is looking at.
+ * The page file keeps only what is not his to edit here, which is the pager.
+ *
+ * `data-tina-field` is what makes the page clickable. Each one names the field
+ * that drew the element, so clicking the title in the preview opens the title
+ * field rather than making him hunt for it in a sidebar of thirty. Adding
+ * markup without one is not an error, it just means that piece cannot be
+ * clicked into, so the rule is: if Ahmad wrote it, mark it.
+ *
+ * Note the nested calls, `tinaField(img, 'src')` rather than a path built by
+ * hand. Every object in the response carries its own address, so the nested
+ * object is the argument. Building the path as a string works right up until a
+ * group is reordered, and then every caption points at the wrong photograph.
+ *
+ * These attributes are not a leak. They are inert in a normal visit, and the
+ * middleware only mounts the editing bridge for a request coming from inside
+ * the admin iframe.
+ */
+interface Props {
+  data: Project;
+}
+
+const { data: d } = Astro.props;
+
+/* Only rows that have a value. An empty row is worse than no row. The field
+   name travels with the row so the fact stays clickable back to what wrote it. */
+type Fact = { label: string; value: string; field: 'buildingType' | 'location' | 'status' | 'area' | 'role' };
+const facts: Fact[] = (
+  [
+    { label: 'Project type', value: d.buildingType, field: 'buildingType' },
+    { label: 'Location', value: d.location, field: 'location' },
+    { label: 'Status', value: d.status, field: 'status' },
+    { label: 'Area', value: d.area, field: 'area' },
+    { label: 'Role', value: d.role, field: 'role' },
+  ] as { label: string; value?: string | null; field: Fact['field'] }[]
+).flatMap((f) => (f.value ? [{ label: f.label, value: f.value, field: f.field }] : []));
+
+const film = filmOf(d);
+const drawings = drawingsOf(d);
+const groups = imageGroupsOf(d);
+---
+
+<section class="hero load">
+  <p class="eyebrow" style="--i:0">
+    <span data-tina-field={tinaField(d, 'category')}>{d.category}</span> &nbsp;/&nbsp; <em data-tina-field={tinaField(d, 'year')}>{d.year}</em>
+  </p>
+  <h1 class="page-title" style="--i:1" data-tina-field={tinaField(d, 'title')}>{d.title}</h1>
+  <p class="sub" style="--i:2" data-tina-field={tinaField(d, 'summary')}>{d.summary}</p>
+</section>
+
+<dl class="meta reveal">
+  {
+    facts.map((f) => (
+      <div data-tina-field={tinaField(d, f.field)}>
+        <dt>{f.label}</dt>
+        <dd>{f.value}</dd>
+      </div>
+    ))
+  }
+</dl>
+
+<div class="band">
+  <div class="prose reveal" data-tina-field={tinaField(d, 'body')}>
+    {d.body && <TinaMarkdown content={d.body} components={markdownComponents} />}
+  </div>
+</div>
+
+{
+  film && (
+    <section class="band" aria-labelledby="film">
+      <h2 class="section-title" id="film">
+        Walkthrough
+      </h2>
+      <div data-tina-field={tinaField(d, 'film')}>
+        <Film
+          src={film.src ?? undefined}
+          youtube={film.youtube ?? undefined}
+          poster={film.poster}
+          caption={film.caption ?? undefined}
+        />
+      </div>
+    </section>
+  )
+}
+
+<div class="stagger">
+  <figure class="reveal" data-tina-field={tinaField(d, 'leadImage')}>
+    {
+      d.leadImage?.src && (
+        <img src={url(d.leadImage.src)} alt={d.leadImage.alt} loading="lazy" decoding="async" />
+      )
+    }
+  </figure>
+  {
+    groups.map((group) =>
+      imagesOf(group).map((img) => (
+        <figure class="reveal" data-tina-field={tinaField(img, 'src')}>
+          <img src={url(img.src)} alt={img.alt} loading="lazy" decoding="async" />
+          {group.caption && <figcaption data-tina-field={tinaField(group, 'caption')}>{group.caption}</figcaption>}
+        </figure>
+      )),
+    )
+  }
+</div>
+
+{
+  drawings.length > 0 && (
+    <section class="band" aria-labelledby="drawings">
+      <h2 class="section-title" id="drawings">
+        Drawings
+      </h2>
+      <div class="sheets">
+        {drawings.map((dr) => (
+          <figure class="reveal" data-tina-field={tinaField(dr, 'src')}>
+            <img src={url(dr.src)} alt={dr.alt} loading="lazy" decoding="async" />
+            <figcaption data-tina-field={tinaField(dr, 'drawingType')}>{dr.drawingType}</figcaption>
+          </figure>
+        ))}
+      </div>
+    </section>
+  )
+}

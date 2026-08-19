@@ -1,6 +1,4 @@
-import type { CollectionEntry } from 'astro:content';
-
-type Project = CollectionEntry<'projects'>;
+import type { Project } from './data';
 
 /**
  * Split the projects into the three tiers the home page and the portfolio PDF
@@ -21,20 +19,26 @@ type Project = CollectionEntry<'projects'>;
  * their normal order rather than disappearing. Worst case he gets a layout he
  * did not quite intend, which he can see and undo, instead of a project that is
  * silently gone.
+ *
+ * An unset tier reads as 'set', matching what the editor offers as the default,
+ * so a project created and saved before Ahmad reaches that field lands in the
+ * strip rather than nowhere.
  */
 export function tiers(projects: Project[]) {
-  const byOrder = [...projects].sort((a, b) => a.data.order - b.data.order);
+  const order = (p: Project) => p.order ?? 99;
+  const tier = (p: Project) => p.tier || 'set';
+  const byOrder = [...projects].sort((a, b) => order(a) - order(b));
 
-  const marked = byOrder.filter((p) => p.data.tier === 'lead');
+  const marked = byOrder.filter((p) => tier(p) === 'lead');
   const leads = marked.slice(0, 3);
   const overflow = marked.slice(3);
 
   const set = byOrder
-    .filter((p) => p.data.tier === 'set')
+    .filter((p) => tier(p) === 'set')
     .concat(overflow)
-    .sort((a, b) => a.data.order - b.data.order);
+    .sort((a, b) => order(a) - order(b));
 
-  const index = byOrder.filter((p) => p.data.tier === 'index');
+  const index = byOrder.filter((p) => tier(p) === 'index');
 
   return { leads, set, index };
 }

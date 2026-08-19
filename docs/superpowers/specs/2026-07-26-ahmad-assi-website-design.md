@@ -94,6 +94,12 @@ adding content.
 
 **Astro, static output, with Keystatic as the editor.**
 
+> Superseded on the editor only. Keystatic was replaced by TinaCMS in August 2026,
+> because Ahmad wanted to edit on the page rather than in a form beside it. The
+> reasoning below still holds for Astro, for static output, and for keeping content
+> as files in this repository; Tina keeps all three. See `docs/EDITING.md` for what
+> is true now. The rest of this document is left as it was written.
+
 - **Astro** ships zero JavaScript by default and includes a responsive image pipeline.
   For a site whose value is large architectural imagery loading fast, that default
   matters more than any framework feature. Client JavaScript is one 170 line module

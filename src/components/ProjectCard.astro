@@ -1,5 +1,6 @@
 ---
-import type { CollectionEntry } from 'astro:content';
+import type { Project } from '../lib/data';
+import { leadImageOf, slugOf } from '../lib/data';
 import { url } from '../lib/url';
 
 /**
@@ -12,12 +13,13 @@ import { url } from '../lib/url';
  * scale changes between them, which is the whole hierarchy.
  */
 interface Props {
-  project: CollectionEntry<'projects'>;
+  project: Project;
   lead?: boolean;
 }
 
-const { project: p, lead = false } = Astro.props;
-const d = p.data;
+const { project: d, lead = false } = Astro.props;
+const slug = slugOf(d);
+const leadImage = leadImageOf(d);
 
 /* The card wants the place, not the postal address. A first part beginning with
    a street number is dropped, so "13904 Hayne Boulevard, New Orleans, Louisiana"
@@ -25,17 +27,17 @@ const d = p.data;
 const place = d.location.replace(/^\s*\d+[^,]*,\s*/, '');
 ---
 
-<li class:list={['card', lead && 'card-lead']} data-tile={p.id}>
+<li class:list={['card', lead && 'card-lead']} data-tile={slug}>
   <a
-    href={url(`/work/${p.id}`)}
-    data-expand={p.id}
+    href={url(`/work/${slug}`)}
+    data-expand={slug}
     aria-expanded="false"
-    aria-controls={`panel-${p.id}`}
+    aria-controls={`panel-${slug}`}
   >
     <span class="card-media">
       <img
-        src={url(d.leadImage.src)}
-        alt={d.leadImage.alt}
+        src={url(leadImage.src)}
+        alt={leadImage.alt}
         loading={lead ? 'eager' : 'lazy'}
         decoding="async"
       />

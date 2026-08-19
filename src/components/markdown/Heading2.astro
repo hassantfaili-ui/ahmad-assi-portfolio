@@ -1,0 +1,25 @@
+---
+/**
+ * A heading inside a project brief, with the anchor Astro's markdown used to add.
+ *
+ * Astro's own markdown pipeline gave every heading a slug id, so a section of a
+ * brief could be linked to directly. Rich text from Tina does not, and losing
+ * that silently would break any address anybody had already sent. Nothing on the
+ * site links to one today, which is exactly why it would have gone unnoticed.
+ *
+ * The text has to come out of the rendered slot because the components map hands
+ * headings their content as a slot rather than as props. Tags are stripped
+ * before slugifying so a heading with emphasis in it does not end up with markup
+ * in its own id.
+ */
+const html = await Astro.slots.render('default');
+
+const id = html
+  .replace(/<[^>]+>/g, '')
+  .trim()
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/^-+|-+$/g, '');
+---
+
+<h2 id={id || undefined}><Fragment set:html={html} /></h2>

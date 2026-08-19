@@ -1,11 +1,12 @@
 ---
-import type { CollectionEntry } from 'astro:content';
+import type { Project } from '../lib/data';
+import { leadImageOf, slugOf } from '../lib/data';
 import ProjectCard from './ProjectCard.astro';
 import { url } from '../lib/url';
 import { tiers } from '../lib/tiers';
 
 interface Props {
-  projects: CollectionEntry<'projects'>[];
+  projects: Project[];
 }
 
 const { projects } = Astro.props;
@@ -19,7 +20,7 @@ const { projects } = Astro.props;
 const { leads, set, index } = tiers(projects);
 
 /** Only rows that have a value. An empty row is worse than no row. */
-function facts(d: CollectionEntry<'projects'>['data']) {
+function facts(d: Project) {
   return [
     ['Type', d.buildingType],
     ['Location', d.location],
@@ -72,11 +73,11 @@ function facts(d: CollectionEntry<'projects'>['data']) {
         <ul class="index-list">
           {index.map((p) => (
             <li>
-              <a href={url(`/work/${p.id}`)}>
-                <span class="index-year">{p.data.year}</span>
-                <span class="index-title">{p.data.title}</span>
-                <span class="index-kind">{p.data.buildingType}</span>
-                <span class="index-credit">{p.data.credit}</span>
+              <a href={url(`/work/${slugOf(p)}`)}>
+                <span class="index-year">{p.year}</span>
+                <span class="index-title">{p.title}</span>
+                <span class="index-kind">{p.buildingType}</span>
+                <span class="index-credit">{p.credit}</span>
                 <span class="index-go" aria-hidden="true">&rarr;</span>
               </a>
             </li>
@@ -98,16 +99,16 @@ function facts(d: CollectionEntry<'projects'>['data']) {
     [...leads, ...set].map((p) => (
       <section
         class="panel"
-        id={`panel-${p.id}`}
-        data-panel={p.id}
-        aria-labelledby={`panel-title-${p.id}`}
+        id={`panel-${slugOf(p)}`}
+        data-panel={slugOf(p)}
+        aria-labelledby={`panel-title-${slugOf(p)}`}
         hidden
       >
         <div class="panel-inner">
           <div class="panel-media">
             <img
-              src={url(p.data.leadImage.src)}
-              alt={p.data.leadImage.alt}
+              src={url(leadImageOf(p).src)}
+              alt={leadImageOf(p).alt}
               loading="lazy"
               decoding="async"
             />
@@ -115,15 +116,15 @@ function facts(d: CollectionEntry<'projects'>['data']) {
 
           <div class="panel-text">
             <p class="eyebrow">
-              {p.data.category} &nbsp;/&nbsp; <em>{p.data.year}</em>
+              {p.category} &nbsp;/&nbsp; <em>{p.year}</em>
             </p>
-            <h3 class="panel-title" id={`panel-title-${p.id}`} tabindex="-1">
-              {p.data.title}
+            <h3 class="panel-title" id={`panel-title-${slugOf(p)}`} tabindex="-1">
+              {p.title}
             </h3>
-            <p class="panel-summary">{p.data.summary}</p>
+            <p class="panel-summary">{p.summary}</p>
 
             <dl class="panel-facts">
-              {facts(p.data).map(([k, v]) => (
+              {facts(p).map(([k, v]) => (
                 <div>
                   <dt>{k}</dt>
                   <dd>{v}</dd>
@@ -132,7 +133,7 @@ function facts(d: CollectionEntry<'projects'>['data']) {
             </dl>
 
             <p class="panel-actions">
-              <a class="btn" href={url(`/work/${p.id}`)}>
+              <a class="btn" href={url(`/work/${slugOf(p)}`)}>
                 Full sheet <span class="i" aria-hidden="true">&rarr;</span>
               </a>
               <button class="panel-close" type="button" data-panel-close>Close</button>

@@ -1,6 +1,6 @@
 ---
 import '../styles/site.css';
-import resume from '../data/resume.json';
+import { getResume } from '../lib/data';
 import { url, isCurrent } from '../lib/url';
 
 interface Props {
@@ -12,6 +12,13 @@ interface Props {
 
 const { pageTitle, description, hideFooterCta = false } = Astro.props;
 const path = Astro.url.pathname;
+
+/* The header and the footer are the same on every page and are not editable in
+   place: they are not one document's content, they are the shape of the site.
+   Ahmad changes his email under Resume and the whole site follows on the next
+   build, which is how it worked before and is the right level for a wordmark. */
+const resume = (await getResume()).data.resume;
+const phone = (resume.phone ?? '').replace(/[^\d+]/g, '');
 
 const PAGES = [
   { label: 'Home', href: '/' },
@@ -88,7 +95,7 @@ const PHONE_ICON =
         <h2 class="foot-title">Get in touch</h2>
         <p class="foot-links">
           <a class="inline" href={`mailto:${resume.email}`}>{resume.email}</a>
-          <a class="inline" href={`tel:${resume.phone.replace(/[^\d+]/g, '')}`}>{resume.phone}</a>
+          <a class="inline" href={`tel:${phone}`}>{resume.phone}</a>
           <a class="inline" href={url('/contact')}>Contact page</a>
         </p>
       </div>
@@ -105,7 +112,7 @@ const PHONE_ICON =
           </li>
           <li>
             <a
-              href={`tel:${resume.phone.replace(/[^\d+]/g, '')}`}
+              href={`tel:${phone}`}
               aria-label={`Telephone ${resume.phone}`}
             >
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d={PHONE_ICON}></path></svg>

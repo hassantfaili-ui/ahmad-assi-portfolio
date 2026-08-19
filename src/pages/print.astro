@@ -1,6 +1,8 @@
 ---
-import { getCollection, render } from 'astro:content';
-import resume from '../data/resume.json';
+import TinaMarkdown from '@tinacms/astro/TinaMarkdown.astro';
+import { markdownComponents } from '../components/markdown/components';
+import type { Project } from '../lib/data';
+import { drawingsOf, getResume, imageGroupsOf, imagesOf, leadImageOf, listProjects } from '../lib/data';
 import { url } from '../lib/url';
 import { tiers } from '../lib/tiers';
 import '../styles/print.css';
@@ -9,8 +11,8 @@ import '../styles/print.css';
  * The portfolio PDF, as a web page.
  *
  * This exists so the document Ahmad attaches to an application and the link he
- * sends alongside it cannot drift apart. Both read the same content collection,
- * in the same order, with the same crediting. Change a project and both change.
+ * sends alongside it cannot drift apart. Both read the same files, in the same
+ * order, with the same crediting. Change a project and both change.
  *
  * Rendered to PDF by scripts/build-portfolio.sh, which serves the built site and
  * drives headless Chrome. Images point at /print/, a set of downscaled copies the
@@ -20,7 +22,8 @@ import '../styles/print.css';
  * Not linked from the site navigation. It is a source file for a document, not a
  * page anyone should land on.
  */
-const all = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+const all = await listProjects();
+const resume = (await getResume()).data.resume;
 
 /* Same derivation as the home page, so a fourth project marked as a lead lands
    in the same place in both rather than making a spread here and vanishing there. */
@@ -35,19 +38,12 @@ const { leads, set, index } = tiers(all);
 const pimg = (src: string) => url(`/print/${src.split('/').pop()}`);
 
 /** Every gallery image, flattened, so a page can just take the first few. */
-const gallery = (p: (typeof all)[number]) =>
-  p.data.imageGroups.flatMap((g) => g.images).filter((i) => i.src.startsWith('/'));
+const gallery = (p: Project) =>
+  imageGroupsOf(p)
+    .flatMap((g) => imagesOf(g))
+    .filter((i) => i.src.startsWith('/'));
 
-const drawings = (p: (typeof all)[number]) =>
-  p.data.drawings.filter((d) => d.src.startsWith('/'));
-
-/* The brief, rendered, for the three lead projects only. The rest carry their
-   summary and contribution, which is all a single page has room for. */
-const briefs = new Map(
-  await Promise.all(
-    leads.map(async (p) => [p.id, (await render(p)).Content] as const),
-  ),
-);
+const drawings = (p: Project) => drawingsOf(p).filter((d) => d.src.startsWith('/'));
 
 const place = (s: string) => s.replace(/^\s*\d+[^,]*,\s*/, '');
 
@@ -119,7 +115,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
                 {
                   leads.map((p, i) => (
                     <li>
-                      <span class="t">{p.data.title}</span>
+                      <span class="t">{p.title}</span>
                       <span class="n">{pad(leadPage(i))}</span>
                     </li>
                   ))
@@ -136,7 +132,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
                 {
                   set.map((p, i) => (
                     <li>
-                      <span class="t">{p.data.title}</span>
+                      <span class="t">{p.title}</span>
                       <span class="n">{pad(setPage(i))}</span>
                     </li>
                   ))
@@ -155,8 +151,8 @@ const pad = (n: number) => String(n).padStart(2, '0');
                 {
                   index.map((p) => (
                     <li>
-                      <span class="t">{p.data.title}</span>
-                      <span class="n">{p.data.year}</span>
+                      <span class="t">{p.title}</span>
+                      <span class="n">{p.year}</span>
                     </li>
                   ))
                 }
@@ -189,7 +185,6 @@ const pad = (n: number) => String(n).padStart(2, '0');
       leads.map((p) => {
         const g = gallery(p);
         const d = drawings(p);
-        const Brief = briefs.get(p.id)!;
         /* Prefer drawings on the detail page: a plan or a section is what tells a
            reviewer the project was resolved, and renders already had the hero. */
         const picks = [...d.slice(0, 2), ...g].slice(0, 4);
@@ -197,28 +192,28 @@ const pad = (n: number) => String(n).padStart(2, '0');
           <>
             <div class="sheet">
               <div class="hero-img">
-                <img src={pimg(p.data.leadImage.src)} alt="" />
+                <img src={pimg(leadImageOf(p).src)} alt="" />
               </div>
               <div class="hero-plate">
-                <p class="p-label">{p.data.category} &nbsp;&middot;&nbsp; {p.data.year}</p>
-                <h2 class="p-title">{p.data.title}</h2>
+                <p class="p-label">{p.category} &nbsp;&middot;&nbsp; {p.year}</p>
+                <h2 class="p-title">{p.title}</h2>
                 <div class="hero-facts">
-                  <span>{place(p.data.location)}</span>
-                  <span>{p.data.status}</span>
-                  {p.data.area && <span>{p.data.area}</span>}
-                  <span><b>{p.data.credit}</b></span>
+                  <span>{place(p.location)}</span>
+                  <span>{p.status}</span>
+                  {p.area && <span>{p.area}</span>}
+                  <span><b>{p.credit}</b></span>
                 </div>
               </div>
-              <p class="sheet-no">{p.data.sheet} &nbsp;/&nbsp; {no()}</p>
+              <p class="sheet-no">{p.sheet} &nbsp;/&nbsp; {no()}</p>
             </div>
 
             <div class="sheet">
               <div class="detail">
                 <div class="detail-text">
-                  <p class="p-label">{p.data.buildingType}</p>
-                  <h3 class="p-title">{p.data.title}</h3>
-                  <div class="detail-body p-body"><Brief /></div>
-                  <p class="detail-credit">{p.data.credit}</p>
+                  <p class="p-label">{p.buildingType}</p>
+                  <h3 class="p-title">{p.title}</h3>
+                  <div class="detail-body p-body">{p.body && <TinaMarkdown content={p.body} components={markdownComponents} />}</div>
+                  <p class="detail-credit">{p.credit}</p>
                 </div>
                 <div class:list={['detail-grid', picks.length === 3 && 'is-three']}>
                   {picks.map((i) => (
@@ -228,7 +223,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
                   ))}
                 </div>
               </div>
-              <p class="sheet-no">{p.data.sheet} &nbsp;/&nbsp; {no()}</p>
+              <p class="sheet-no">{p.sheet} &nbsp;/&nbsp; {no()}</p>
             </div>
           </>
         );
@@ -246,21 +241,21 @@ const pad = (n: number) => String(n).padStart(2, '0');
           <div class="sheet">
             <div class="single">
               <div class="single-main">
-                <img src={pimg(p.data.leadImage.src)} alt="" />
+                <img src={pimg(leadImageOf(p).src)} alt="" />
               </div>
               <div class="single-foot">
                 <div class="single-text">
-                  <p class="p-label">{p.data.category} &nbsp;&middot;&nbsp; {p.data.year}</p>
-                  <h2 class="p-title">{p.data.title}</h2>
-                  <p class="p-body">{p.data.summary}</p>
+                  <p class="p-label">{p.category} &nbsp;&middot;&nbsp; {p.year}</p>
+                  <h2 class="p-title">{p.title}</h2>
+                  <p class="p-body">{p.summary}</p>
                   <p class="p-body" style="margin-top:3mm">
                     <b style="font-weight:400;color:var(--ink)">My part.</b>{' '}
-                    {p.data.contribution}
+                    {p.contribution}
                   </p>
                   <div class="hero-facts" style="margin-top:5mm">
-                    <span>{place(p.data.location)}</span>
-                    <span>{p.data.status}</span>
-                    <span><b>{p.data.credit}</b></span>
+                    <span>{place(p.location)}</span>
+                    <span>{p.status}</span>
+                    <span><b>{p.credit}</b></span>
                   </div>
                 </div>
                 <div class="single-strip">
@@ -272,7 +267,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
                 </div>
               </div>
             </div>
-            <p class="sheet-no">{p.data.sheet} &nbsp;/&nbsp; {no()}</p>
+            <p class="sheet-no">{p.sheet} &nbsp;/&nbsp; {no()}</p>
           </div>
         );
       })
@@ -287,10 +282,10 @@ const pad = (n: number) => String(n).padStart(2, '0');
           {
             index.map((p) => (
               <li>
-                <span class="y">{p.data.year}</span>
-                <span class="t">{p.data.title}</span>
-                <span class="k">{p.data.buildingType}</span>
-                <span class="c">{p.data.credit}</span>
+                <span class="y">{p.year}</span>
+                <span class="t">{p.title}</span>
+                <span class="k">{p.buildingType}</span>
+                <span class="c">{p.credit}</span>
               </li>
             ))
           }
@@ -311,13 +306,13 @@ const pad = (n: number) => String(n).padStart(2, '0');
         <h2 class="p-title">Experience</h2>
         <div class="cv">
           {
-            resume.experience.map((e) => (
+            (resume.experience ?? []).map((e) => e && (
               <section>
                 <div class="cv-item">
                   <b>{e.role}</b>
                   <p class="w">{e.firm} &nbsp;&middot;&nbsp; {e.period}</p>
                   <ul>
-                    {e.contributions.slice(0, 3).map((c) => (
+                    {(e.contributions ?? []).slice(0, 3).map((c) => (
                       <li>{c}</li>
                     ))}
                   </ul>
@@ -339,7 +334,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
           <section>
             <h3>Education</h3>
             {
-              resume.education.map((e) => (
+              (resume.education ?? []).map((e) => e && (
                 <div class="cv-item">
                   <b>{e.credential}</b>
                   <p class="w">{e.institution} &nbsp;&middot;&nbsp; {e.year}</p>
@@ -349,16 +344,16 @@ const pad = (n: number) => String(n).padStart(2, '0');
             }
             <h3 style="margin-top:7mm">Languages</h3>
             <div class="cv-tags">
-              {resume.languages.map((l) => <span>{l}</span>)}
+              {(resume.languages ?? []).map((l) => <span>{l}</span>)}
             </div>
           </section>
           <section>
             {
-              resume.skillGroups.map((g) => (
+              (resume.skillGroups ?? []).map((g) => g && (
                 <>
                   <h3 style="margin-top:0">{g.label}</h3>
                   <div class="cv-tags" style="margin-bottom:6mm">
-                    {g.items.map((i) => (
+                    {(g.items ?? []).map((i) => (
                       <span>{i}</span>
                     ))}
                   </div>

@@ -1,12 +1,15 @@
 ---
-import { getCollection } from 'astro:content';
+import TinaIsland from '@tinacms/astro/TinaIsland.astro';
 import Site from '../layouts/Site.astro';
 import ProjectGrid from '../components/ProjectGrid.astro';
 import HeroFilm from '../components/HeroFilm.astro';
-import resume from '../data/resume.json';
-import { url } from '../lib/url';
+import HomeAbout from '../components/islands/HomeAbout.astro';
+import { getResume, listProjects } from '../lib/data';
+import { islands } from '../lib/islands';
 
-const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+const projects = await listProjects();
+const resume = await getResume();
+const r = resume.data.resume;
 
 /* Short enough to read over moving footage. The full version is on the resume. */
 const intro =
@@ -16,12 +19,12 @@ const intro =
 ---
 
 <Site
-  pageTitle={`${resume.name}, ${resume.discipline}`}
-  description={resume.positioning}
+  pageTitle={`${r.name}, ${r.discipline}`}
+  description={r.positioning ?? ''}
   hideFooterCta
 >
   <HeroFilm
-    eyebrow={`${resume.discipline} \u00a0/\u00a0 ${resume.location}`}
+    eyebrow={`${r.discipline} \u00a0/\u00a0 ${r.location}`}
     name="Ahmad"
     surname="Assi"
     intro={intro}
@@ -36,29 +39,7 @@ const intro =
 
   <!-- About and the invitation sit side by side and share a row, so the page
        closes on one gesture rather than two stacked centred blocks. -->
-  <section class="band closing">
-    <div class="closing-grid">
-      <div class="closing-about reveal">
-        <h2 class="closing-heading">About</h2>
-        <div class="closing-prose">
-          {resume.longBio.map((p) => <p>{p}</p>)}
-        </div>
-        <p style="margin-top:2rem">
-          <a class="btn" href={url('/resume')}>
-            Resume <span class="i" aria-hidden="true">&rarr;</span>
-          </a>
-        </p>
-      </div>
-
-      <div class="closing-contact reveal">
-        <p class="foot-kicker">Interested in collaborating?</p>
-        <h2 class="closing-heading">Get in touch</h2>
-        <ul class="closing-links">
-          <li><a class="inline" href={`mailto:${resume.email}`}>{resume.email}</a></li>
-          <li><a class="inline" href={`tel:${resume.phone.replace(/[^\d+]/g, '')}`}>{resume.phone}</a></li>
-          <li><a class="inline" href={url('/contact')}>Contact page</a></li>
-        </ul>
-      </div>
-    </div>
-  </section>
+  <TinaIsland name="home-about" wrapper={islands['home-about'].wrapper} primary>
+    <HomeAbout data={r} />
+  </TinaIsland>
 </Site>
