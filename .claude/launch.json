@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "ahmadassi",
+      "name": "ahmadassi-next",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": ["--prefix", "/Users/hassan/ahmadassi-nextjs", "run", "dev"],
       "port": 3000,
       "autoPort": true
     }
