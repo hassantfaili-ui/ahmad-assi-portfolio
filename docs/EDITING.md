@@ -5,7 +5,7 @@ The editor is [Keystatic](https://keystatic.com). It writes ordinary files back
 to the repository, so every change is a normal commit that can be read and
 undone, and Cloudflare rebuilds the site within a minute or two of a save.
 
-The editor lives at **`/admin`**, for example `https://ahmad-assi-portfolio.hassan-tfaili.workers.dev/admin`.
+The editor lives at **`/admin`**, for example `https://ahmadassi.ca/admin`.
 That is the address to give Ahmad and the one to bookmark. It hands straight on
 to `/keystatic`, which is where the editor actually runs.
 
@@ -31,7 +31,7 @@ needs accounts. It takes about ten minutes, once.
 7. Check it took:
 
    ```bash
-   npm run editor:check -- https://ahmad-assi-portfolio.hassan-tfaili.workers.dev
+   npm run editor:check -- https://ahmadassi.ca
    ```
 
    That reports what is configured and whether the deployed site is actually
@@ -131,7 +131,7 @@ The three films are too big for that limit, so they are not served from here.
 They live in an R2 bucket and `PUBLIC_MEDIA_ORIGIN` points at it:
 
 ```
-PUBLIC_MEDIA_ORIGIN = https://pub-a254722ed465461099b646f0d39d458b.r2.dev
+PUBLIC_MEDIA_ORIGIN = https://media.ahmadassi.ca
 ```
 
 With it set, the build rewrites the film URLs to that origin and deletes the
@@ -145,10 +145,8 @@ The bucket keys must stay under a `media/` prefix, because that is the path the
 site requests: `media/hero-1440.mp4`, `media/hero-720.mp4`,
 `media/lincoln-beach-walkthrough.mp4`.
 
-**Before handover, move off the `pub-….r2.dev` address.** Cloudflare rate limits
-it and says not to use it in production. Add a custom domain to the bucket, for
-example `media.ahmadassi.com`, and change the variable to that. Same bucket,
-same keys, nothing else to do.
+The bucket is served from `media.ahmadassi.ca`, a custom domain rather than the
+rate limited `pub-….r2.dev` address Cloudflare says not to use in production.
 
 There is no contact form. It was Netlify Forms and there is no equivalent here,
 so the contact page is the email link, which was always the primary route.

@@ -42,7 +42,7 @@ const editorOnline = true;
 export default defineConfig({
   /* Cloudflare Pages publishes the deploy URL as CF_PAGES_URL. URL is kept as a
      fallback so a Netlify build, or a local `netlify dev`, still resolves. */
-  site: process.env.CF_PAGES_URL || process.env.URL || 'https://ahmad-assi-portfolio.hassan-tfaili.workers.dev',
+  site: process.env.CF_PAGES_URL || process.env.URL || 'https://ahmadassi.ca',
   output: 'static',
   trailingSlash: 'ignore',
   build: { inlineStylesheets: 'auto' },
