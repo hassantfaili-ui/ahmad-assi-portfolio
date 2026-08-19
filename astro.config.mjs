@@ -47,10 +47,14 @@ export default defineConfig({
   trailingSlash: 'ignore',
   build: { inlineStylesheets: 'auto' },
   devToolbar: { enabled: false },
-  /* The adapter is only needed when the editor is being built, and adding it
-     unconditionally would turn a pure file deploy into one with functions
-     attached for no reason. */
-  ...(editorOnline ? { adapter: cloudflare() } : {}),
+  /* Always on, deliberately. It used to be conditional, on the reasoning that a
+     site with no editor needs no server. That produced two different build
+     shapes from one repository, and the deploy command only suits one of them:
+     `wrangler deploy` wants a worker, and a build without the adapter emits
+     none, so it failed looking for dist/server/wrangler.json. One shape every
+     time is worth more than skipping a worker that costs nothing when idle and
+     that Cloudflare serves static assets around for free either way. */
+  adapter: cloudflare(),
   /* shrink-media runs on every build, editor or not. It is the backstop that
      keeps an oversized upload from reaching a visitor, so it must not be
      conditional on the thing that lets uploads happen. */

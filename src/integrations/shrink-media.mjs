@@ -135,38 +135,18 @@ export default function shrinkMedia() {
            a per-file cap they fail the build even though nothing links to them:
            Cloudflare rejects any asset over 25 MiB and the hero is 42.8MB at
            full quality. Dropping them is what lets that quality be kept. */
-        const origin = process.env.PUBLIC_MEDIA_ORIGIN;
-        if (!origin) {
-          /* The films are kept in the repository at full bitrate, which is what
-             R2 serves, and the hero alone is 42.8MB. Without an origin they get
-             published, and a host that caps a single asset then fails the build
-             with an error that names the file but not the cause. Say the cause
-             here, while the build still has something useful to say. */
-          const big = [];
-          for (const f of (await readdir(root).catch(() => []))) {
-            if (!f.toLowerCase().endsWith('.mp4')) continue;
-            const { size } = await stat(join(root, f));
-            if (size > 25 * 1024 * 1024) big.push(`${f} (${mb(size)})`);
-          }
-          if (big.length) {
-            logger.warn(
-              `PUBLIC_MEDIA_ORIGIN is not set, so these films will be published: ${big.join(', ')}. ` +
-                'Cloudflare rejects any asset over 25MB, so that build will fail. Set the variable ' +
-                'to the R2 origin and they are served from there instead.',
-            );
-          }
-        }
-        if (origin) {
-          const films = (await readdir(join(fileURLToPath(dir), 'media')).catch(() => []))
-            .filter((f) => f.toLowerCase().endsWith('.mp4'));
-          for (const f of films) {
-            const p = join(fileURLToPath(dir), 'media', f);
-            const { size } = await stat(p);
-            await rm(p);
-            logger.info(`served from ${origin}, dropped from the build: ${f} (${mb(size)})`);
-          }
-        }
+        /* Films never ship in the bundle. They are kept in the repository at full
+           bitrate, and the hero alone is 42.8MB against Cloudflare's 25 MiB cap
+           on a single asset, so publishing them fails the build outright.
 
+           Dropping them unconditionally rather than only when an origin is set
+           is the difference between a soft failure and a hard one. Without an
+           origin the site still builds and every page still works; only the film
+           is missing, and the warning says why. Failing the whole deploy because
+           one variable is unset punishes the wrong thing.
+
+           Local development is unaffected: `astro dev` serves from public, not
+           from dist, so the films play normally there either way. */
         const files = await walk(root);
         if (files.length === 0) {
           logger.warn(`no images found under ${root}`);

@@ -39,7 +39,7 @@ films are well over it, so they are served from an R2 bucket instead and
 drops them from `dist`; without it the build warns, then fails on the host. See
 `docs/EDITING.md`.
 
-GitHub Pages and Netlify were both used earlier and both have been left behind.
+Two earlier hosts have been left behind.
 Nothing in the code assumes a host: `astro.config.mjs` reads `CF_PAGES_URL` with
 `URL` as a fallback, and every internal link and asset goes through `url()` in
 `src/lib/url.ts`, which is a passthrough at a root base and is what would make a
@@ -191,7 +191,7 @@ like data.
 These are known and deliberate, not oversights:
 
 1. **Confirm the inferred project details.** See below.
-2. **There is no contact form.** It was Netlify Forms and Cloudflare has no
+2. **There is no contact form.** The previous host provided one; Cloudflare has no
    equivalent, so it was removed rather than left to post nowhere. The page is the
    email link, which was always the primary route: an attachment will not fit
    through a form anyway. Adding one back means a third party service.
