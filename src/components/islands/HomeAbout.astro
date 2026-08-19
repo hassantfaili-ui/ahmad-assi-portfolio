@@ -1,0 +1,48 @@
+---
+import { tinaField } from '@tinacms/astro/tina-field';
+import type { ResumeDoc } from '../../lib/data';
+import { url } from '../../lib/url';
+
+/**
+ * How the home page closes: the biography and the invitation, side by side.
+ *
+ * They share a row so the page ends on one gesture rather than two stacked
+ * centred blocks. Both read the resume record, which is why they are one island
+ * rather than two: a single document is a single form, and splitting them would
+ * put the same form on the page twice.
+ */
+interface Props {
+  data: ResumeDoc;
+}
+
+const { data: r } = Astro.props;
+const bio = (r.longBio ?? []).flatMap((p) => (p ? [p] : []));
+---
+
+<div class="closing-grid">
+  <div class="closing-about reveal">
+    <h2 class="closing-heading">About</h2>
+    <div class="closing-prose" data-tina-field={tinaField(r, 'longBio')}>
+      {bio.map((p) => <p>{p}</p>)}
+    </div>
+    <p style="margin-top:2rem">
+      <a class="btn" href={url('/resume')}>
+        Resume <span class="i" aria-hidden="true">&rarr;</span>
+      </a>
+    </p>
+  </div>
+
+  <div class="closing-contact reveal">
+    <p class="foot-kicker">Interested in collaborating?</p>
+    <h2 class="closing-heading">Get in touch</h2>
+    <ul class="closing-links">
+      <li data-tina-field={tinaField(r, 'email')}>
+        <a class="inline" href={`mailto:${r.email}`}>{r.email}</a>
+      </li>
+      <li data-tina-field={tinaField(r, 'phone')}>
+        <a class="inline" href={`tel:${(r.phone ?? '').replace(/[^\d+]/g, '')}`}>{r.phone}</a>
+      </li>
+      <li><a class="inline" href={url('/contact')}>Contact page</a></li>
+    </ul>
+  </div>
+</div>

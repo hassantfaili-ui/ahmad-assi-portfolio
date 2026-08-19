@@ -8,7 +8,7 @@ buildingType: Four storey coach house, documentation and design report
 area: Drawn at 1 to 100
 status: Academic
 role: Group 9, ARCC 2202
-contribution: Part of a five person group. The submission is the group's shared work.
+contribution: Part of a five person group. The submission is the group’s shared work.
 summary: A four storey coach house documented at 1 to 100 with the level heights carried from a single datum, and reported through to its sustainability case and energy performance.
 leadImage:
   src: /media/coach-house/coach-ext-2.jpg
@@ -79,4 +79,4 @@ The value of an exercise like this is not the building. It is learning that a se
 
 The report went further than the drawings: the material choices argued rather than asserted, passive heating and cooling traced through the section, and the whole thing checked against an energy figure at the end. Drawing a building and defending how it performs are different skills, and the second one is the one that gets asked about.
 
-Produced as Group 9 for ARCC 2202. The submission is the group's shared work.
+Produced as Group 9 for ARCC 2202. The submission is the group’s shared work.

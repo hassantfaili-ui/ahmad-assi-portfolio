@@ -29,7 +29,7 @@ order: 11
 
 One detail, drawn properly. The section runs from a parking garage below grade, through the foundation wall, up past the floor assembly and into a classroom, and every layer in it is numbered and named.
 
-That is the whole exercise. A hatch pattern says "wall"; a keyed note says which air barrier, at what thickness, with what R value, lapped over what. The difference between the two is whether the drawing can be built from.
+That is the whole exercise. A hatch pattern says “wall”; a keyed note says which air barrier, at what thickness, with what R value, lapped over what. The difference between the two is whether the drawing can be built from.
 
 The specification runs alongside the drawing as composite construction notes, assembly by assembly: the exterior wall, the floor, the foundation above and below grade, and the glazing. Doing this in third year is what makes it possible to detail a 400 millimetre wall on a real house later and defend the choice, which is the connection between this sheet, Core and Shell, and La Casa Aranas.
 

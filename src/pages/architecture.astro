@@ -1,20 +1,19 @@
 ---
-import { getCollection } from 'astro:content';
 import Site from '../layouts/Site.astro';
 import ProjectGrid from '../components/ProjectGrid.astro';
-import resume from '../data/resume.json';
-import { url } from '../lib/url';
+import { getResume, listProjects } from '../lib/data';
 
-const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+const projects = await listProjects();
+const r = (await getResume()).data.resume;
 ---
 
 <Site
-  pageTitle={`Architecture, ${resume.name}`}
+  pageTitle={`Architecture, ${r.name}`}
   description="Architectural and urbanism work by Ahmad Assi, including the Lincoln Beach Center and La Casa Aranas."
 >
   <section class="hero load">
     <p class="eyebrow" style="--i:0">
-Architecture and urbanism &nbsp;/&nbsp; <em>{projects.length} projects</em>
+      Architecture and urbanism &nbsp;/&nbsp; <em>{projects.length} projects</em>
     </p>
     <h1 class="page-title" style="--i:1">Projects</h1>
     <p class="sub sub-line" style="--i:2">

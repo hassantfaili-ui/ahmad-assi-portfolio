@@ -1,0 +1,104 @@
+---
+import { tinaField } from '@tinacms/astro/tina-field';
+import type { ResumeDoc } from '../../lib/data';
+import { url } from '../../lib/url';
+
+/**
+ * The contact page, which is the resume record read a different way.
+ *
+ * Email only. There is no form: Cloudflare has nothing that accepts a submission
+ * without a third party service, and markup that silently posts nowhere is worse
+ * than none. Email was always the primary route anyway, because a practice
+ * writing to a graduate attaches a brief or a job description and no form field
+ * takes an attachment.
+ */
+interface Props {
+  data: ResumeDoc;
+}
+
+const { data: r } = Astro.props;
+
+const social = (r.social ?? []).flatMap((s) => (s?.href && s.label ? [s] : []));
+const tel = (r.phone ?? '').replace(/[^\d+]/g, '');
+const subject = encodeURIComponent('Enquiry from your portfolio');
+const mailto = `mailto:${r.email}?subject=${subject}`;
+---
+
+<section class="hero load">
+  <p class="eyebrow" style="--i:0">
+    <span data-tina-field={tinaField(r, 'location')}>{r.location}</span> &nbsp;/&nbsp; <em>Available now</em>
+  </p>
+  <h1 class="page-title" style="--i:1">Contact</h1>
+  <p class="sub" style="--i:2" data-tina-field={tinaField(r, 'availability')}>{r.availability}</p>
+</section>
+
+<section class="band">
+  <div class="contact-grid">
+    <div class="reveal">
+      <h2 class="closing-heading">Write to me</h2>
+      <p class="closing-prose" style="margin-top:1rem">
+        Email is best, and it reaches me directly. Attach the brief, the job
+        description or the drawing set and I will reply with whatever is useful,
+        including work that is not on this site.
+      </p>
+      <p style="margin-top:2rem">
+        <a class="btn" href={mailto} data-tina-field={tinaField(r, 'email')}>
+          {r.email} <span class="i" aria-hidden="true">&rarr;</span>
+        </a>
+      </p>
+    </div>
+
+    <div class="reveal">
+      <dl class="contact-facts">
+        <div data-tina-field={tinaField(r, 'email')}>
+          <dt>Email</dt>
+          <dd><a class="inline" href={`mailto:${r.email}`}>{r.email}</a></dd>
+        </div>
+        <div data-tina-field={tinaField(r, 'phone')}>
+          <dt>Phone</dt>
+          <dd><a class="inline" href={`tel:${tel}`}>{r.phone}</a></dd>
+        </div>
+        <div data-tina-field={tinaField(r, 'location')}>
+          <dt>Based in</dt>
+          <dd>{r.location}</dd>
+        </div>
+        {
+          social.length > 0 && (
+            <div data-tina-field={tinaField(r, 'social')}>
+              <dt>Elsewhere</dt>
+              <dd>
+                {social.map((s) => (
+                  <a class="inline" href={s.href!} style="display:block">
+                    {s.label}
+                  </a>
+                ))}
+              </dd>
+            </div>
+          )
+        }
+      </dl>
+
+      {
+        (r.cvFile || r.portfolioFile) && (
+          <p class="contact-files">
+            {r.portfolioFile && (
+              <a
+                class="btn"
+                href={url(r.portfolioFile)}
+                download
+                data-tina-field={tinaField(r, 'portfolioFile')}
+              >
+                Portfolio PDF <span class="i" aria-hidden="true">&darr;</span>
+              </a>
+            )}
+            {r.cvFile && (
+              <a class="btn" href={url(r.cvFile)} download data-tina-field={tinaField(r, 'cvFile')}>
+                Resume PDF <span class="i" aria-hidden="true">&darr;</span>
+              </a>
+            )}
+          </p>
+        )
+      }
+    </div>
+  </div>
+</section>

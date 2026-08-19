@@ -18,3 +18,19 @@
 
 /*.html
   Cache-Control: public, max-age=0, must-revalidate
+
+/admin
+# The editor must never be cached and must never be indexed. It is a shell that
+# talks to TinaCloud, so a cached copy is a stale one signed in against nothing.
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+
+/admin/*
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+
+/tina-island/*
+# The editor's live preview endpoint. Nothing a visitor reaches, and its answers
+# are per-keystroke drafts, so caching one would be actively wrong.
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow

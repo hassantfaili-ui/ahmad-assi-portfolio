@@ -1,0 +1,72 @@
+---
+import TinaMarkdown from '@tinacms/astro/TinaMarkdown.astro';
+import type { TableComponentProps } from '@tinacms/astro/types';
+
+/**
+ * A table in a project brief, drawn the way this site draws tables.
+ *
+ * Two things the default renderer does that do not belong here, both of which
+ * are only visible once you have a stylesheet with opinions about tables, which
+ * src/styles/site.css does under `.prose`.
+ *
+ * IT PUTS A BORDER IN A STYLE ATTRIBUTE. A hardcoded `1px solid #EDECF3` on the
+ * table and on every cell. An inline style beats a stylesheet, so that grey grid
+ * wins over the design's own rules and stays exactly the same grey in dark mode,
+ * where it is the wrong colour twice over.
+ *
+ * IT MAKES EVERY ROW A `td`. Markdown wrote a header row and meant it. Drawn as
+ * data cells, the cut list on the Media Wall Cabinets page loses the styling for
+ * its heading row, and a screen reader loses the only thing that tells it which
+ * column a figure is in. That is the part that actually matters: an unheaded
+ * table is a grid of numbers with nothing to attach them to.
+ *
+ * So: `thead` and `th` for the first row, `tbody` for the rest, alignment where
+ * markdown asked for it, and no other styling at all. Everything the table looks
+ * like comes from the stylesheet, which is where it was before.
+ */
+type Props = TableComponentProps;
+
+const { node } = Astro.props;
+
+const align = node.props?.align ?? [];
+const rows = node.children ?? [];
+const [head, ...body] = rows;
+
+/** A cell's content is wrapped in a paragraph; unwrap it so a cell is not a
+    block of prose inside a table cell. */
+const cellContent = (cell: (typeof rows)[number]['children'][number]) =>
+  (cell?.children ?? []).flatMap((paragraph) => paragraph?.children ?? []);
+
+/* Markdown's default is 'left' for a column with no colon in its rule, and that
+   is also the CSS default, so only a real choice is written out. */
+const alignOf = (i: number) => (align[i] && align[i] !== 'left' ? align[i] : undefined);
+---
+
+<table>
+  {
+    head && (
+      <thead>
+        <tr>
+          {(head.children ?? []).map((cell, i) => (
+            <th scope="col" style={alignOf(i) && `text-align:${alignOf(i)}`}>
+              <TinaMarkdown content={cellContent(cell)} />
+            </th>
+          ))}
+        </tr>
+      </thead>
+    )
+  }
+  <tbody>
+    {
+      body.map((row) => (
+        <tr>
+          {(row?.children ?? []).map((cell, i) => (
+            <td style={alignOf(i) && `text-align:${alignOf(i)}`}>
+              <TinaMarkdown content={cellContent(cell)} />
+            </td>
+          ))}
+        </tr>
+      ))
+    }
+  </tbody>
+</table>

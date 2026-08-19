@@ -1,0 +1,28 @@
+{
+  // Read by Cloudflare when this project is deployed, and ignored everywhere else.
+
+  // Has to match the Worker this repository already deploys to. It is not a free
+  // choice: `wrangler deploy` reads the name from here, and a different one
+  // publishes a second Worker beside the live site rather than updating it.
+  "name": "ahmad-assi-portfolio",
+
+  "compatibility_date": "2026-06-01",
+
+  // The one flag that matters. Tina's live preview route
+  // (src/pages/tina-island/[name].ts) keeps per-request state in
+  // AsyncLocalStorage, which is `node:async_hooks`, and workerd does not expose
+  // it without this. The failure without it is quiet in the worst way: the site
+  // deploys, every page works, and only the editor's live preview 500s.
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Empty, and required to be here.
+  //
+  // The film upload route reads its R2 credentials from the Worker's own
+  // variables, and locally those come from a .dev.vars file that is never
+  // committed. Wrangler only merges .dev.vars when the config declares a vars
+  // block at all, so without these two braces `npm run dev` reports film uploads
+  // as switched off no matter what is in the file. The names are deliberately
+  // not listed: they are secrets, and they belong in .dev.vars locally and in
+  // the Worker's secrets in production. See docs/EDITING.md.
+  "vars": {}
+}

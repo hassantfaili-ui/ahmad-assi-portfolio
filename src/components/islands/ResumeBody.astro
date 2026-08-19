@@ -1,0 +1,191 @@
+---
+import { tinaField } from '@tinacms/astro/tina-field';
+import SkillIcon from '../SkillIcon.astro';
+import type { ResumeDoc } from '../../lib/data';
+import { url } from '../../lib/url';
+
+/**
+ * The resume page, as the editor sees it and as a visitor sees it.
+ *
+ * One component for both, which is the point: what Ahmad clicks in the admin is
+ * this markup, rendered on the server with his unsaved values, dropped back into
+ * the page he is looking at. There is no second preview template that can drift.
+ *
+ * The "at a glance" block below is deliberately not editable. It is a written
+ * summary of the record rather than part of it, it has no fields behind it, and
+ * inventing four to hold prose that is really one paragraph would put a worse
+ * page in front of a reader than the fixed one does.
+ */
+interface Props {
+  data: ResumeDoc;
+}
+
+const { data: r } = Astro.props;
+
+const education = (r.education ?? []).flatMap((e) => (e ? [e] : []));
+const experience = (r.experience ?? []).flatMap((e) => (e ? [e] : []));
+const volunteering = (r.volunteering ?? []).flatMap((v) => (v ? [v] : []));
+const skillGroups = (r.skillGroups ?? []).flatMap((g) => (g ? [g] : []));
+const languages = (r.languages ?? []).flatMap((l) => (l ? [l] : []));
+---
+
+<section class="hero load">
+  <p class="eyebrow" style="--i:0">
+    <span data-tina-field={tinaField(r, 'credential')}>{r.credential}</span> &nbsp;/&nbsp; <em data-tina-field={tinaField(r, 'yearsExperience')}>{r.yearsExperience}</em>
+  </p>
+  <h1 class="page-title" style="--i:1">Resume</h1>
+  <p class="sub" style="--i:2">
+    <span data-tina-field={tinaField(r, 'location')}>{r.location}</span> &nbsp;/&nbsp; <span data-tina-field={tinaField(r, 'phone')}>{r.phone}</span> &nbsp;/&nbsp;
+    <a class="inline" href={`mailto:${r.email}`} data-tina-field={tinaField(r, 'email')}>{r.email}</a>
+  </p>
+</section>
+
+<!-- A reader scans before they read. Categories with a few lines each, and the
+     full document one click away, rather than three paragraphs of prose. -->
+<section class="band">
+  <div class="atglance">
+    <div class="atglance-item reveal">
+      <p class="group-label">Qualification</p>
+      <ul>
+        <li>B.A.S. (Honours), Urbanism major, Carleton University, 2025</li>
+        <li>Dean's Honour List, Faculty of Engineering and Design</li>
+        <li>International Baccalaureate, 2021</li>
+      </ul>
+    </div>
+
+    <div class="atglance-item reveal">
+      <p class="group-label">Practice</p>
+      <ul>
+        <li>Independent residential design since 2023, one house under construction</li>
+        <li>Built interiors and landscape delivered, not only drawn</li>
+        <li>Project support on Government of Canada work, 2025</li>
+      </ul>
+    </div>
+
+    <div class="atglance-item reveal">
+      <p class="group-label">On site</p>
+      <ul>
+        <li>Five years of residential construction labour across Ottawa</li>
+        <li>Site preparation, landscaping, finishing and installations</li>
+        <li>Detailing informed by having built the thing</li>
+      </ul>
+    </div>
+
+    <div class="atglance-item reveal">
+      <p class="group-label">Beyond the studio</p>
+      <ul>
+        <li>Four languages: English, French and Arabic fluent, Spanish intermediate</li>
+        <li>Scouts leader and youth programme admin, ABCCO</li>
+        <li>Four years running a kitchen, ending as senior chef</li>
+      </ul>
+    </div>
+  </div>
+
+  {
+    r.cvFile && (
+      <p class="centre" style="margin-top:clamp(2.5rem,6vw,4rem)">
+        <a class="btn" href={url(r.cvFile)} download data-tina-field={tinaField(r, 'cvFile')}>
+          Full resume, PDF <span class="i" aria-hidden="true">&darr;</span>
+        </a>
+      </p>
+    )
+  }
+</section>
+
+<section class="band">
+  <h2 class="section-title">Education</h2>
+  <ul class="list">
+    {
+      education.map((e) => (
+        <li class="reveal" data-tina-field={tinaField(e, 'credential')}>
+          <p class="when">{e.year || 'Completed'}</p>
+          <div>
+            <h3 class="r">{e.credential}</h3>
+            <p class="f">{e.institution}</p>
+            {e.note && <p style="margin:0.6rem 0 0;color:var(--ink-2)">{e.note}</p>}
+          </div>
+        </li>
+      ))
+    }
+  </ul>
+</section>
+
+<section class="band">
+  <h2 class="section-title">Experience</h2>
+  <ul class="list">
+    {
+      experience.map((x) => (
+        <li class="reveal" data-tina-field={tinaField(x, 'role')}>
+          <p class="when">{x.period}</p>
+          <div>
+            <h3 class="r">{x.role}</h3>
+            <p class="f">
+              {x.firm} &nbsp;/&nbsp; {x.location}
+            </p>
+            <ul>
+              {(x.contributions ?? []).map((c) => c && <li>{c}</li>)}
+            </ul>
+          </div>
+        </li>
+      ))
+    }
+  </ul>
+</section>
+
+{
+  volunteering.length > 0 && (
+    <section class="band">
+      <h2 class="section-title">Community</h2>
+      <ul class="list">
+        {volunteering.map((v) => (
+          <li class="reveal" data-tina-field={tinaField(v, 'title')}>
+            <p class="when">{v.year || 'Ongoing'}</p>
+            <div>
+              <h3 class="r">{v.title}</h3>
+              <p class="f">{v.detail}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+<section class="band">
+  <h2 class="section-title">Skills</h2>
+  {
+    skillGroups.map((g) => (
+      <div class="reveal" style="margin-bottom:2.75rem" data-tina-field={tinaField(g, 'items')}>
+        <p class="group-label">{g.label}</p>
+        {/* Software is a set of tools, so it is drawn rather than listed. The
+            rest are things he does, which only words describe. */}
+        {(g.label ?? '').toLowerCase() === 'software' ? (
+          <ul class="software">
+            {(g.items ?? []).map(
+              (i) =>
+                i && (
+                  <li>
+                    <SkillIcon name={i} />
+                    <span>{i}</span>
+                  </li>
+                ),
+            )}
+          </ul>
+        ) : (
+          <div class="tags">
+            {(g.items ?? []).map((i) => i && <span class="tag">{i}</span>)}
+          </div>
+        )}
+      </div>
+    ))
+  }
+  <div class="reveal" data-tina-field={tinaField(r, 'languages')}>
+    <p class="group-label">Languages</p>
+    <div class="tags">
+      {languages.map((l) => <span class="tag">{l}</span>)}
+    </div>
+  </div>
+  <p class="group-label" style="margin-top:3rem" data-tina-field={tinaField(r, 'references')}>
+    References {(r.references ?? '').toLowerCase()}
+  </p>
+</section>
