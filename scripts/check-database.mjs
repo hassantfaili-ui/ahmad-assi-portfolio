@@ -34,6 +34,26 @@ const db = new PrismaClient({
   }),
 });
 
+const safeUrl = url.replace(/:[^:@/]+@/, ':***@');
+
+/* Connecting and querying are separate failures with separate fixes, and
+   collapsing them into one message is actively misleading. Pointing this at a
+   fresh Neon database reported "cannot reach the database" when it was
+   perfectly reachable and simply had no tables in it yet, which sends you off
+   checking the network instead of running one command. */
+try {
+  await db.$queryRaw`select 1`;
+} catch (error) {
+  console.error(
+    `\nCannot reach the database at ${safeUrl}\n\n` +
+      'Every page on this site is rendered from Postgres, so the build cannot\n' +
+      'continue without it. Start the database, or correct DATABASE_URL.\n',
+  );
+  console.error(error instanceof Error ? error.message : error);
+  await db.$disconnect();
+  process.exit(1);
+}
+
 try {
   const projects = await db.project.count();
   const media = await db.media.count();
@@ -47,12 +67,21 @@ try {
     );
   }
 } catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+
+  /* The tables not existing is the ordinary state of a database somebody has
+     just created, so it gets its own answer rather than the generic one. */
+  const noSchema = /does not exist|relation .* does not exist|P2021|table/i.test(message);
+
   console.error(
-    `\nCannot reach the database at ${url.replace(/:[^:@/]+@/, ':***@')}\n\n` +
-      'Every page on this site is rendered from Postgres, so the build cannot\n' +
-      'continue without it. Start the database, or correct DATABASE_URL.\n',
+    noSchema
+      ? `\nThe database at ${safeUrl} is reachable but has no tables in it yet.\n\n` +
+          'Create them, then import the content:\n\n' +
+          '  npx prisma db push\n' +
+          '  npm run migrate:content\n'
+      : `\nThe database at ${safeUrl} answered, but the check failed.\n`,
   );
-  console.error(error instanceof Error ? error.message : error);
+  console.error(message);
   process.exit(1);
 } finally {
   await db.$disconnect();
