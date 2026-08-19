@@ -56,6 +56,23 @@ export function mediaUrl(key: string): string {
   return `${MEDIA_ORIGIN}/${clean}`;
 }
 
+/**
+ * A poster frame, resized.
+ *
+ * Posters go on a video element's poster attribute, which takes a plain URL and
+ * so never passes through next/image. That left the two of them as the only
+ * untransformed images on the site: the hero poster alone was 451KB, more than
+ * every optimised image on the home page put together, and it sits on the
+ * critical path because it is what shows before the film starts.
+ */
+export function posterUrl(key: string, width = 1920): string {
+  if (!key) return '';
+  const clean = key.replace(/^\/+/, '');
+  if (LOCAL_MEDIA) return `/api/media-dev/${clean}`;
+  if (!ORIGIN_CAN_TRANSFORM) return `${MEDIA_ORIGIN}/${clean}`;
+  return `${MEDIA_ORIGIN}/cdn-cgi/image/width=${width},format=auto,quality=82/${clean}`;
+}
+
 export interface ImageLoaderArgs {
   src: string;
   width: number;

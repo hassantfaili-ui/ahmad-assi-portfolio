@@ -7,7 +7,7 @@ import type { CSSProperties } from 'react';
 import Film from '@/components/site/Film';
 import Reveal from '@/components/site/Reveal';
 import { renderMarkdown } from '@/lib/markdown';
-import { mediaUrl } from '@/lib/media-url';
+import { mediaUrl, posterUrl } from '@/lib/media-url';
 import {
   getAdjacentProjects,
   getProfile,
@@ -153,7 +153,7 @@ export default async function WorkPage({ params }: WorkPageProps) {
               url: mediaUrl(source.media.key),
             }))}
             youtubeId={project.film.youtubeId}
-            poster={project.film.poster ? mediaUrl(project.film.poster.key) : ''}
+            poster={project.film.poster ? posterUrl(project.film.poster.key) : ''}
             caption={project.film.caption}
           />
         </section>

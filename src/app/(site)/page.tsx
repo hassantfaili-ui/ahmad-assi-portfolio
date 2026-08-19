@@ -4,7 +4,7 @@ import Link from 'next/link';
 import HeroFilm from '@/components/site/HeroFilm';
 import ProjectGrid from '@/components/site/ProjectGrid';
 import Reveal from '@/components/site/Reveal';
-import { mediaUrl } from '@/lib/media-url';
+import { mediaUrl, posterUrl } from '@/lib/media-url';
 import { getHeroFilm, getProfile, getPublishedProjects } from '@/lib/queries';
 
 /* Short enough to read over moving footage. The full version is on the resume. */
@@ -79,7 +79,7 @@ export default async function Home() {
           large: largest ? mediaUrl(largest) : null,
           small: smallest ? mediaUrl(smallest) : null,
         }}
-        poster={hero?.poster ? mediaUrl(hero.poster.key) : null}
+        poster={hero?.poster ? posterUrl(hero.poster.key) : null}
       />
 
       <section aria-labelledby="works">
