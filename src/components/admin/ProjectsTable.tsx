@@ -1,7 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
+
+import { GuardedLink } from '@/components/admin/GuardedLink';
 import { useRouter } from 'next/navigation';
 import { useCallback, useRef, useState, useTransition, type FormEvent } from 'react';
 import { Clapperboard, ImageOff, Plus, Trash2, TriangleAlert } from 'lucide-react';
@@ -366,12 +367,16 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
 
                 <div className={cn('min-w-0', !row.published && 'opacity-60')}>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Link
+                    {/* Guarded, because the typed new project title above is
+                        registered unsaved work and a row link is a client side
+                        navigation that beforeunload cannot see. This lost the
+                        title every time, with no timing needed at all. */}
+                    <GuardedLink
                       href={`/admin/projects/${row.id}`}
                       className="truncate font-medium text-neutral-900 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900"
                     >
                       {row.title}
-                    </Link>
+                    </GuardedLink>
                     {row.published ? null : <Badge variant="warning">Not published</Badge>}
                   </div>
 

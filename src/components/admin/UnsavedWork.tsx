@@ -6,6 +6,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useInsertionEffect,
   useMemo,
   useRef,
   useState,
@@ -36,9 +37,30 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
  */
 
 interface UnsavedContextValue {
+  /**
+   * Record the fact, without rendering anything.
+   *
+   * Split from `register` because React forbids scheduling a state update from
+   * an insertion effect, which is the phase early enough for a click handler to
+   * be able to trust the answer. So the ref is written there and the state
+   * follows in an ordinary effect, one for deciding and one for showing.
+   */
+  registerLive: (key: string, dirty: boolean) => void;
   register: (key: string, dirty: boolean) => void;
   release: (key: string) => void;
+  /** For rendering: a badge, a disabled state. One commit behind at worst. */
   anyUnsaved: boolean;
+  /**
+   * For deciding, at the moment of a click or a back press.
+   *
+   * Reads a ref rather than state, and the difference is not academic.
+   * Registration goes through React state, so `anyUnsaved` is a render behind
+   * the keystroke that caused it. A link that chose between guarded and
+   * unguarded at render time was therefore unguarded for the window after the
+   * first character was typed, which on a busy screen is exactly when a
+   * keystroke and a habitual click are most likely to arrive together.
+   */
+  isAnyUnsaved: () => boolean;
   /** Ask before leaving. Resolves true when it is safe to go. */
   confirmLeave: () => Promise<boolean>;
 }
@@ -61,8 +83,20 @@ export function useUnsavedWork(): UnsavedContextValue {
  * save clear the flag without the component going away.
  */
 export function useRegisterUnsaved(key: string, dirty: boolean): void {
-  const { register, release } = useUnsavedWork();
+  const { registerLive, register, release } = useUnsavedWork();
 
+  /* The fact, recorded during the commit, before layout effects and long
+     before paint. A passive effect would leave this two commits behind the
+     keystroke that dirtied the screen, and a click landing in that window would
+     be treated as leaving a clean one. Nothing here touches the DOM, reads
+     layout, or schedules a render, which is what makes it safe at that phase:
+     it writes one ref that the click handler reads. */
+  useInsertionEffect(() => {
+    registerLive(key, dirty);
+  }, [registerLive, key, dirty]);
+
+  /* And the render, in an ordinary effect. This is what drives the badge and
+     anything else that is shown, where being a commit behind costs nothing. */
   useEffect(() => {
     register(key, dirty);
   }, [register, key, dirty]);
@@ -74,7 +108,17 @@ export function useRegisterUnsaved(key: string, dirty: boolean): void {
 
 export function UnsavedWorkProvider({ children }: { children: ReactNode }) {
   const [dirtyKeys, setDirtyKeys] = useState<string[]>([]);
+
+  /* The same set, held where a click handler can read it without waiting for a
+     render. State drives what is shown; this drives what is decided. */
+  const live = useRef(new Set<string>());
   const anyUnsaved = dirtyKeys.length > 0;
+  const isAnyUnsaved = useCallback(() => live.current.size > 0, []);
+
+  const registerLive = useCallback((key: string, dirty: boolean) => {
+    if (dirty) live.current.add(key);
+    else live.current.delete(key);
+  }, []);
 
   const register = useCallback((key: string, dirty: boolean) => {
     setDirtyKeys((current) => {
@@ -85,6 +129,7 @@ export function UnsavedWorkProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const release = useCallback((key: string) => {
+    live.current.delete(key);
     setDirtyKeys((current) => (current.includes(key) ? current.filter((k) => k !== key) : current));
   }, []);
 
@@ -110,12 +155,19 @@ export function UnsavedWorkProvider({ children }: { children: ReactNode }) {
   const [asking, setAsking] = useState(false);
 
   const confirmLeave = useCallback((): Promise<boolean> => {
-    if (!anyUnsaved) return Promise.resolve(true);
+    if (!isAnyUnsaved()) return Promise.resolve(true);
+
+    /* A second ask before the first is answered, for example a link clicked
+       while the back button guard is already waiting. The earlier caller is
+       told it was superseded rather than left hanging forever, which would have
+       silently dropped the navigation it was waiting to perform. */
+    pending.current?.(false);
+
     setAsking(true);
     return new Promise<boolean>((resolve) => {
       pending.current = resolve;
     });
-  }, [anyUnsaved]);
+  }, [isAnyUnsaved]);
 
   const answer = useCallback((leave: boolean) => {
     setAsking(false);
@@ -126,8 +178,8 @@ export function UnsavedWorkProvider({ children }: { children: ReactNode }) {
   useBackButtonGuard(anyUnsaved, confirmLeave);
 
   const value = useMemo(
-    () => ({ register, release, anyUnsaved, confirmLeave }),
-    [register, release, anyUnsaved, confirmLeave],
+    () => ({ registerLive, register, release, anyUnsaved, isAnyUnsaved, confirmLeave }),
+    [registerLive, register, release, anyUnsaved, isAnyUnsaved, confirmLeave],
   );
 
   return (
@@ -174,7 +226,22 @@ function useBackButtonGuard(anyUnsaved: boolean, confirmLeave: () => Promise<boo
 
   useEffect(() => {
     if (!anyUnsaved) {
-      armed.current = false;
+      /* Disarm the sentinel in place rather than popping it.
+         Calling history.back() here raced every navigation that follows a save:
+         creating a project clears the title, which clears the last unsaved
+         claim, which ran this, and the back landed before the router.push that
+         was meant to open the new project. It was intermittent, so it passed on
+         a fast desktop run and failed on a slower device, which is the worst
+         way for a bug like this to behave.
+         replaceState clears the marker without moving anywhere. The extra
+         history entry stays, which is harmless: it now points at the same page
+         and a back press goes where it should. */
+      if (armed.current) {
+        armed.current = false;
+        if (window.history.state?.unsavedSentinel) {
+          window.history.replaceState({ ...window.history.state, unsavedSentinel: false }, '');
+        }
+      }
       return;
     }
 

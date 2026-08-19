@@ -42,7 +42,19 @@ export interface GroupEditorProps {
    */
   errors: FieldErrors;
   slug: string;
-  onChange: (groups: EditorGroup[]) => void;
+  /**
+   * Takes a function of the current groups, never a finished array.
+   *
+   * It used to take the array, and every mutator here built one from the
+   * `groups` prop it had closed over. That defeats the whole point of the
+   * functional appends the parent uses to protect uploads: a caption typed
+   * while a batch was still uploading would dispatch an overwrite built from
+   * the pre upload list, React would rebase, and the images the append had just
+   * added would be gone from state with the progress rows still reading Done.
+   *
+   * With a function there is no stale array to build from.
+   */
+  onChange: (change: (current: EditorGroup[]) => EditorGroup[]) => void;
   onAddGroup: () => void;
   onAddImages: (groupId: string, items: UploadedItem[]) => void;
 }
@@ -100,34 +112,36 @@ export function GroupEditor({
 
   const updateGroup = useCallback(
     (groupId: string, changes: Partial<EditorGroup>) => {
-      onChange(groups.map((group) => (group.id === groupId ? { ...group, ...changes } : group)));
+      onChange((current) =>
+        current.map((group) => (group.id === groupId ? { ...group, ...changes } : group)),
+      );
     },
-    [groups, onChange],
+    [onChange],
   );
 
   const removeGroup = useCallback(
     (groupId: string) => {
-      onChange(groups.filter((group) => group.id !== groupId));
+      onChange((current) => current.filter((group) => group.id !== groupId));
       setPendingRemoval(null);
     },
-    [groups, onChange],
+    [onChange],
   );
 
   const reorderGroups = useCallback(
     (idsInOrder: string[]) => {
-      onChange(
+      onChange((current) =>
         idsInOrder
-          .map((id) => groups.find((group) => group.id === id))
+          .map((id) => current.find((group) => group.id === id))
           .filter((group): group is EditorGroup => Boolean(group)),
       );
     },
-    [groups, onChange],
+    [onChange],
   );
 
   const updateImage = useCallback(
     (groupId: string, imageId: string, changes: Partial<EditorImage>) => {
-      onChange(
-        groups.map((group) =>
+      onChange((current) =>
+        current.map((group) =>
           group.id === groupId
             ? {
                 ...group,
@@ -139,33 +153,36 @@ export function GroupEditor({
         ),
       );
     },
-    [groups, onChange],
+    [onChange],
   );
 
   const removeImage = useCallback(
     (groupId: string, imageId: string) => {
-      onChange(
-        groups.map((group) =>
+      onChange((current) =>
+        current.map((group) =>
           group.id === groupId
             ? { ...group, images: group.images.filter((image) => image.id !== imageId) }
             : group,
         ),
       );
     },
-    [groups, onChange],
+    [onChange],
   );
 
   const moveImage = useCallback(
     (fromGroupId: string, imageId: string, toGroupId: string) => {
       if (fromGroupId === toGroupId) return;
 
-      const moving = groups
-        .find((group) => group.id === fromGroupId)
-        ?.images.find((image) => image.id === imageId);
-      if (!moving) return;
+      onChange((current) => {
+        // Found inside the update, not outside it. Reading the image from the
+        // prop first would move a copy of whatever it looked like before an
+        // upload or another edit landed.
+        const moving = current
+          .find((group) => group.id === fromGroupId)
+          ?.images.find((image) => image.id === imageId);
+        if (!moving) return current;
 
-      onChange(
-        groups.map((group) => {
+        return current.map((group) => {
           if (group.id === fromGroupId) {
             return { ...group, images: group.images.filter((image) => image.id !== imageId) };
           }
@@ -173,16 +190,16 @@ export function GroupEditor({
             return { ...group, images: [...group.images, moving] };
           }
           return group;
-        }),
-      );
+        });
+      });
     },
-    [groups, onChange],
+    [onChange],
   );
 
   const reorderImages = useCallback(
     (groupId: string, idsInOrder: string[]) => {
-      onChange(
-        groups.map((group) =>
+      onChange((current) =>
+        current.map((group) =>
           group.id === groupId
             ? {
                 ...group,
@@ -194,7 +211,7 @@ export function GroupEditor({
         ),
       );
     },
-    [groups, onChange],
+    [onChange],
   );
 
   const askToRemoveGroup = useCallback(

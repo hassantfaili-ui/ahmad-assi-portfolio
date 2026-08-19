@@ -79,6 +79,15 @@ async function createProject(page: Page, title: string) {
   await page.waitForURL(/\/admin\/projects\//, { timeout: 15_000 });
 }
 
+/**
+ * Delete a project through the interface, exactly as Ahmad would.
+ *
+ * Only used by the round trip test, which ends on a clean screen. The unsaved
+ * work tests deliberately end with a dirty form, and a dirty form blocks
+ * navigation, which is the entire point of it: cleanup through the interface
+ * cannot work there and should not be made to. e2e/global-teardown.ts removes
+ * what they leave behind.
+ */
 async function deleteProject(page: Page, title: string) {
   await page.goto('/admin');
 
@@ -86,8 +95,16 @@ async function deleteProject(page: Page, title: string) {
   if ((await remove.count()) === 0) return;
 
   await remove.first().click();
-  await page.getByRole('button', { name: `Delete ${title}`, exact: true }).last().click();
-  await expect(page.getByRole('link', { name: title })).toHaveCount(0);
+
+  /* Scoped to the dialog. The row's delete button and the dialog's confirm
+     button carry the same accessible name by design, since naming the project
+     is the whole point of the confirm, so picking by position raced the dialog
+     opening and left scratch projects behind on a run that otherwise passed. */
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible({ timeout: 5000 });
+  await dialog.getByRole('button', { name: `Delete ${title}` }).click();
+
+  await expect(page.getByRole('link', { name: title })).toHaveCount(0, { timeout: 10_000 });
 }
 
 test.describe('the projects list', () => {
@@ -154,7 +171,9 @@ test.describe('unsaved work', () => {
       expect(page.url()).toContain('/admin/projects/');
       await expect(summary).toHaveValue('A sentence that has not been saved.');
     } finally {
-      await deleteProject(page, title);
+      // No cleanup here on purpose. This test ends with the form dirty, and a
+      // dirty form refuses to navigate, which is the behaviour under test. The
+      // global teardown removes the scratch project.
     }
   });
 
@@ -170,7 +189,7 @@ test.describe('unsaved work', () => {
 
       await page.waitForURL(/\/admin\/media/);
     } finally {
-      await deleteProject(page, title);
+      // Left to the global teardown, as above.
     }
   });
 
@@ -200,8 +219,13 @@ test.describe('a project round trip', () => {
       // label. The switch is the state; the badge is a description of it.
       const row = page.locator('li', { has: page.getByRole('link', { name: title }) }).first();
       await expect(row.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
-    } finally {
+
+      // Deleted through the interface, which is the point of this test: it is
+      // the only place the delete flow is exercised end to end.
       await deleteProject(page, title);
+    } finally {
+      // deleteProject above is the assertion, not cleanup. If it throws, the
+      // teardown still removes the row.
     }
   });
 });

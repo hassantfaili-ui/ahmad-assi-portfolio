@@ -1,0 +1,78 @@
+name: Checks
+
+# Every gate, on every push and pull request.
+#
+# There was no CI at all, so "the gates pass" meant one laptop at one moment,
+# with no record and nothing stopping the next commit from regressing any of
+# them. Two of the gates had also quietly become no-ops on any machine but that
+# one, which is exactly the failure a pipeline exists to catch.
+
+on:
+  push:
+    branches: [main, nextjs-rebuild]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        # Every page is rendered from Postgres, so the build genuinely needs one.
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ahmadassi
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ahmadassi
+      # The editing area is behind Cloudflare Access in production. There is no
+      # Access in front of a CI runner, so the bypass is set here on purpose:
+      # without it the whole admin browser suite would skip and the run would go
+      # green having opened none of the five editing screens.
+      ACCESS_DEV_BYPASS: 'true'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Prepare the database
+        run: |
+          npx prisma generate
+          npx prisma db push
+          npm run migrate:content -- --skip-upload
+
+      - run: npx tsc --noEmit
+      - run: npx eslint . --max-warnings=0
+      - run: npx vitest run
+
+      - run: npm run build
+
+      - name: Install the browser
+        run: npx playwright install --with-deps chromium
+
+      - run: npx playwright test
+
+      - name: Deploy build
+        # The only build that produces something shippable. next build can
+        # succeed while this fails.
+        run: npm run cf:build
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

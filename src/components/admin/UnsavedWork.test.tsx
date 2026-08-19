@@ -208,3 +208,68 @@ describe('GuardedLink', () => {
     expect(screen.queryByText('Leave without saving?')).not.toBeInTheDocument();
   });
 });
+
+/**
+ * The two timing properties the registry has to hold.
+ *
+ * Both were found by review rather than by use, which is the point: neither
+ * shows up in normal clicking, and both lose work when they do.
+ */
+describe('the registry decides on live state, not on a render behind', () => {
+  /* Reads isAnyUnsaved during render and shows the answer, so the assertion is
+     on what a click handler would have seen at that same moment. */
+  function LiveReadout() {
+    const { isAnyUnsaved } = useUnsavedWork();
+    return <p data-testid="live">{isAnyUnsaved() ? 'unsaved' : 'saved'}</p>;
+  }
+
+  it('reports unsaved through isAnyUnsaved as soon as an editor registers', () => {
+    render(
+      <UnsavedWorkProvider>
+        <Editor dirty />
+        <LiveReadout />
+      </UnsavedWorkProvider>,
+    );
+
+    // The click handler reads this rather than the rendered boolean, because
+    // registration goes through state and is a render behind the keystroke.
+    expect(screen.getByTestId('live')).toHaveTextContent('unsaved');
+  });
+
+  it('a second ask resolves the first rather than leaving it hanging', async () => {
+    // A link clicked while the back guard is already waiting used to orphan the
+    // first promise forever, so the navigation it was waiting on never
+    // happened at all.
+    const answers: string[] = [];
+
+    function TwoAsks() {
+      const { confirmLeave } = useUnsavedWork();
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            void confirmLeave().then((leave) => answers.push(`first:${leave}`));
+            void confirmLeave().then((leave) => answers.push(`second:${leave}`));
+          }}
+        >
+          Ask twice
+        </button>
+      );
+    }
+
+    render(
+      <UnsavedWorkProvider>
+        <Editor dirty />
+        <TwoAsks />
+      </UnsavedWorkProvider>,
+    );
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ask twice' }));
+
+    // The superseded one is answered immediately, and answered with "stay".
+    await vi.waitFor(() => expect(answers).toContain('first:false'));
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Leave and lose the changes' }));
+    await vi.waitFor(() => expect(answers).toContain('second:true'));
+  });
+});

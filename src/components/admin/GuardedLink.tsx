@@ -34,28 +34,27 @@ export function GuardedLink({
   className?: string;
 } & Omit<React.ComponentProps<typeof Link>, 'href' | 'className' | 'children'>) {
   const router = useRouter();
-  const { anyUnsaved, confirmLeave } = useUnsavedWork();
+  const { isAnyUnsaved, confirmLeave } = useUnsavedWork();
 
-  /* Nothing outstanding, so this is an ordinary link and keeps every ordinary
-     behaviour: prefetching, middle click, the status bar showing where it goes. */
-  if (!anyUnsaved) {
-    return (
-      <Link href={href} className={className} {...rest}>
-        {children}
-      </Link>
-    );
-  }
-
+  /* Always a real Link, so prefetching, middle click and the status bar all
+     keep working, and the decision is made in the handler instead.
+     Branching at render time was subtly wrong: the registry updates through
+     React state, so a link could still be rendering its unguarded self for a
+     moment after the keystroke that dirtied the screen. Deciding at click time
+     from the live value has no such window. */
   return (
-    <a
+    <Link
       href={href}
       className={className}
+      {...rest}
       onClick={(event) => {
-        /* A modified click opens a new tab or window and leaves this one where
+        /* A modified or middle click opens a new tab and leaves this one where
            it is, so there is nothing to lose and nothing to ask about. */
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
           return;
         }
+        if (!isAnyUnsaved()) return;
+
         event.preventDefault();
         void confirmLeave().then((leave) => {
           if (leave) router.push(href);
@@ -63,6 +62,6 @@ export function GuardedLink({
       }}
     >
       {children}
-    </a>
+    </Link>
   );
 }

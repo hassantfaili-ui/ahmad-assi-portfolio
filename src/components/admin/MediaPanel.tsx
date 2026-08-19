@@ -187,10 +187,10 @@ export function MediaPanel({
     [markGroupsDirty],
   );
 
-  const changeGroups = useCallback(
-    (next: EditorGroup[]) => applyToGroups(() => next),
-    [applyToGroups],
-  );
+  /* Passed straight through. GroupEditor hands over a function of the current
+     groups rather than a finished array, so an edit made while an upload is
+     still running cannot rebase over the images that upload appended. */
+  const changeGroups = applyToGroups;
 
   const startGroupFromUpload = useCallback(
     (items: UploadedItem[]) => {
@@ -208,11 +208,31 @@ export function MediaPanel({
     (groupId: string, items: UploadedItem[]) => {
       const images = imagesFromUpload(items);
       if (images.length === 0) return;
-      applyToGroups((current) =>
-        current.map((group) =>
+
+      applyToGroups((current) => {
+        /* The group can be gone. The id was captured when the files were
+           dropped and a batch of renders runs for minutes, so Ahmad may well
+           have removed that group in the meantime. This used to map over the
+           list, match nothing, and discard the whole batch in silence while
+           every progress row still read Done.
+           They go into a new group instead, which is recoverable, rather than
+           nowhere, which is not. */
+        if (!current.some((group) => group.id === groupId)) {
+          return [
+            ...current,
+            {
+              id: `group-${Date.now()}`,
+              layout: 'pair' as const,
+              caption: '',
+              images,
+            },
+          ];
+        }
+
+        return current.map((group) =>
           group.id === groupId ? { ...group, images: [...group.images, ...images] } : group,
-        ),
-      );
+        );
+      });
     },
     [applyToGroups],
   );
