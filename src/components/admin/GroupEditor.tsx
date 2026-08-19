@@ -20,10 +20,10 @@ import type { EditorGroup, EditorImage } from '@/components/admin/MediaPanel';
  * The arrangement: groups of images, in order, each image with its own
  * description.
  *
- * This holds no data of its own. Every change is handed back up to MediaPanel,
- * which owns the arrangement and is the only place that saves it. Two lists
- * that both think they are the truth is how an image ends up in two places at
- * once, or in neither.
+ * This holds no data of its own. Every change is handed back up through
+ * MediaPanel to ProjectForm, which owns the arrangement and is the only thing
+ * on this screen that saves anything. Two lists that both think they are the
+ * truth is how an image ends up in two places at once, or in neither.
  */
 
 /** How each layout reads to somebody who has never seen the word triptych. */
@@ -36,9 +36,15 @@ const LAYOUT_LABELS: Record<(typeof LAYOUTS)[number], string> = {
 export interface GroupEditorProps {
   groups: EditorGroup[];
   /**
-   * Keyed images.<position>.alt, counting across every group in order, which is
-   * the same shape saveImageGroups sends back. Both halves of the message
-   * therefore land on the same picture whether the check ran here or there.
+   * The whole map from the save. A picture's message is at
+   * groups.<groupIndex>.images.<imageIndex>.alt, which is where
+   * saveWholeProject puts it.
+   *
+   * It used to be images.<position>.alt, counted flat across every group in
+   * order, which needed a running offset here to find a picture again. The key
+   * now has the same shape as the payload, so there is no arithmetic between
+   * the message and the box it belongs in, and two pictures in different groups
+   * cannot collide on images.0.alt and show one message for both.
    */
   errors: FieldErrors;
   slug: string;
@@ -57,17 +63,6 @@ export interface GroupEditorProps {
   onChange: (change: (current: EditorGroup[]) => EditorGroup[]) => void;
   onAddGroup: () => void;
   onAddImages: (groupId: string, items: UploadedItem[]) => void;
-}
-
-/** Where each group starts in the flat count the error keys are numbered by. */
-function flatOffsets(groups: EditorGroup[]): number[] {
-  const offsets: number[] = [];
-  let running = 0;
-  for (const group of groups) {
-    offsets.push(running);
-    running += group.images.length;
-  }
-  return offsets;
 }
 
 function groupLabel(group: EditorGroup): string {
@@ -225,8 +220,6 @@ export function GroupEditor({
     [removeGroup],
   );
 
-  const offsets = flatOffsets(groups);
-
   if (groups.length === 0) {
     return (
       <p className="rounded-lg border border-dashed border-neutral-300 px-4 py-6 text-center text-sm text-neutral-500">
@@ -311,7 +304,7 @@ export function GroupEditor({
                           label="What this picture shows"
                           htmlFor={`image-${image.id}-alt`}
                           required
-                          error={errors[`images.${offsets[groupIndex] + imageIndex}.alt`]}
+                          error={errors[`groups.${groupIndex}.images.${imageIndex}.alt`]}
                         >
                           <Input
                             value={image.alt}
@@ -415,7 +408,7 @@ export function GroupEditor({
               The {pendingRemoval?.images.length ?? 0} pictures in it come off this project. The
               files themselves stay in your library, so you can put them back.
             </p>
-            <p className="mt-2">Nothing changes on the site until you save the arrangement.</p>
+            <p className="mt-2">Nothing changes on the site until you save.</p>
           </>
         }
         confirmLabel="Remove the group"

@@ -125,7 +125,7 @@ describe('every server action checks the identity', () => {
     // A rename or a refactor that stopped matching would otherwise make every
     // case below pass by finding nothing to check.
     expect(actions.length).toBeGreaterThanOrEqual(10);
-    expect(actions).toContain('saveProject');
+    expect(actions).toContain('saveWholeProject');
     expect(actions).toContain('deleteProject');
   });
 

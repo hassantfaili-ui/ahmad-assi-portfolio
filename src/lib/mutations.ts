@@ -94,61 +94,6 @@ export async function createProject(title: string): Promise<SaveResult<{ id: str
   return { ok: true, data: project };
 }
 
-export async function saveProject(
-  id: string,
-  input: ProjectInput,
-): Promise<SaveResult<{ slug: string }>> {
-  if (!(await authorised())) return DENIED;
-
-  const errors = validateProject(input);
-  if (hasErrors(errors)) return { ok: false, errors };
-
-  const existing = await db.project.findUnique({ where: { id }, select: { slug: true } });
-  if (!existing) return { ok: false, message: 'That project no longer exists.' };
-
-  /* The slug is only recomputed when Ahmad actually changed it. A published URL
-     is a promise, and quietly renaming one because a title was corrected would
-     break every link to it. */
-  let slug = existing.slug;
-  if (input.slug.trim() && input.slug.trim() !== existing.slug) {
-    const taken = (
-      await db.project.findMany({ where: { NOT: { id } }, select: { slug: true } })
-    ).map((p) => p.slug);
-    slug = uniqueSlug(toSlug(input.slug), taken);
-  }
-
-  await db.project.update({
-    where: { id },
-    data: {
-      slug,
-      title: input.title.trim(),
-      sheet: input.sheet.trim(),
-      category: input.category as never,
-      year: input.year,
-      location: input.location.trim(),
-      buildingType: input.buildingType.trim(),
-      area: input.area?.trim() || null,
-      status: input.status as never,
-      role: input.role.trim(),
-      contribution: input.contribution.trim(),
-      summary: input.summary.trim(),
-      body: (input.body ?? '').trim(),
-      credit: input.credit.trim(),
-      tier: input.tier as never,
-      order: input.order,
-      leadImageId: input.leadImageId ?? null,
-      leadImageAlt: input.leadImageAlt ?? '',
-    },
-  });
-
-  revalidateProject(existing.slug);
-  if (slug !== existing.slug) revalidatePath(PATHS.project(slug));
-
-  const leadCount = await db.project.count({ where: { tier: 'lead', published: true } });
-
-  return { ok: true, data: { slug }, warning: leadOverflowWarning(leadCount) ?? undefined };
-}
-
 export async function deleteProject(id: string): Promise<SaveResult> {
   if (!(await authorised())) return DENIED;
 
@@ -254,86 +199,10 @@ export interface GroupInput {
   images: { mediaId: string; alt: string }[];
 }
 
-/**
- * Replace a project's whole image arrangement.
- *
- * Wholesale rather than a diff. The arrangement is what the form holds, groups
- * and images are cheap rows, and a diff over two nested ordered lists is a
- * quantity of code whose only purpose would be to avoid writing a hundred rows
- * that Postgres writes in a millisecond. The files themselves are untouched.
- */
-export async function saveImageGroups(
-  projectId: string,
-  groups: GroupInput[],
-): Promise<SaveResult> {
-  if (!(await authorised())) return DENIED;
-
-  const errors = validateImages(groups.flatMap((group) => group.images));
-  if (hasErrors(errors)) return { ok: false, errors };
-
-  const project = await db.project.findUnique({ where: { id: projectId }, select: { slug: true } });
-  if (!project) return { ok: false, message: 'That project no longer exists.' };
-
-  await db.$transaction([
-    db.imageGroup.deleteMany({ where: { projectId } }),
-    ...groups.map((group, groupIndex) =>
-      db.imageGroup.create({
-        data: {
-          projectId,
-          layout: group.layout,
-          caption: group.caption?.trim() || null,
-          order: groupIndex,
-          images: {
-            create: group.images.map((image, imageIndex) => ({
-              mediaId: image.mediaId,
-              alt: image.alt.trim(),
-              order: imageIndex,
-            })),
-          },
-        },
-      }),
-    ),
-  ]);
-
-  revalidateProject(project.slug);
-  return { ok: true };
-}
-
 export interface DrawingInput {
   mediaId: string;
   alt: string;
   drawingType: string;
-}
-
-export async function saveDrawings(
-  projectId: string,
-  drawings: DrawingInput[],
-): Promise<SaveResult> {
-  if (!(await authorised())) return DENIED;
-
-  const errors = validateImages(drawings);
-  if (hasErrors(errors)) return { ok: false, errors };
-
-  const project = await db.project.findUnique({ where: { id: projectId }, select: { slug: true } });
-  if (!project) return { ok: false, message: 'That project no longer exists.' };
-
-  await db.$transaction([
-    db.drawing.deleteMany({ where: { projectId } }),
-    ...drawings.map((drawing, index) =>
-      db.drawing.create({
-        data: {
-          projectId,
-          mediaId: drawing.mediaId,
-          alt: drawing.alt.trim(),
-          drawingType: drawing.drawingType.trim() || 'Drawing',
-          order: index,
-        },
-      }),
-    ),
-  ]);
-
-  revalidateProject(project.slug);
-  return { ok: true };
 }
 
 export interface FilmInput {
@@ -400,6 +269,8 @@ export async function deleteFilm(projectId: string | null): Promise<SaveResult> 
 
 export interface WholeProjectInput {
   fields: ProjectInput;
+  /** Whether the project is on the site, saved with everything else. */
+  published: boolean;
   groups: GroupInput[];
   drawings: DrawingInput[];
   /** null means the project has no film, and any existing one is removed. */
@@ -497,6 +368,7 @@ export async function saveWholeProject(
         credit: input.fields.credit.trim(),
         tier: input.fields.tier as never,
         order: input.fields.order,
+        published: input.published,
         leadImageId: input.fields.leadImageId ?? null,
         leadImageAlt: input.fields.leadImageAlt ?? '',
       },

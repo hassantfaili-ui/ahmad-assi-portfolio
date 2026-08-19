@@ -1,32 +1,34 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useState, useTransition } from 'react';
+import { useCallback } from 'react';
 import { Check } from 'lucide-react';
 
 import { Dropzone } from '@/components/admin/Dropzone';
 import { GroupEditor } from '@/components/admin/GroupEditor';
 import { SortableList } from '@/components/admin/SortableList';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/toast';
-import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
-import { useSaveFlag } from '@/hooks/use-save-flag';
 import type { UploadedImage, UploadedItem } from '@/hooks/use-uploads';
-import { runAction } from '@/lib/action-result';
-import { saveDrawings, saveImageGroups } from '@/lib/mutations';
-import { hasErrors, validateImages, type FieldErrors } from '@/lib/validation';
+import type { FieldErrors } from '@/lib/validation';
 
 /**
  * Everything on the right hand side: the pictures, how they are grouped, the
  * cover, and the drawings.
  *
- * The arrangement is held here rather than inside GroupEditor, because the
- * cover is chosen from the same pictures and is saved by a different action.
- * One owner, two savers, no chance of the two lists disagreeing about what the
- * project contains.
+ * This holds none of it. The arrangement, the drawings and the cover all live
+ * in ProjectForm, which is the only thing on this screen that saves, and there
+ * is only one of those. This used to own the groups and the drawings and save
+ * each of them with its own button, and the result was that a caption typed
+ * here was not covered by the obvious button at the top of the screen. The work
+ * was never sent and nothing said so.
+ *
+ * Uploads still start here, because this is where the drop targets are, and
+ * they append through the same onChange as every other edit. That contract
+ * takes a function of the current value and never a finished array, so a batch
+ * that lands after minutes of compression cannot rebase over the descriptions
+ * typed while it ran.
  */
 
 export interface EditorMedia {
@@ -118,90 +120,54 @@ function countImages(groups: EditorGroup[]): number {
 }
 
 export interface MediaPanelProps {
-  projectId: string;
+  /** Where uploaded files are filed in the bucket. */
   slug: string;
-  initialGroups: EditorGroup[];
-  initialDrawings: EditorDrawing[];
+  groups: EditorGroup[];
+  drawings: EditorDrawing[];
+  /**
+   * The whole map from the save, keyed the way the server keys it. This panel
+   * reads groups.<group>.images.<image>.alt, drawings.<index>.alt and
+   * leadImageAlt out of it.
+   *
+   * Handed down whole rather than sliced and renumbered on the way in, because
+   * a renumbering step is one more place for a message to land on the wrong
+   * picture or on nothing at all.
+   */
+  errors: FieldErrors;
+  /** Takes a function of the current groups, never a finished array. */
+  onGroupsChange: (change: (current: EditorGroup[]) => EditorGroup[]) => void;
+  /** Takes a function of the current drawings, never a finished array. */
+  onDrawingsChange: (change: (current: EditorDrawing[]) => EditorDrawing[]) => void;
   leadImageId: string | null;
   leadImageAlt: string;
   leadImage: EditorMedia | null;
-  leadImageAltError?: string;
   onLeadImageChange: (mediaId: string | null) => void;
   onLeadImageAltChange: (alt: string) => void;
 }
 
 export function MediaPanel({
-  projectId,
   slug,
-  initialGroups,
-  initialDrawings,
+  groups,
+  drawings,
+  errors,
+  onGroupsChange,
+  onDrawingsChange,
   leadImageId,
   leadImageAlt,
   leadImage,
-  leadImageAltError,
   onLeadImageChange,
   onLeadImageAltChange,
 }: MediaPanelProps) {
-  const { push } = useToast();
-
-  const [groups, setGroups] = useState<EditorGroup[]>(initialGroups);
-  const [groupErrors, setGroupErrors] = useState<FieldErrors>({});
-  const {
-    dirty: groupsUnsaved,
-    markDirty: markGroupsDirty,
-    snapshot: snapshotGroups,
-    settle: settleGroups,
-  } = useSaveFlag();
-  const [savingGroups, startGroupSave] = useTransition();
-
-  const [drawings, setDrawings] = useState<EditorDrawing[]>(initialDrawings);
-  const [drawingErrors, setDrawingErrors] = useState<FieldErrors>({});
-  const {
-    dirty: drawingsUnsaved,
-    markDirty: markDrawingsDirty,
-    snapshot: snapshotDrawings,
-    settle: settleDrawings,
-  } = useSaveFlag();
-  const [savingDrawings, startDrawingSave] = useTransition();
-
-  /* Two halves, two flags, and each is cleared only by the button that saves
-     it, and only for what that button actually sent. One warning covers both,
-     because the browser asks the same question whichever of them is
-     outstanding. */
-  useRegisterUnsaved('project:media', groupsUnsaved || drawingsUnsaved);
-
-  /**
-   * Every change to the arrangement goes through here, as a function of what is
-   * already there rather than of what was there.
-   *
-   * That matters because an upload finishes minutes after it was started and
-   * Ahmad keeps working while it runs. Adding to the copy of the list that
-   * existed when the files were dropped throws away every description typed
-   * since, which looks exactly like the interface losing his work.
-   */
-  const applyToGroups = useCallback(
-    (change: (current: EditorGroup[]) => EditorGroup[]) => {
-      setGroups(change);
-      markGroupsDirty();
-    },
-    [markGroupsDirty],
-  );
-
-  /* Passed straight through. GroupEditor hands over a function of the current
-     groups rather than a finished array, so an edit made while an upload is
-     still running cannot rebase over the images that upload appended. */
-  const changeGroups = applyToGroups;
-
   const startGroupFromUpload = useCallback(
     (items: UploadedItem[]) => {
       const images = imagesFromUpload(items);
       if (images.length === 0) return;
-      applyToGroups((current) => [
+      onGroupsChange((current) => [
         ...current,
         { id: localId(), layout: 'pair', caption: '', images },
       ]);
     },
-    [applyToGroups],
+    [onGroupsChange],
   );
 
   const addToGroup = useCallback(
@@ -209,7 +175,7 @@ export function MediaPanel({
       const images = imagesFromUpload(items);
       if (images.length === 0) return;
 
-      applyToGroups((current) => {
+      onGroupsChange((current) => {
         /* The group can be gone. The id was captured when the files were
            dropped and a batch of renders runs for minutes, so Ahmad may well
            have removed that group in the meantime. This used to map over the
@@ -234,68 +200,15 @@ export function MediaPanel({
         );
       });
     },
-    [applyToGroups],
+    [onGroupsChange],
   );
 
   const addEmptyGroup = useCallback(() => {
-    applyToGroups((current) => [
+    onGroupsChange((current) => [
       ...current,
       { id: localId(), layout: 'pair', caption: '', images: [] },
     ]);
-  }, [applyToGroups]);
-
-  const saveArrangement = useCallback(() => {
-    /* The payload and the snapshot are taken together, in that order, so the
-       number stands for exactly this list and nothing later. That is the whole
-       point of the pair here: an upload started ten minutes ago can land while
-       this request is out, and its handler appends a group the payload above
-       does not contain. The count moves past the snapshot, settle declines to
-       clear, and the new group keeps its badge and its guard. */
-    const payload = groups.map((group) => ({
-      layout: group.layout,
-      caption: group.caption,
-      images: group.images.map((image) => ({ mediaId: image.mediaId, alt: image.alt })),
-    }));
-    const at = snapshotGroups();
-
-    /* Checked here as well as on the server, and blocking rather than warning.
-       A picture with no description is not something to save and fix later: on
-       the page it is a blank a screen reader reads as nothing at all. */
-    const found = validateImages(payload.flatMap((group) => group.images));
-    if (hasErrors(found)) {
-      setGroupErrors(found);
-      push('Every picture needs a line saying what it shows. The ones missing it are marked.', 'error');
-      return;
-    }
-
-    startGroupSave(async () => {
-      const result = await runAction(() => saveImageGroups(projectId, payload));
-
-      if (!result.ok) {
-        setGroupErrors(result.errors ?? {});
-        push(result.message ?? 'Nothing was saved. The pictures marked below need a description.', 'error');
-        return;
-      }
-
-      setGroupErrors({});
-      settleGroups(at);
-      push('Pictures saved.');
-    });
-  }, [groups, projectId, push, snapshotGroups, settleGroups]);
-
-  /** As above: a drawing that lands late joins the list as it stands then. */
-  const applyToDrawings = useCallback(
-    (change: (current: EditorDrawing[]) => EditorDrawing[]) => {
-      setDrawings(change);
-      markDrawingsDirty();
-    },
-    [markDrawingsDirty],
-  );
-
-  const changeDrawings = useCallback(
-    (next: EditorDrawing[]) => applyToDrawings(() => next),
-    [applyToDrawings],
-  );
+  }, [onGroupsChange]);
 
   const addDrawings = useCallback(
     (items: UploadedItem[]) => {
@@ -307,70 +220,37 @@ export function MediaPanel({
         media: image.media,
       }));
       if (added.length === 0) return;
-      applyToDrawings((current) => [...current, ...added]);
+      onDrawingsChange((current) => [...current, ...added]);
     },
-    [applyToDrawings],
+    [onDrawingsChange],
   );
 
   const updateDrawing = useCallback(
     (id: string, changes: Partial<EditorDrawing>) => {
-      changeDrawings(
-        drawings.map((drawing) => (drawing.id === id ? { ...drawing, ...changes } : drawing)),
+      onDrawingsChange((current) =>
+        current.map((drawing) => (drawing.id === id ? { ...drawing, ...changes } : drawing)),
       );
     },
-    [drawings, changeDrawings],
+    [onDrawingsChange],
   );
 
   const removeDrawing = useCallback(
     (id: string) => {
-      changeDrawings(drawings.filter((drawing) => drawing.id !== id));
+      onDrawingsChange((current) => current.filter((drawing) => drawing.id !== id));
     },
-    [drawings, changeDrawings],
+    [onDrawingsChange],
   );
 
   const reorderDrawings = useCallback(
     (idsInOrder: string[]) => {
-      changeDrawings(
+      onDrawingsChange((current) =>
         idsInOrder
-          .map((id) => drawings.find((drawing) => drawing.id === id))
+          .map((id) => current.find((drawing) => drawing.id === id))
           .filter((drawing): drawing is EditorDrawing => Boolean(drawing)),
       );
     },
-    [drawings, changeDrawings],
+    [onDrawingsChange],
   );
-
-  const saveDrawingList = useCallback(() => {
-    /* As above: the sheets this save is carrying, and the count at the moment
-       it was built. A drawing dropped while the request is out is not in the
-       payload, so it is not what settle clears. */
-    const payload = drawings.map((drawing) => ({
-      mediaId: drawing.mediaId,
-      alt: drawing.alt,
-      drawingType: drawing.drawingType,
-    }));
-    const at = snapshotDrawings();
-
-    const found = validateImages(payload);
-    if (hasErrors(found)) {
-      setDrawingErrors(found);
-      push('Every drawing needs a line saying what it shows. The ones missing it are marked.', 'error');
-      return;
-    }
-
-    startDrawingSave(async () => {
-      const result = await runAction(() => saveDrawings(projectId, payload));
-
-      if (!result.ok) {
-        setDrawingErrors(result.errors ?? {});
-        push(result.message ?? 'Nothing was saved. The drawings marked below need a description.', 'error');
-        return;
-      }
-
-      setDrawingErrors({});
-      settleDrawings(at);
-      push('Drawings saved.');
-    });
-  }, [drawings, projectId, push, snapshotDrawings, settleDrawings]);
 
   const choices = coverChoices(groups, leadImage);
   const imageCount = countImages(groups);
@@ -385,16 +265,6 @@ export function MediaPanel({
           <span className="text-sm text-neutral-500">
             {imageCount} in {groups.length} {groups.length === 1 ? 'group' : 'groups'}
           </span>
-          {groupsUnsaved && <Badge variant="warning">Not saved yet</Badge>}
-          <Button
-            type="button"
-            className="ml-auto"
-            size="sm"
-            onClick={saveArrangement}
-            disabled={savingGroups}
-          >
-            {savingGroups ? 'Saving' : 'Save the pictures'}
-          </Button>
         </div>
 
         <Dropzone
@@ -408,9 +278,9 @@ export function MediaPanel({
 
         <GroupEditor
           groups={groups}
-          errors={groupErrors}
+          errors={errors}
           slug={slug}
-          onChange={changeGroups}
+          onChange={onGroupsChange}
           onAddGroup={addEmptyGroup}
           onAddImages={addToGroup}
         />
@@ -477,8 +347,8 @@ export function MediaPanel({
                 label="What the cover shows"
                 htmlFor="lead-image-alt"
                 required
-                error={leadImageAltError}
-                hint="Saved with the rest of the details, using the button at the top."
+                error={errors.leadImageAlt}
+                hint="Saved with everything else, using the button at the top."
               >
                 <Input
                   value={leadImageAlt}
@@ -499,16 +369,6 @@ export function MediaPanel({
           <span className="text-sm text-neutral-500">
             {drawings.length} {drawings.length === 1 ? 'sheet' : 'sheets'}
           </span>
-          {drawingsUnsaved && <Badge variant="warning">Not saved yet</Badge>}
-          <Button
-            type="button"
-            className="ml-auto"
-            size="sm"
-            onClick={saveDrawingList}
-            disabled={savingDrawings}
-          >
-            {savingDrawings ? 'Saving' : 'Save the drawings'}
-          </Button>
         </div>
 
         <Dropzone
@@ -546,7 +406,7 @@ export function MediaPanel({
                     label="What this drawing shows"
                     htmlFor={`drawing-${drawing.id}-alt`}
                     required
-                    error={drawingErrors[`images.${index}.alt`]}
+                    error={errors[`drawings.${index}.alt`]}
                   >
                     <Input
                       value={drawing.alt}
