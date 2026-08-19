@@ -286,7 +286,10 @@ export function GroupEditor({
                         className="h-16 w-24 shrink-0 rounded bg-neutral-200 object-cover"
                       />
 
-                      <div className="min-w-0 flex-1" onDragStart={cancelDrag}>
+                      {/* A minimum rather than nothing, so the controls beside
+                          it wrap onto their own line instead of squeezing the
+                          description down to a box two words wide. */}
+                      <div className="min-w-[12rem] flex-1" onDragStart={cancelDrag}>
                         <Field
                           label="What this picture shows"
                           htmlFor={`image-${image.id}-alt`}

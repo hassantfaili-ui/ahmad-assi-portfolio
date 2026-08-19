@@ -494,7 +494,7 @@ export function MediaPanel({
                   className="h-16 w-24 shrink-0 rounded bg-neutral-200 object-contain"
                 />
 
-                <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2">
+                <div className="grid min-w-[12rem] flex-1 gap-2 sm:grid-cols-2">
                   <Field
                     label="What this drawing shows"
                     htmlFor={`drawing-${drawing.id}-alt`}

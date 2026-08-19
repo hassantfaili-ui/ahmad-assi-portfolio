@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useState, useTransition } from 'react';
+import { useCallback, useState, useSyncExternalStore, useTransition } from 'react';
 
 import { Dropzone } from '@/components/admin/Dropzone';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +39,26 @@ export interface EditorFilm {
 }
 
 const EMPTY_FILM: EditorFilm = { posterMedia: null, youtubeId: '', caption: '', sources: [] };
+
+/**
+ * Whether this is running in the browser yet.
+ *
+ * The video dropzone works out whether this browser can compress video by
+ * looking for an encoder on window, which the server does not have. So the
+ * server renders the notice saying video cannot be uploaded here and the
+ * browser renders no notice, the two disagree, and React throws the server's
+ * version of the page away. Ahmad saw that as "this browser cannot compress
+ * video" flashing up on a browser that can, every time the screen loaded.
+ *
+ * Holding the dropzone back until hydration has finished makes both renders
+ * identical. useSyncExternalStore is the sanctioned way to say that a value
+ * legitimately differs between the server and the browser; setting state from
+ * an effect would reach the same place by causing the mismatch first and
+ * patching it afterwards.
+ */
+const NEVER_CHANGES = () => () => {};
+const IN_THE_BROWSER = () => true;
+const ON_THE_SERVER = () => false;
 
 function toEditorMedia(media: { id: string; key: string; bytes: number; width: number | null; height: number | null }): EditorMedia {
   return {
@@ -139,7 +159,9 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
     });
   }, [projectId, push]);
 
+  const hydrated = useSyncExternalStore(NEVER_CHANGES, IN_THE_BROWSER, ON_THE_SERVER);
   const hasVideo = film.sources.length > 0;
+  const dropLabel = hasVideo ? 'Drop a new video here to replace this one' : 'Drop a walkthrough here';
 
   return (
     <section className="grid gap-4" aria-labelledby="film-heading">
@@ -168,14 +190,21 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
         </div>
       </div>
 
-      <Dropzone
-        destination="film"
-        accept="video"
-        filmProfile="walkthrough"
-        onUploaded={takeUpload}
-        label={hasVideo ? 'Drop a new video here to replace this one' : 'Drop a walkthrough here'}
-        hint="It is made smaller in this browser before anything is sent, so a long film takes a few minutes and then uploads quickly."
-      />
+      {hydrated ? (
+        <Dropzone
+          destination="film"
+          accept="video"
+          filmProfile="walkthrough"
+          onUploaded={takeUpload}
+          label={dropLabel}
+          hint="It is made smaller in this browser before anything is sent, so a long film takes a few minutes and then uploads quickly."
+        />
+      ) : (
+        <div className="rounded-xl border-2 border-dashed border-neutral-300 bg-white p-8 text-center">
+          <p className="text-sm font-medium text-neutral-800">{dropLabel}</p>
+          <p className="mt-1 text-xs text-neutral-500">One moment, getting this ready.</p>
+        </div>
+      )}
 
       {errors.film && (
         <p role="alert" className="text-sm font-medium text-red-600">
