@@ -4,6 +4,8 @@ import { cache } from 'react';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
+import { requestScopedClient } from '@/lib/request-scoped-client';
+
 /**
  * The Prisma client, one per request.
  *
@@ -72,9 +74,20 @@ export function getDb(): PrismaClient {
  * Exported as a proxy so every call site reads `db.project.findMany()` while
  * still resolving a fresh client per request underneath. The alternative was
  * awaiting a getter at fifty two call sites for no gain in clarity.
+ *
+ * The binding is not decoration. An earlier version forwarded with
+ * `Reflect.get(getClient(), property, receiver)`, where `receiver` is this
+ * proxy, and that quietly broke `db.$transaction(async (tx) => ...)`. An
+ * interactive transaction runs its body with `this` set to the client, and
+ * Prisma builds the transaction-bound `tx` from that `this`. With the proxy as
+ * `this`, every lookup inside the transaction was routed back out to the base
+ * client, so `tx.project.update` ran outside the transaction that `BEGIN` had
+ * opened, and the pinned transaction id came back as P2028, "Transaction not
+ * found". Reads never noticed, because a read does not depend on `this` being
+ * the transaction client. A whole-project save is one interactive transaction,
+ * so every save failed and nothing else did.
+ *
+ * Resolving each property against the real client and binding functions to it
+ * means `this` is the client wherever it matters, and a plain read still reads.
  */
-export const db = new Proxy({} as PrismaClient, {
-  get(_target, property, receiver) {
-    return Reflect.get(getClient(), property, receiver);
-  },
-});
+export const db = requestScopedClient<PrismaClient>(getClient);

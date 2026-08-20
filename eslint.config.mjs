@@ -18,6 +18,10 @@ const config = [
     ignores: [
       '.next/**',
       '.open-next/**',
+      /* wrangler dev writes bundled worker copies here. They are build output,
+         not source, and linting them buries real findings under thousands of
+         warnings about minified code. */
+      '.wrangler/**',
       'node_modules/**',
       'src/generated/**',
       'src/content/**',
