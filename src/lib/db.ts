@@ -28,14 +28,14 @@ import { requestScopedClient } from '@/lib/request-scoped-client';
  * everywhere else.
  */
 
-function resolveConnectionString(): string {
+function resolveConnectionString(): { url: string; onWorkers: boolean } {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { getCloudflareContext } = require('@opennextjs/cloudflare') as {
       getCloudflareContext: () => { env: Record<string, { connectionString?: string }> };
     };
     const hyperdrive = getCloudflareContext().env.HYPERDRIVE;
-    if (hyperdrive?.connectionString) return hyperdrive.connectionString;
+    if (hyperdrive?.connectionString) return { url: hyperdrive.connectionString, onWorkers: true };
   } catch {
     /* Not on Workers, or called outside a request. Both fall through. */
   }
@@ -44,26 +44,46 @@ function resolveConnectionString(): string {
   if (!url) {
     throw new Error('No Hyperdrive binding and no DATABASE_URL. The database is unreachable.');
   }
-  return url;
+  return { url, onWorkers: false };
 }
 
-/** One client for the life of one request. */
+/**
+ * The one client a Node process gets, held for its whole life.
+ *
+ * Per-request construction is a Workers requirement, not a virtue. Run under
+ * `next build`, the same pattern built a client, and a pool, for every page a
+ * build worker rendered and disconnected none of them, so nine workers
+ * prerendering thirty pages held pools faster than Postgres could shed them
+ * and CI died at TooManyConnections. One pool per process, capped low enough
+ * that nine workers together stay under a default Postgres max_connections,
+ * is the correct shape everywhere that is not a Worker.
+ */
+let nodeClient: PrismaClient | undefined;
+
+/** One client for the life of one request on Workers, of the process elsewhere. */
 const getClient = cache((): PrismaClient => {
-  const connectionString = resolveConnectionString();
+  const { url: connectionString, onWorkers } = resolveConnectionString();
+
+  if (!onWorkers && nodeClient) return nodeClient;
 
   const adapter = new PrismaPg({
     connectionString,
-    /* Never hand the same connection to a second request. */
-    maxUses: 1,
+    /* On Workers, never hand the same connection to a second request. In a
+       Node process, four connections per pool keeps nine parallel build
+       workers under a hundred in total. */
+    ...(onWorkers ? { maxUses: 1 } : { max: 4 }),
     ...(connectionString.includes('sslmode=require') || process.env.DATABASE_SSL === 'true'
       ? { ssl: { rejectUnauthorized: false } }
       : {}),
   });
 
-  return new PrismaClient({
+  const client = new PrismaClient({
     adapter,
     log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
   });
+
+  if (!onWorkers) nodeClient = client;
+  return client;
 });
 
 export function getDb(): PrismaClient {
