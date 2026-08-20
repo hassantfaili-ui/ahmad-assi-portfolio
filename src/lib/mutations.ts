@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 
 import { getIdentity } from '@/lib/access';
 import { PATHS, profilePaths, projectPaths } from '@/lib/cache-tags';
+import { CONTACT_DEFAULTS } from '@/lib/contact-defaults';
+import { resolveCover } from '@/lib/cover-image';
 import { db } from '@/lib/db';
 import { toSlug, uniqueSlug } from '@/lib/slug';
 import {
@@ -50,6 +52,21 @@ const DENIED: SaveResult<never> = { ok: false, message: 'You are not signed in.'
 /** Everything a project edit could have changed. */
 function revalidateProject(slug: string) {
   for (const path of projectPaths(slug)) revalidatePath(path);
+  revalidateProjectNeighbours();
+}
+
+/**
+ * The pages a project write changes without touching their rows.
+ *
+ * Every project page carries prev and next links to its neighbours by running
+ * order, so deleting, unpublishing or reordering one project changes pages
+ * that were never themselves written. And the sitemap lists every published
+ * slug. Left out, a cached neighbour keeps pointing at a project that is
+ * gone, and the sitemap keeps advertising it, until the next redeploy.
+ */
+function revalidateProjectNeighbours() {
+  revalidatePath('/work/[slug]', 'page');
+  revalidatePath('/sitemap.xml');
 }
 
 // -------------------------------------------------------------- projects ---
@@ -92,61 +109,6 @@ export async function createProject(title: string): Promise<SaveResult<{ id: str
   revalidatePath(PATHS.home);
   revalidatePath(PATHS.architecture);
   return { ok: true, data: project };
-}
-
-export async function saveProject(
-  id: string,
-  input: ProjectInput,
-): Promise<SaveResult<{ slug: string }>> {
-  if (!(await authorised())) return DENIED;
-
-  const errors = validateProject(input);
-  if (hasErrors(errors)) return { ok: false, errors };
-
-  const existing = await db.project.findUnique({ where: { id }, select: { slug: true } });
-  if (!existing) return { ok: false, message: 'That project no longer exists.' };
-
-  /* The slug is only recomputed when Ahmad actually changed it. A published URL
-     is a promise, and quietly renaming one because a title was corrected would
-     break every link to it. */
-  let slug = existing.slug;
-  if (input.slug.trim() && input.slug.trim() !== existing.slug) {
-    const taken = (
-      await db.project.findMany({ where: { NOT: { id } }, select: { slug: true } })
-    ).map((p) => p.slug);
-    slug = uniqueSlug(toSlug(input.slug), taken);
-  }
-
-  await db.project.update({
-    where: { id },
-    data: {
-      slug,
-      title: input.title.trim(),
-      sheet: input.sheet.trim(),
-      category: input.category as never,
-      year: input.year,
-      location: input.location.trim(),
-      buildingType: input.buildingType.trim(),
-      area: input.area?.trim() || null,
-      status: input.status as never,
-      role: input.role.trim(),
-      contribution: input.contribution.trim(),
-      summary: input.summary.trim(),
-      body: (input.body ?? '').trim(),
-      credit: input.credit.trim(),
-      tier: input.tier as never,
-      order: input.order,
-      leadImageId: input.leadImageId ?? null,
-      leadImageAlt: input.leadImageAlt ?? '',
-    },
-  });
-
-  revalidateProject(existing.slug);
-  if (slug !== existing.slug) revalidatePath(PATHS.project(slug));
-
-  const leadCount = await db.project.count({ where: { tier: 'lead', published: true } });
-
-  return { ok: true, data: { slug }, warning: leadOverflowWarning(leadCount) ?? undefined };
 }
 
 export async function deleteProject(id: string): Promise<SaveResult> {
@@ -215,6 +177,8 @@ export async function reorderProjects(idsInOrder: string[]): Promise<SaveResult>
   revalidatePath(PATHS.home);
   revalidatePath(PATHS.architecture);
   revalidatePath(PATHS.print);
+  /* A new running order moves prev and next on every project page. */
+  revalidateProjectNeighbours();
 
   const missing = idsInOrder.length - usable.length;
   return {
@@ -254,86 +218,10 @@ export interface GroupInput {
   images: { mediaId: string; alt: string }[];
 }
 
-/**
- * Replace a project's whole image arrangement.
- *
- * Wholesale rather than a diff. The arrangement is what the form holds, groups
- * and images are cheap rows, and a diff over two nested ordered lists is a
- * quantity of code whose only purpose would be to avoid writing a hundred rows
- * that Postgres writes in a millisecond. The files themselves are untouched.
- */
-export async function saveImageGroups(
-  projectId: string,
-  groups: GroupInput[],
-): Promise<SaveResult> {
-  if (!(await authorised())) return DENIED;
-
-  const errors = validateImages(groups.flatMap((group) => group.images));
-  if (hasErrors(errors)) return { ok: false, errors };
-
-  const project = await db.project.findUnique({ where: { id: projectId }, select: { slug: true } });
-  if (!project) return { ok: false, message: 'That project no longer exists.' };
-
-  await db.$transaction([
-    db.imageGroup.deleteMany({ where: { projectId } }),
-    ...groups.map((group, groupIndex) =>
-      db.imageGroup.create({
-        data: {
-          projectId,
-          layout: group.layout,
-          caption: group.caption?.trim() || null,
-          order: groupIndex,
-          images: {
-            create: group.images.map((image, imageIndex) => ({
-              mediaId: image.mediaId,
-              alt: image.alt.trim(),
-              order: imageIndex,
-            })),
-          },
-        },
-      }),
-    ),
-  ]);
-
-  revalidateProject(project.slug);
-  return { ok: true };
-}
-
 export interface DrawingInput {
   mediaId: string;
   alt: string;
   drawingType: string;
-}
-
-export async function saveDrawings(
-  projectId: string,
-  drawings: DrawingInput[],
-): Promise<SaveResult> {
-  if (!(await authorised())) return DENIED;
-
-  const errors = validateImages(drawings);
-  if (hasErrors(errors)) return { ok: false, errors };
-
-  const project = await db.project.findUnique({ where: { id: projectId }, select: { slug: true } });
-  if (!project) return { ok: false, message: 'That project no longer exists.' };
-
-  await db.$transaction([
-    db.drawing.deleteMany({ where: { projectId } }),
-    ...drawings.map((drawing, index) =>
-      db.drawing.create({
-        data: {
-          projectId,
-          mediaId: drawing.mediaId,
-          alt: drawing.alt.trim(),
-          drawingType: drawing.drawingType.trim() || 'Drawing',
-          order: index,
-        },
-      }),
-    ),
-  ]);
-
-  revalidateProject(project.slug);
-  return { ok: true };
 }
 
 export interface FilmInput {
@@ -397,6 +285,172 @@ export async function deleteFilm(projectId: string | null): Promise<SaveResult> 
   return { ok: true };
 }
 
+
+export interface WholeProjectInput {
+  fields: ProjectInput;
+  /** Whether the project is on the site, saved with everything else. */
+  published: boolean;
+  groups: GroupInput[];
+  drawings: DrawingInput[];
+  /** null means the project has no film, and any existing one is removed. */
+  film: FilmInput | null;
+}
+
+/**
+ * Save everything about a project at once.
+ *
+ * This replaces four separate saves, and the reason is a real failure rather
+ * than tidiness. The editing screen had a button for the fields, one for the
+ * pictures, one for the drawings and one for the film. Editing a group caption
+ * and then pressing the obvious button at the top of the screen, the one
+ * labelled Save the details, sent everything except the caption. The work was
+ * never lost, exactly: it was never sent. That is worse, because nothing failed
+ * and nothing warned.
+ *
+ * It is also atomic, which the four separate saves were not. Under those, a
+ * refused picture save after an accepted field save left the project half
+ * written, with the screen showing one state and the site another. Here, either
+ * all of it lands or none of it does.
+ *
+ * Errors come back keyed the way the form expects: bare names for the fields,
+ * and prefixed for the rest, so a missing description on the third picture of
+ * the second group lands on that picture and not in a toast.
+ */
+export async function saveWholeProject(
+  id: string,
+  input: WholeProjectInput,
+): Promise<SaveResult<{ slug: string }>> {
+  if (!(await authorised())) return DENIED;
+
+  const errors: FieldErrors = { ...validateProject(input.fields) };
+
+  /* Namespaced, so two pictures in different groups cannot collide on
+     images.0.alt and quietly show one error for both. */
+  input.groups.forEach((group, groupIndex) => {
+    const found = validateImages(group.images);
+    for (const [key, message] of Object.entries(found)) {
+      errors[`groups.${groupIndex}.${key}`] = message;
+    }
+  });
+
+  input.drawings.forEach((drawing, index) => {
+    if (!drawing.alt.trim()) {
+      errors[`drawings.${index}.alt`] =
+        'Alt text is required. It is what a screen reader announces.';
+    }
+  });
+
+  if (input.film) {
+    Object.assign(
+      errors,
+      validateFilm({
+        sourceMediaIds: input.film.sources.map((source) => source.mediaId),
+        youtubeId: input.film.youtubeId,
+        posterMediaId: input.film.posterMediaId,
+      }),
+    );
+  }
+
+  if (hasErrors(errors)) return { ok: false, errors };
+
+  const existing = await db.project.findUnique({ where: { id }, select: { slug: true } });
+  if (!existing) return { ok: false, message: 'That project no longer exists.' };
+
+  /* The slug is only recomputed when Ahmad actually edited it. A published URL
+     is a promise, and renaming one because a title changed would break every
+     link to it. */
+  let slug = existing.slug;
+  if (input.fields.slug.trim() && input.fields.slug.trim() !== existing.slug) {
+    const taken = (
+      await db.project.findMany({ where: { NOT: { id } }, select: { slug: true } })
+    ).map((project) => project.slug);
+    slug = uniqueSlug(toSlug(input.fields.slug), taken);
+  }
+
+  await db.$transaction(async (tx) => {
+    await tx.project.update({
+      where: { id },
+      data: {
+        slug,
+        title: input.fields.title.trim(),
+        sheet: input.fields.sheet.trim(),
+        category: input.fields.category as never,
+        year: input.fields.year,
+        location: input.fields.location.trim(),
+        buildingType: input.fields.buildingType.trim(),
+        area: input.fields.area?.trim() || null,
+        status: input.fields.status as never,
+        role: input.fields.role.trim(),
+        contribution: input.fields.contribution.trim(),
+        summary: input.fields.summary.trim(),
+        body: (input.fields.body ?? '').trim(),
+        credit: input.fields.credit.trim(),
+        tier: input.fields.tier as never,
+        order: input.fields.order,
+        published: input.published,
+        ...resolveCover(input.fields.leadImageId, input.fields.leadImageAlt, input.groups),
+      },
+    });
+
+    await tx.imageGroup.deleteMany({ where: { projectId: id } });
+    for (const [groupIndex, group] of input.groups.entries()) {
+      await tx.imageGroup.create({
+        data: {
+          projectId: id,
+          layout: group.layout,
+          caption: group.caption?.trim() || null,
+          order: groupIndex,
+          images: {
+            create: group.images.map((image, imageIndex) => ({
+              mediaId: image.mediaId,
+              alt: image.alt.trim(),
+              order: imageIndex,
+            })),
+          },
+        },
+      });
+    }
+
+    await tx.drawing.deleteMany({ where: { projectId: id } });
+    if (input.drawings.length > 0) {
+      await tx.drawing.createMany({
+        data: input.drawings.map((drawing, index) => ({
+          projectId: id,
+          mediaId: drawing.mediaId,
+          alt: drawing.alt.trim(),
+          drawingType: drawing.drawingType.trim() || 'Drawing',
+          order: index,
+        })),
+      });
+    }
+
+    await tx.film.deleteMany({ where: { projectId: id } });
+    if (input.film) {
+      await tx.film.create({
+        data: {
+          projectId: id,
+          posterMediaId: input.film.posterMediaId ?? null,
+          youtubeId: input.film.youtubeId?.trim() || null,
+          caption: input.film.caption?.trim() || null,
+          sources: {
+            create: input.film.sources.map((source) => ({
+              mediaId: source.mediaId,
+              height: source.height,
+            })),
+          },
+        },
+      });
+    }
+  });
+
+  revalidateProject(existing.slug);
+  if (slug !== existing.slug) revalidatePath(PATHS.project(slug));
+
+  const leadCount = await db.project.count({ where: { tier: 'lead', published: true } });
+
+  return { ok: true, data: { slug }, warning: leadOverflowWarning(leadCount) ?? undefined };
+}
+
 // ---------------------------------------------------------------- resume ---
 
 export interface ProfileInput {
@@ -418,6 +472,9 @@ export interface ProfileInput {
   email: string;
   phone: string;
   references: string;
+  contactStatus: string;
+  contactHeading: string;
+  contactBlurb: string;
 }
 
 export async function saveProfile(input: ProfileInput): Promise<SaveResult> {
@@ -445,6 +502,12 @@ export async function saveProfile(input: ProfileInput): Promise<SaveResult> {
     email: input.email.trim(),
     phone: input.phone.trim(),
     references: input.references.trim() || 'Available upon request',
+    /* Blank falls back to what the page used to say rather than publishing an
+       empty heading, because a contact page with no words on it is worse than
+       one Ahmad has not got round to rewriting. */
+    contactStatus: input.contactStatus.trim() || CONTACT_DEFAULTS.status,
+    contactHeading: input.contactHeading.trim() || CONTACT_DEFAULTS.heading,
+    contactBlurb: input.contactBlurb.trim() || CONTACT_DEFAULTS.blurb,
   };
 
   await db.profile.upsert({

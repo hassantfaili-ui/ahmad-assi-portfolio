@@ -55,7 +55,9 @@ jobs:
           npm run migrate:content -- --skip-upload
 
       - run: npx tsc --noEmit
-      - run: npx eslint . --max-warnings=0
+      # npm run lint, not a bare eslint invocation, so the flags cannot drift
+      # from what developers run locally.
+      - run: npm run lint
       - run: npx vitest run
 
       - run: npm run build
@@ -68,6 +70,9 @@ jobs:
       - name: Deploy build
         # The only build that produces something shippable. next build can
         # succeed while this fails.
+        env:
+          # Safe here and only here: this run just packaging-tests the bundle, nothing deploys from CI.
+          DEPLOY_FROM_LOCAL_DATABASE: 'true'
         run: npm run cf:build
 
       - uses: actions/upload-artifact@v4

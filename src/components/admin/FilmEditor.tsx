@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useRef, useState, useTransition } from 'react';
+import { useCallback, useState } from 'react';
 
 import { Dropzone } from '@/components/admin/Dropzone';
 import { Badge } from '@/components/ui/badge';
@@ -10,14 +10,10 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
-import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
-import { useSaveFlag } from '@/hooks/use-save-flag';
 import type { UploadedFilm, UploadedItem } from '@/hooks/use-uploads';
-import { runAction } from '@/lib/action-result';
 import { mediaUrl } from '@/lib/media-url';
-import { deleteFilm, saveFilm } from '@/lib/mutations';
 import { formatBytes } from '@/lib/upload-policy';
-import { hasErrors, validateFilm, type FieldErrors } from '@/lib/validation';
+import type { FieldErrors } from '@/lib/validation';
 
 import type { EditorMedia } from '@/components/admin/MediaPanel';
 
@@ -32,6 +28,12 @@ import type { EditorMedia } from '@/components/admin/MediaPanel';
  * from Google until a visitor presses play, but it is still somebody else's
  * player on the page, so it is only worth it for a film too large to be worth
  * hosting here.
+ *
+ * The film itself lives in ProjectForm, along with the fields, the pictures and
+ * the drawings, and is saved with them by the one button at the top of the
+ * screen. This section used to hold and save its own copy, which meant a
+ * caption typed here went nowhere when the obvious button was pressed. Nothing
+ * here writes to the server any more.
  */
 
 export interface EditorFilm {
@@ -68,51 +70,41 @@ function sourceIds(sources: { media: { id: string } }[]): string {
 }
 
 export interface FilmEditorProps {
-  projectId: string;
-  initialFilm: EditorFilm | null;
+  /** What is on screen. null means this project has no walkthrough. */
+  film: EditorFilm | null;
+  /**
+   * What the site is showing, which is not the same thing. A film that has been
+   * compressed and uploaded but not saved exists nowhere but this browser, and
+   * comparing the two is the only way to know that.
+   */
+  savedFilm: EditorFilm | null;
+  /** The whole map from the save. This section reads film and filmPoster. */
+  errors: FieldErrors;
+  /**
+   * Takes a function of the current film, never a finished object.
+   *
+   * A compression takes minutes and the caption box stays live throughout, so
+   * an upload that handed back an object built from the film as it was when the
+   * video was dropped would wipe out whatever was typed while it ran.
+   */
+  onChange: (change: (current: EditorFilm | null) => EditorFilm | null) => void;
 }
 
-export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
+export function FilmEditor({ film, savedFilm, errors, onChange }: FilmEditorProps) {
   const { push } = useToast();
 
-  const [film, setFilm] = useState<EditorFilm>(initialFilm ?? EMPTY_FILM);
-  const [onSite, setOnSite] = useState(initialFilm !== null);
-  const [errors, setErrors] = useState<FieldErrors>({});
+  /* Both of these are about what is on screen this second, not about what is
+     saved, which is why they are still allowed to live here. */
   const [confirming, setConfirming] = useState(false);
   const [blocked, setBlocked] = useState(false);
-  const [saving, startSave] = useTransition();
-  const [removing, startRemoval] = useTransition();
-
-  /* A counter rather than a boolean, because a save takes seconds to answer and
-     this screen stays live the whole time. The flag records where the edits
-     stood when the payload was built, and a save that comes back ok clears it
-     only if nothing has been typed or dropped since. A boolean would report a
-     caption written during the round trip as saved. */
-  const flag = useSaveFlag();
-  const { markDirty, snapshot, settle, reset } = flag;
-
-  /* Which videos the server has for this project. Compared against what is on
-     screen to tell an uploaded film apart from a saved one. */
-  const [savedSourceIds, setSavedSourceIds] = useState(() =>
-    sourceIds(initialFilm?.sources ?? []),
-  );
-
-  /* The same reading, kept where a save or a removal that left before the
-     latest upload can still read it. Those run from a closure built when the
-     button was pressed, and that closure cannot see a film that landed after. */
-  const liveSourceIds = useRef(savedSourceIds);
-
-  /* The film's own flag, not the details form's. A caption typed here and a
-     video dropped here are lost by the same reload, and neither is covered by
-     the save button at the top of the screen. */
-  useRegisterUnsaved('project:film', flag.dirty);
 
   const change = useCallback(
     (changes: Partial<EditorFilm>) => {
-      markDirty();
-      setFilm((current) => ({ ...current, ...changes }));
+      /* An edit on a project with no film starts one. A YouTube id typed into
+         an empty section is a perfectly ordinary way to add a walkthrough. */
+      onChange((current) => ({ ...(current ?? EMPTY_FILM), ...changes }));
     },
-    [markDirty],
+    [onChange],
   );
 
   const takeUpload = useCallback(
@@ -125,17 +117,21 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
         media: toEditorMedia(source.media),
       }));
 
-      liveSourceIds.current = sourceIds(sources);
       setBlocked(false);
       change({ sources, posterMedia: toEditorMedia(uploaded.poster) });
     },
     [change],
   );
 
+  const sources = film?.sources ?? [];
+
   /* A film that exists nowhere but this browser: compressed here, uploaded, and
-     never saved. Taking the old film off the project would take this with it,
-     and nothing on this screen can put it back. */
-  const unsavedReplacement = film.sources.length > 0 && sourceIds(film.sources) !== savedSourceIds;
+     never saved. Taking the old film off would take this with it, and nothing
+     on this screen can put it back together. */
+  const unsavedReplacement =
+    sources.length > 0 &&
+    savedFilm !== null &&
+    sourceIds(sources) !== sourceIds(savedFilm.sources);
 
   /* Said where the button is, rather than inside a dialog that promises the
      files stay in the library. That promise holds for the film on the project
@@ -146,56 +142,6 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
     push('Save the film you just uploaded first, or it goes with the old one.', 'error');
   }, [push]);
 
-  const save = useCallback(() => {
-    const found = validateFilm({
-      sourceMediaIds: film.sources.map((source) => source.media.id),
-      youtubeId: film.youtubeId,
-      posterMediaId: film.posterMedia?.id ?? null,
-    });
-
-    if (hasErrors(found)) {
-      setErrors(found);
-      push('The film is not ready to save yet. The reason is below.', 'error');
-      return;
-    }
-
-    /* Taken before the payload is read out of state and handed to settle when
-       the answer comes back. A caption typed or a film dropped while this save
-       is out bumps the counter past this number, and settle then leaves the
-       badge up over the work that never went. */
-    const at = snapshot();
-    const sent = film.sources.map((source) => ({
-      mediaId: source.media.id,
-      height: source.height,
-    }));
-
-    startSave(async () => {
-      const result = await runAction(() =>
-        saveFilm(projectId, {
-          posterMediaId: film.posterMedia?.id ?? null,
-          youtubeId: film.youtubeId,
-          caption: film.caption,
-          sources: sent,
-        }),
-      );
-
-      if (!result.ok) {
-        setErrors(result.errors ?? {});
-        push(result.message ?? 'Nothing was saved. The reason is below.', 'error');
-        return;
-      }
-
-      setErrors({});
-      setBlocked(false);
-      /* What the project page shows now is what this payload carried, not
-         whatever is on screen by the time it answers. */
-      setSavedSourceIds(sourceIds(film.sources));
-      setOnSite(true);
-      settle(at);
-      push('Film saved.');
-    });
-  }, [film, projectId, push, settle, snapshot]);
-
   const remove = useCallback(() => {
     /* Asked again here, not only where the button opened the dialog: a
        compression can finish while the question is on screen. */
@@ -204,40 +150,14 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
       return;
     }
 
-    /* The videos he answered the question about. */
-    const answered = sourceIds(film.sources);
+    onChange(() => null);
+    setConfirming(false);
+    setBlocked(false);
+    push('The film comes off this project when you save. The video files stay in your library.');
+  }, [onChange, push, refuseRemoval, unsavedReplacement]);
 
-    startRemoval(async () => {
-      const result = await runAction(() => deleteFilm(projectId));
-
-      if (!result.ok) {
-        push(result.message ?? 'The film could not be taken off. Try again.', 'error');
-        return;
-      }
-
-      setErrors({});
-      setOnSite(false);
-      setConfirming(false);
-      setSavedSourceIds('');
-
-      /* A film that landed while the removal was out was no part of what he
-         agreed to, and emptying the editor would throw away a compression
-         nothing here can repeat. It stays on screen, and so does the flag. */
-      if (liveSourceIds.current !== answered) {
-        push(
-          'The old film is off this project. The one you uploaded while that was happening is still here and still needs saving.',
-        );
-        return;
-      }
-
-      setFilm(EMPTY_FILM);
-      liveSourceIds.current = '';
-      reset(false);
-      push('Film taken off this project. The video files stay in your library.');
-    });
-  }, [film.sources, projectId, push, refuseRemoval, reset, unsavedReplacement]);
-
-  const hasVideo = film.sources.length > 0;
+  const onSite = savedFilm !== null;
+  const hasVideo = sources.length > 0;
   const dropLabel = hasVideo ? 'Drop a new video here to replace this one' : 'Drop a walkthrough here';
 
   return (
@@ -246,25 +166,22 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
         <h2 id="film-heading" className="text-base font-semibold">
           Walkthrough
         </h2>
-        {flag.dirty && <Badge variant="warning">Not saved yet</Badge>}
-        {onSite && !flag.dirty && <Badge variant="secondary">On the page</Badge>}
+        {/* Whether the site is showing a film right now. Whether this screen has
+            work outstanding is one question about the whole project, answered
+            once, beside the one button that settles it. */}
+        {onSite && <Badge variant="secondary">On the page</Badge>}
 
-        <div className="ml-auto flex gap-2">
-          {onSite && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => (unsavedReplacement ? refuseRemoval() : setConfirming(true))}
-              disabled={removing}
-            >
-              Take the film off
-            </Button>
-          )}
-          <Button type="button" size="sm" onClick={save} disabled={saving}>
-            {saving ? 'Saving' : 'Save the film'}
+        {onSite && film !== null && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+            onClick={() => (unsavedReplacement ? refuseRemoval() : setConfirming(true))}
+          >
+            Take the film off
           </Button>
-        </div>
+        )}
       </div>
 
       <Dropzone
@@ -286,8 +203,8 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
             The film you dropped here has not been saved yet, so taking the old one off would take
             this one with it. Its files are in your library, but nothing on this screen can put them
             back together into a film, so you would be dropping the original in again and waiting
-            through the whole compression a second time. Press Save the film, then take it off. If
-            you do not want the new film at all, reload this page first.
+            through the whole compression a second time. Press Save everything at the top, then take
+            it off. If you do not want the new film at all, reload this page first.
           </p>
         </div>
       )}
@@ -305,7 +222,7 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
 
       {hasVideo ? (
         <div className="flex flex-wrap items-start gap-4 rounded-lg border border-neutral-200 bg-white p-3">
-          {film.posterMedia ? (
+          {film?.posterMedia ? (
             <Image
               src={film.posterMedia.key}
               alt=""
@@ -321,7 +238,7 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-neutral-800">Two copies, one for each screen</p>
             <ul className="mt-1 grid gap-1 text-sm text-neutral-600">
-              {film.sources.map((source) => (
+              {sources.map((source) => (
                 <li key={source.height}>
                   {source.height}p, {formatBytes(source.media.bytes)},{' '}
                   <a
@@ -343,7 +260,9 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
         </div>
       ) : (
         <p className="rounded-lg border border-dashed border-neutral-300 px-4 py-6 text-center text-sm text-neutral-500">
-          No film on this project. It does not need one.
+          {onSite && film === null
+            ? 'The film comes off this project when you save.'
+            : 'No film on this project. It does not need one.'}
         </p>
       )}
 
@@ -353,7 +272,7 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
         hint="A line under the film. Leave it empty for none."
       >
         <Input
-          value={film.caption}
+          value={film?.caption ?? ''}
           onChange={(event) => change({ caption: event.target.value })}
           placeholder="A walk from the entrance court through to the roof terrace"
         />
@@ -365,7 +284,7 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
         hint="Only for a film too large to keep here. Paste the part of the address after v=, nothing else, for example dQw4w9WgXcQ."
       >
         <Input
-          value={film.youtubeId}
+          value={film?.youtubeId ?? ''}
           onChange={(event) => change({ youtubeId: event.target.value })}
           placeholder="Usually empty"
         />
@@ -375,10 +294,9 @@ export function FilmEditor({ projectId, initialFilm }: FilmEditorProps) {
         open={confirming}
         onOpenChange={setConfirming}
         title="Take the film off this project?"
-        description="The project page stops showing it straight away. The video files stay in your library, so you can put it back."
+        description="The project page stops showing it once you save. The video files stay in your library, so you can put it back."
         confirmLabel="Take it off"
         onConfirm={remove}
-        busy={removing}
       />
     </section>
   );

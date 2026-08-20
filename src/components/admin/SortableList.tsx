@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useId, useRef, useState } from 'react';
+import { useCallback, useId, useLayoutEffect, useRef, useState } from 'react';
 import { GripVertical } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
@@ -52,15 +52,30 @@ export function SortableList<T>({
   const [announcement, setAnnouncement] = useState('');
   const listId = useId();
   const handles = useRef(new Map<string, HTMLButtonElement>());
+  const pendingFocusId = useRef<string | null>(null);
+
+  /* Focus follows the item, not the position, or a second press moves whatever
+     happened to slide into the slot instead. It used to follow inside
+     requestAnimationFrame, and under load that frame fires after the user has
+     already moved on: focus was yanked back to the old handle and the next
+     keypress landed on nothing. That late steal is also exactly what made the
+     CI runner red while every laptop run stayed green. A layout effect runs
+     synchronously with the render that moved the item, so there is no window
+     for the user to get ahead of it. The pending id is a ref, not state,
+     because consuming it must not schedule another render: the effect runs
+     after every render and does nothing unless a commit just happened. */
+  useLayoutEffect(() => {
+    if (pendingFocusId.current === null) return;
+    handles.current.get(pendingFocusId.current)?.focus();
+    pendingFocusId.current = null;
+  });
 
   const commit = useCallback(
     (next: T[], movedId: string, index: number) => {
       onReorder(next.map(getId));
       const moved = next[index];
       setAnnouncement(`${getLabel(moved)} moved to position ${index + 1} of ${next.length}.`);
-      // Focus follows the item, not the position, or a second press moves
-      // whatever happened to slide into the slot instead.
-      requestAnimationFrame(() => handles.current.get(movedId)?.focus());
+      pendingFocusId.current = movedId;
     },
     [getId, getLabel, onReorder],
   );

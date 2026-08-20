@@ -20,27 +20,43 @@ import { useToast } from '@/components/ui/toast';
 import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
 import { useSaveFlag } from '@/hooks/use-save-flag';
 import { runAction } from '@/lib/action-result';
-import { saveProject, setProjectPublished } from '@/lib/mutations';
+import { saveWholeProject, type WholeProjectInput } from '@/lib/mutations';
 import {
   CATEGORIES,
   STATUSES,
   STATUS_LABELS,
   TIERS,
   hasErrors,
+  validateFilm,
+  validateImages,
   validateProject,
   type FieldErrors,
   type ProjectInput,
 } from '@/lib/validation';
 
 /**
- * The whole editing screen: the words on the left, the pictures on the right.
+ * The whole editing screen: the words on the left, the pictures and the film on
+ * the right, and one button that saves all of it.
  *
- * MediaPanel is rendered from here rather than beside here, and that is the one
- * thing about this file worth explaining. The cover is chosen from the
- * project's own pictures, which MediaPanel holds, but it is stored on the
- * project row and saved by saveProject, which this form calls. One of the two
- * has to own it. Putting it here means the cover cannot be saved without the
- * details it belongs to, which is the pairing that matches how it is stored.
+ * THERE IS ONE SAVE BUTTON ON PURPOSE. Please do not split it up again.
+ *
+ * This screen used to have four. Save the details, Save the pictures, Save the
+ * drawings and Save the film, each sending its own quarter of the project and
+ * clearing its own badge. Ahmad edited a group caption, pressed the obvious
+ * button at the top of the screen, was told Saved, and the caption never
+ * reached the database, because captions belonged to a different button further
+ * down the page. Nothing failed and nothing warned. The work was not lost, it
+ * was never sent, which is worse, because there was nothing to notice.
+ *
+ * No interface can ask somebody to hold a map in their head of which control
+ * belongs to which button. So this component owns every editable thing on the
+ * screen: the fields, the groups, the drawings and the film. MediaPanel and
+ * FilmEditor are controlled, hold no savable state of their own, and hand every
+ * change back up here. One flag, one badge, one button, one payload, and one
+ * server action that writes all of it in a single transaction or none of it.
+ *
+ * If a fifth kind of content is added later, it belongs in this state and in
+ * this payload. It does not get a button.
  */
 
 /** How each tier reads. The words on the home page, not the words in the code. */
@@ -151,16 +167,184 @@ function toInput(values: FormValues): ProjectInput {
   };
 }
 
-export function ProjectForm({ project, groups, drawings, film }: ProjectFormProps) {
+/**
+ * The film as the server wants it, or null for a project with no walkthrough.
+ *
+ * An empty shell is not a film. Sending one would fail the server's check with
+ * "a film needs either an uploaded file or a YouTube id" on every project that
+ * simply has no walkthrough, which would be the whole archive. null is the
+ * honest description of that, and it is also what removes a film that was
+ * there before.
+ *
+ * A caption on its own is deliberately not treated as empty. It is a film with
+ * nothing in it, and it comes back marked, rather than being quietly dropped,
+ * which is the exact failure this screen was rebuilt to end.
+ */
+function toFilmInput(film: EditorFilm | null): WholeProjectInput['film'] {
+  if (!film) return null;
+
+  const sources = film.sources.map((source) => ({
+    mediaId: source.media.id,
+    height: source.height,
+  }));
+
+  if (sources.length === 0 && !film.youtubeId.trim() && !film.caption.trim()) return null;
+
+  return {
+    posterMediaId: film.posterMedia?.id ?? null,
+    youtubeId: film.youtubeId,
+    caption: film.caption,
+    sources,
+  };
+}
+
+/** Everything on the screen, in the one shape the one action takes. */
+function buildPayload(
+  values: FormValues,
+  groups: EditorGroup[],
+  drawings: EditorDrawing[],
+  film: EditorFilm | null,
+  published: boolean,
+): WholeProjectInput {
+  return {
+    fields: toInput(values),
+    published,
+    groups: groups.map((group) => ({
+      layout: group.layout,
+      caption: group.caption,
+      images: group.images.map((image) => ({ mediaId: image.mediaId, alt: image.alt })),
+    })),
+    drawings: drawings.map((drawing) => ({
+      mediaId: drawing.mediaId,
+      alt: drawing.alt,
+      drawingType: drawing.drawingType,
+    })),
+    film: toFilmInput(film),
+  };
+}
+
+/**
+ * The same rules the server applies, run here first on the same payload.
+ *
+ * Here so the answer is instant and nothing goes out that is going to come back
+ * refused. There, because this half can be skipped and that half cannot. Both
+ * halves key their messages identically, so a message means the same control
+ * whichever of them produced it, and neither has to be translated on arrival.
+ */
+function collectErrors(payload: WholeProjectInput): FieldErrors {
+  const errors: FieldErrors = { ...validateProject(payload.fields) };
+
+  /* Namespaced by group, so two pictures in different groups cannot collide on
+     images.0.alt and show one message for both. */
+  payload.groups.forEach((group, groupIndex) => {
+    for (const [key, message] of Object.entries(validateImages(group.images))) {
+      errors[`groups.${groupIndex}.${key}`] = message;
+    }
+  });
+
+  /* Drawings are checked by the same function, so the wording of the message
+     has one source, and only the prefix is swapped to say which list it is
+     about. */
+  for (const [key, message] of Object.entries(validateImages(payload.drawings))) {
+    errors[key.replace('images.', 'drawings.')] = message;
+  }
+
+  if (payload.film) {
+    Object.assign(
+      errors,
+      validateFilm({
+        sourceMediaIds: payload.film.sources.map((source) => source.mediaId),
+        youtubeId: payload.film.youtubeId,
+        posterMediaId: payload.film.posterMediaId,
+      }),
+    );
+  }
+
+  return errors;
+}
+
+/* Named in the order they appear down the screen, so the sentence built from
+   them reads the way the eye travels. */
+const SECTIONS = [
+  'the details',
+  'the pictures',
+  'the cover',
+  'the drawings',
+  'the walkthrough',
+] as const;
+
+/** Which parts of the screen a refusal is about, from the keys it came back with. */
+function troubledSections(errors: FieldErrors): string[] {
+  const found = new Set<string>();
+
+  for (const key of Object.keys(errors)) {
+    if (key.startsWith('groups.')) found.add('the pictures');
+    else if (key.startsWith('drawings.')) found.add('the drawings');
+    else if (key === 'film' || key === 'filmPoster') found.add('the walkthrough');
+    else if (key === 'leadImageAlt') found.add('the cover');
+    else found.add('the details');
+  }
+
+  return SECTIONS.filter((section) => found.has(section));
+}
+
+function inWords(items: string[]): string {
+  if (items.length <= 1) return items[0] ?? '';
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
+/**
+ * What to say when a save is refused.
+ *
+ * It names the sections, because one button now covers a screen taller than the
+ * window. A marked field is no use to somebody who is looking at the pictures
+ * and has no idea the year is the problem, so the message says where to look
+ * and the marks say what to fix.
+ */
+function refusalMessage(errors: FieldErrors): string {
+  const sections = troubledSections(errors);
+  if (sections.length === 0) return 'Nothing was saved. Try again.';
+  return `Nothing was saved. What needs something is marked, in ${inWords(sections)}.`;
+}
+
+export function ProjectForm({
+  project,
+  groups: savedGroups,
+  drawings: savedDrawings,
+  film: filmOnSite,
+}: ProjectFormProps) {
   const { push } = useToast();
 
+  /* Every editable thing on the screen, held here and nowhere else. The panels
+     below render it and hand changes back. */
   const [values, setValues] = useState<FormValues>(() => initialValues(project));
+  const [groups, setGroups] = useState<EditorGroup[]>(savedGroups);
+  const [drawings, setDrawings] = useState<EditorDrawing[]>(savedDrawings);
+  const [film, setFilm] = useState<EditorFilm | null>(filmOnSite);
+
+  /* The film the site is actually showing. FilmEditor compares it against the
+     one on screen to tell a film that has only been uploaded from one that has
+     been saved, which is the difference between taking a film off and throwing
+     away a compression that took four minutes and cannot be repeated from here. */
+  const [savedFilm, setSavedFilm] = useState<EditorFilm | null>(filmOnSite);
+
+  /* One map for the whole screen, keyed exactly as saveWholeProject keys it:
+     bare names for the fields, groups.<group>.images.<image>.alt for pictures,
+     drawings.<index>.alt for sheets, film and filmPoster for the walkthrough.
+     It is handed down whole rather than sliced and renumbered on the way, since
+     a renumbering step is somewhere for a message to get lost, and a message
+     that lands nowhere is how this screen went wrong in the first place. */
   const [errors, setErrors] = useState<FieldErrors>({});
   const [warning, setWarning] = useState<string | null>(null);
-  const { dirty: unsaved, markDirty, snapshot, settle } = useSaveFlag();
+
   const [published, setPublished] = useState(project.published);
+
+  /* What the site is serving, which is not what the toggle says the moment it
+     is pressed. The badge reads from this so it cannot claim a project is on
+     the site before the save that puts it there has run. */
+  const [liveOnSite, setLiveOnSite] = useState(project.published);
+  const { dirty: unsaved, markDirty, snapshot, settle } = useSaveFlag();
   const [saving, startSave] = useTransition();
-  const [publishing, startPublish] = useTransition();
 
   /* What the web address box holds right now, which is not what a save in
      flight is holding. That save closed over the values as they were when it
@@ -168,15 +352,51 @@ export function ProjectForm({ project, groups, drawings, film }: ProjectFormProp
      anything that has to reason about the box afterwards asks this. */
   const slugOnScreen = useRef(project.slug);
 
-  /* Covers closing the tab, reloading, and leaving the site. Clicking a link
-     inside the admin is a client side route change the browser cannot see, so
-     that case is GuardedLink's, below. */
-  useRegisterUnsaved('project:fields', unsaved);
+  /* One claim for the whole screen, because there is one button. It covers
+     closing the tab, reloading, and leaving the site. Clicking a link inside
+     the admin is a client side route change the browser cannot see, so that
+     case is GuardedLink's, below. */
+  useRegisterUnsaved('project', unsaved);
 
   const update = useCallback(
     (changes: Partial<FormValues>) => {
       if (changes.slug !== undefined) slugOnScreen.current = changes.slug;
       setValues((current) => ({ ...current, ...changes }));
+      markDirty();
+    },
+    [markDirty],
+  );
+
+  /**
+   * The three lifted lists, each changed by a function of what is already
+   * there rather than of what was there when the caller was rendered.
+   *
+   * That matters because an upload finishes minutes after it was started and
+   * Ahmad keeps working while it runs. Handing back a finished array built from
+   * the copy that existed when the files were dropped throws away every
+   * description typed since, which looks exactly like the interface losing his
+   * work. There is no stale array to build from when the contract is a
+   * function, so the panels below cannot make that mistake.
+   */
+  const changeGroups = useCallback(
+    (change: (current: EditorGroup[]) => EditorGroup[]) => {
+      setGroups(change);
+      markDirty();
+    },
+    [markDirty],
+  );
+
+  const changeDrawings = useCallback(
+    (change: (current: EditorDrawing[]) => EditorDrawing[]) => {
+      setDrawings(change);
+      markDirty();
+    },
+    [markDirty],
+  );
+
+  const changeFilm = useCallback(
+    (change: (current: EditorFilm | null) => EditorFilm | null) => {
+      setFilm(change);
       markDirty();
     },
     [markDirty],
@@ -197,34 +417,38 @@ export function ProjectForm({ project, groups, drawings, film }: ProjectFormProp
   );
 
   const save = useCallback(() => {
-    /* Taken where the payload is built, so the number stands for exactly what
-       is being sent. Anything typed while the request is out moves the count
-       past it, and settle then leaves the flag set for the characters this save
-       is not carrying. */
+    /* The payload and the snapshot are taken together, in that order, so the
+       number stands for exactly what is being sent and nothing later. An upload
+       started ten minutes ago can land while this request is out, and its
+       handler appends to a list this payload does not contain. The count then
+       moves past the snapshot, settle declines to clear, and the badge and the
+       guard stay up over the work that never went. */
+    const payload = buildPayload(values, groups, drawings, film, published);
     const at = snapshot();
-    const input = toInput(values);
 
-    /* Checked here first so the answer is instant and nothing is sent that is
-       going to come back refused. The server checks the same rules again,
-       because this half can be skipped and that half cannot. */
-    const found = validateProject(input);
+    const found = collectErrors(payload);
     if (hasErrors(found)) {
       setErrors(found);
-      push('Some of this is still missing. The parts that need something are marked.', 'error');
+      push(refusalMessage(found), 'error');
       return;
     }
 
     startSave(async () => {
-      const result = await runAction(() => saveProject(project.id, input));
+      const result = await runAction(() => saveWholeProject(project.id, payload));
 
       if (!result.ok) {
-        setErrors(result.errors ?? {});
-        push(result.message ?? 'Nothing was saved. The parts that need something are marked.', 'error');
+        const returned = result.errors ?? {};
+        setErrors(returned);
+        push(result.message ?? refusalMessage(returned), 'error');
         return;
       }
 
       setErrors({});
       setWarning(result.warning ?? null);
+      /* What the site shows now is what this payload carried, not whatever is
+         on screen by the time it answers. */
+      setSavedFilm(payload.film === null ? null : film);
+      setLiveOnSite(payload.published);
       settle(at);
 
       /* The web address that came back can differ from the one that was sent,
@@ -234,8 +458,8 @@ export function ProjectForm({ project, groups, drawings, film }: ProjectFormProp
          disabled while the save runs, so it can just as easily hold something
          typed since, and that is his and not the server's to overwrite. */
       const savedSlug = result.data?.slug;
-      if (savedSlug && savedSlug !== input.slug) {
-        if (slugOnScreen.current === input.slug) {
+      if (savedSlug && savedSlug !== payload.fields.slug) {
+        if (slugOnScreen.current === payload.fields.slug) {
           slugOnScreen.current = savedSlug;
           setValues((current) => ({ ...current, slug: savedSlug }));
           push(`Saved. Another project already used that web address, so this one is ${savedSlug}.`);
@@ -252,22 +476,16 @@ export function ProjectForm({ project, groups, drawings, film }: ProjectFormProp
 
       push('Saved.');
     });
-  }, [values, project.id, push, snapshot, settle]);
+  }, [values, groups, drawings, film, published, project.id, push, snapshot, settle]);
 
+  /* Putting a project on the site used to write immediately, on its own, which
+     meant pressing it with an unsaved caption on screen published the caption
+     as it used to be. Going live is not a separate thing from the edit that
+     prompted it, so it now waits for the same button as everything else. */
   const togglePublished = useCallback(() => {
-    const next = !published;
-    startPublish(async () => {
-      const result = await runAction(() => setProjectPublished(project.id, next));
-
-      if (!result.ok) {
-        push(result.message ?? 'That did not change. Try again.', 'error');
-        return;
-      }
-
-      setPublished(next);
-      push(next ? 'This project is on the site now.' : 'This project is off the site now.');
-    });
-  }, [published, project.id, push]);
+    setPublished((current) => !current);
+    markDirty();
+  }, [markDirty]);
 
   return (
     <div className="grid gap-6">
@@ -283,12 +501,17 @@ export function ProjectForm({ project, groups, drawings, film }: ProjectFormProp
         </div>
 
         <Badge variant={published ? 'secondary' : 'warning'}>
-          {published ? 'On the site' : 'Not on the site'}
+          {published === liveOnSite
+            ? published
+              ? 'On the site'
+              : 'Not on the site'
+            : published
+              ? 'Goes on the site when you save'
+              : 'Comes off the site when you save'}
         </Badge>
-        {unsaved && <Badge variant="warning">Not saved yet</Badge>}
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          {published && (
+          {liveOnSite && (
             <a
               href={`/work/${project.slug}/`}
               target="_blank"
@@ -299,23 +522,34 @@ export function ProjectForm({ project, groups, drawings, film }: ProjectFormProp
             </a>
           )}
 
-          <Button type="button" variant="outline" onClick={togglePublished} disabled={publishing}>
+          <Button type="button" variant="outline" onClick={togglePublished} disabled={saving}>
             {published ? 'Take it off the site' : 'Put it on the site'}
           </Button>
 
+          {/* Beside the button rather than across the screen from it, so the
+              badge and the thing that clears it read as one statement. */}
+          {unsaved && <Badge variant="warning">Not saved yet</Badge>}
+
           <Button type="button" onClick={save} disabled={saving}>
-            {saving ? 'Saving' : 'Save the details'}
+            {saving ? 'Saving' : 'Save everything'}
           </Button>
         </div>
       </div>
 
       {warning && (
-        <p className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p
+          role="status"
+          className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+        >
           {warning}
         </p>
       )}
 
       <div className="grid items-start gap-10 lg:grid-cols-2">
+        {/* Still a form, for the labelling and for Enter, but with no submit
+            button of its own. The one button lives in the bar above, where it
+            can save the pictures and the film as well, which no button inside
+            this form could honestly claim to do. */}
         <form
           className="grid gap-5"
           onSubmit={(event) => {
@@ -509,29 +743,24 @@ export function ProjectForm({ project, groups, drawings, film }: ProjectFormProp
               onChange={(event) => update({ order: event.target.value })}
             />
           </Field>
-
-          <div>
-            <Button type="submit" disabled={saving}>
-              {saving ? 'Saving' : 'Save the details'}
-            </Button>
-          </div>
         </form>
 
         <div className="grid gap-10">
           <MediaPanel
-            projectId={project.id}
             slug={project.slug}
-            initialGroups={groups}
-            initialDrawings={drawings}
+            groups={groups}
+            drawings={drawings}
+            errors={errors}
+            onGroupsChange={changeGroups}
+            onDrawingsChange={changeDrawings}
             leadImageId={values.leadImageId}
             leadImageAlt={values.leadImageAlt}
             leadImage={project.leadImage}
-            leadImageAltError={errors.leadImageAlt}
             onLeadImageChange={chooseLeadImage}
             onLeadImageAltChange={changeLeadImageAlt}
           />
 
-          <FilmEditor projectId={project.id} initialFilm={film} />
+          <FilmEditor film={film} savedFilm={savedFilm} errors={errors} onChange={changeFilm} />
         </div>
       </div>
     </div>

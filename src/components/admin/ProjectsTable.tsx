@@ -34,12 +34,16 @@ import { TIERS } from '@/lib/validation';
  * The list holds its own copy of the rows and changes it the moment Ahmad acts,
  * before the server has answered. Waiting for a round trip to redraw a row he
  * has already clicked makes a working screen feel broken, so the change lands
- * first and the previous list is kept in hand: if the write comes back refused,
- * the list goes back exactly as it was and a message says so. A silent failure
- * here would leave him believing a project is live when it is not. Every write
- * goes out through runAction for the same reason: a dropped connection then
- * arrives as an ordinary refusal, which puts the row back, instead of as a
- * rejection escaping the transition and taking the whole screen with it.
+ * first: if the write comes back refused, that one change is undone and a
+ * message says so. Only that one change, never a snapshot of the whole list,
+ * because writes overlap: he flips one row, flips another while the first is
+ * still out, and if the first then fails, restoring a snapshot would also erase
+ * the second row's change after the server accepted it, leaving him believing a
+ * project is hidden while it is live. A silent failure here would mislead him
+ * the same way. Every write goes out through runAction for the same reason: a
+ * dropped connection then arrives as an ordinary refusal, which puts the row
+ * back, instead of as a rejection escaping the transition and taking the whole
+ * screen with it.
  *
  * That same worry is why an unpublished row does not merely say so. It is
  * dimmed, its cover is greyed, and it carries a badge, because "published" is
@@ -140,7 +144,19 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
         if (ticket !== latestOrder.current) return;
         if (result.ok) return;
 
-        setRows(previous);
+        /* Only the ordering is put back. The rows themselves stay as they are
+           now, because another write may have landed on one of them while this
+           reorder was out, and restoring the old row objects would erase it. */
+        setRows((current) => {
+          const liveById = new Map(current.map((row) => [row.id, row]));
+          const restored = previous.flatMap((row) => {
+            const live = liveById.get(row.id);
+            if (!live) return [];
+            liveById.delete(row.id);
+            return [live];
+          });
+          return [...restored, ...liveById.values()];
+        });
         push(
           result.message ??
             'The new order was not saved, so the list has been put back the way it was. Please try again.',
@@ -155,7 +171,6 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
     (target: AdminProjectRow, tier: AdminProjectRow['tier']) => {
       if (target.tier === tier) return;
 
-      const previous = rows;
       setRows(rows.map((row) => (row.id === target.id ? { ...row, tier } : row)));
       markBusy(target.id);
 
@@ -164,7 +179,11 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
         clearBusy(target.id);
 
         if (!result.ok) {
-          setRows(previous);
+          /* Only this row's tier goes back. A snapshot of the whole list would
+             also wind back any other row a later write had already changed. */
+          setRows((current) =>
+            current.map((row) => (row.id === target.id ? { ...row, tier: target.tier } : row)),
+          );
           push(result.message ?? PUT_BACK, 'error');
           return;
         }
@@ -184,7 +203,6 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
   const handlePublish = useCallback(
     (target: AdminProjectRow) => {
       const published = !target.published;
-      const previous = rows;
       setRows(rows.map((row) => (row.id === target.id ? { ...row, published } : row)));
       markBusy(target.id);
 
@@ -193,7 +211,14 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
         clearBusy(target.id);
 
         if (!result.ok) {
-          setRows(previous);
+          /* Only this row's switch goes back. Published is the one fact on this
+             screen that is expensive to misread, so a refusal here must never
+             touch a neighbouring row whose own write was accepted. */
+          setRows((current) =>
+            current.map((row) =>
+              row.id === target.id ? { ...row, published: target.published } : row,
+            ),
+          );
           push(result.message ?? PUT_BACK, 'error');
           return;
         }

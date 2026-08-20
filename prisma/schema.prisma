@@ -259,6 +259,14 @@ model Profile {
   phone      String
   references String @default("Available upon request")
 
+  /// The contact page's own words. The rest of that page is assembled from the
+  /// fields above, but these three were written into the page itself, which
+  /// meant the one page whose whole purpose is to be got in touch through was
+  /// the one page Ahmad could not change a word of.
+  contactStatus  String @default("Available now")
+  contactHeading String @default("Write to me")
+  contactBlurb   String @default("Email is best, and it reaches me directly. Attach the brief, the job description or the drawing set and I will reply with whatever is useful, including work that is not on this site.")
+
   updatedAt DateTime @updatedAt
 }
 

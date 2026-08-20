@@ -1,13 +1,31 @@
 import { defineCloudflareConfig } from '@opennextjs/cloudflare';
 import kvIncrementalCache from '@opennextjs/cloudflare/overrides/incremental-cache/kv-incremental-cache';
+import kvTagCache from '@opennextjs/cloudflare/overrides/tag-cache/kv-next-tag-cache';
+import doQueue from '@opennextjs/cloudflare/overrides/queue/do-queue';
 
 /**
  * Pages are rendered once and held in KV rather than rebuilt for every visitor.
- * A save in the administration area revalidates the paths it changed, so Ahmad
- * sees his edit within seconds and a visitor never causes a database query.
+ *
+ * The incremental cache alone is not enough, which cost a real bug: with only
+ * that configured, Ahmad changed a project's cover, the database took it, and
+ * the site went on serving the old picture. Nothing failed. revalidatePath had
+ * been called and had nowhere to write, because recording that a page is stale
+ * is the tag cache's job, and there was not one. The page was cached with
+ * s-maxage of a year, so it would have stayed wrong until the next deploy.
+ *
+ * So three pieces, not one. The incremental cache holds the rendered pages, the
+ * tag cache records which of them an edit invalidated, and the queue carries out
+ * the re-render after the request that asked for it has gone.
+ *
+ * No cache purge override, deliberately. That clears Cloudflare's edge cache and
+ * needs an API token, and the edge is not caching this HTML: a request carries
+ * no cf-cache-status and a cache busting query still returned the stale copy, so
+ * the staleness was entirely in KV. Worth revisiting only if that changes.
  */
 const config = defineCloudflareConfig({
   incrementalCache: kvIncrementalCache,
+  tagCache: kvTagCache,
+  queue: doQueue,
 });
 
 /**

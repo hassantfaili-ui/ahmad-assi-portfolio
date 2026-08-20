@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 
 import { requireIdentityOr401 } from '@/lib/api-auth';
 import { db } from '@/lib/db';
-import { headObject } from '@/lib/r2';
-import { validateUpload, type MediaKind } from '@/lib/upload-policy';
+import { deleteObject, headObject, keyExpectation, sizeVerdict } from '@/lib/r2';
+import { formatBytes, validateUpload, type MediaKind } from '@/lib/upload-policy';
 
 /**
  * Confirm an object really landed, then write its row.
@@ -63,11 +63,44 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
 
+  /* What the key was signed for. The extension in the key decided the content
+     type at presign, so it is the standard the landed object is held to. */
+  const expected = keyExpectation(key);
+
   /* The kind is re-derived from the name rather than taken from the request, for
      the same reason the content type is: the client is not the authority on what
      it just uploaded. */
   const verdict = validateUpload({ name: originalName, size: head.bytes, type: head.contentType });
-  const kind: MediaKind = verdict.ok ? verdict.kind : (body.kind ?? 'document');
+  const kind: MediaKind = verdict.ok ? verdict.kind : (expected?.kind ?? body.kind ?? 'document');
+
+  /* A presigned PUT binds no length, so the size the browser was validated
+     against and the size R2 is now holding can be two different numbers. Only
+     the real one counts, and an object over its ceiling is removed before any
+     row can point at it. */
+  const size = sizeVerdict(kind, head.bytes);
+  if (!size.ok) {
+    await deleteObject(key);
+    return NextResponse.json(
+      {
+        error: `${originalName} arrived at ${formatBytes(head.bytes)}, which is over the ${formatBytes(size.limit)} limit for ${kind === 'document' ? 'a PDF' : `${kind} files`}. It has been removed, so nothing was saved. Export a smaller version and drop it again.`,
+      },
+      { status: 413 },
+    );
+  }
+
+  /* Nothing holds the uploader to the content type the URL was signed for, so
+     a .jpg URL can be used to store text/html, and the media domain would then
+     serve a page that runs script. The extension already decided the type at
+     presign; here the object itself is held to that decision, or removed. */
+  if (expected && head.contentType !== expected.contentType) {
+    await deleteObject(key);
+    return NextResponse.json(
+      {
+        error: `${originalName} was uploaded as ${head.contentType}, but its name says it should be ${expected.contentType}. It has been removed, so nothing was saved. Export it in the format its name promises and drop it again.`,
+      },
+      { status: 415 },
+    );
+  }
 
   const media = await db.media.upsert({
     where: { key },

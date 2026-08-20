@@ -18,11 +18,15 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './e2e',
+  globalSetup: './e2e/global-setup.ts',
   globalTeardown: './e2e/global-teardown.ts',
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
-  reporter: process.env.CI ? 'github' : 'list',
+  /* The html reporter is what writes playwright-report/, which is the path CI
+     uploads when a run fails. github alone annotates the log and leaves the
+     artifact step with nothing to find. */
+  reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
 
   use: {
     baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:3000',

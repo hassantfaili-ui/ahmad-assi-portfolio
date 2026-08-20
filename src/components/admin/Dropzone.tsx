@@ -109,6 +109,12 @@ export function Dropzone({
   return (
     <div className="grid gap-3">
       <div
+        /* Focusable, because paste only fires on the element holding focus.
+           Clicking the panel used to leave focus on the body, so Cmd+V went
+           nowhere and pasting looked broken; now a click or a Tab puts focus
+           here and the paste lands. Not a document listener, since two of these
+           mount on one screen and both would take the same paste. */
+        tabIndex={0}
         onDragOver={(event) => {
           event.preventDefault();
           setOver(true);
@@ -122,6 +128,7 @@ export function Dropzone({
         onPaste={(event) => take(event.clipboardData?.files ?? null)}
         className={cn(
           'rounded-xl border-2 border-dashed p-8 text-center transition-colors',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900',
           over ? 'border-neutral-900 bg-neutral-100' : 'border-neutral-300 bg-white',
         )}
       >

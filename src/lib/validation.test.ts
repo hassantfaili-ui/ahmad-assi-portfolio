@@ -101,7 +101,29 @@ describe('validateFilm', () => {
   });
 
   it('accepts a YouTube id alone, with no poster', () => {
-    expect(validateFilm({ sourceMediaIds: [], youtubeId: 'abc123' })).toEqual({});
+    expect(validateFilm({ sourceMediaIds: [], youtubeId: 'dQw4w9WgXcQ' })).toEqual({});
+  });
+
+  it('accepts a pasted watch URL', () => {
+    expect(
+      validateFilm({ sourceMediaIds: [], youtubeId: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }),
+    ).toEqual({});
+  });
+
+  it('refuses a string that is not a YouTube id or link', () => {
+    // Junk here used to save cleanly, and the first sign of it was a visitor
+    // pressing play on a player with nothing behind it.
+    const errors = validateFilm({ sourceMediaIds: [], youtubeId: 'my walkthrough film' });
+    expect(errors.film).toContain('does not look like a YouTube id');
+  });
+
+  it('refuses junk even when an uploaded source would carry the film', () => {
+    const errors = validateFilm({
+      sourceMediaIds: ['m1'],
+      posterMediaId: 'p1',
+      youtubeId: 'abc123',
+    });
+    expect(errors.film).toContain('does not look like a YouTube id');
   });
 
   it('requires a poster once there is an uploaded source', () => {
