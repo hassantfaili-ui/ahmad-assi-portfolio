@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { getIdentity } from '@/lib/access';
 import { PATHS, profilePaths, projectPaths } from '@/lib/cache-tags';
 import { CONTACT_DEFAULTS } from '@/lib/contact-defaults';
+import { resolveCover } from '@/lib/cover-image';
 import { db } from '@/lib/db';
 import { toSlug, uniqueSlug } from '@/lib/slug';
 import {
@@ -370,8 +371,7 @@ export async function saveWholeProject(
         tier: input.fields.tier as never,
         order: input.fields.order,
         published: input.published,
-        leadImageId: input.fields.leadImageId ?? null,
-        leadImageAlt: input.fields.leadImageAlt ?? '',
+        ...resolveCover(input.fields.leadImageId, input.fields.leadImageAlt, input.groups),
       },
     });
 
