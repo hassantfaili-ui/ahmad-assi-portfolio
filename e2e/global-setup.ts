@@ -37,7 +37,7 @@ export default function globalSetup() {
         'These tests create, edit and delete projects, and the teardown deletes\n' +
         'anything left behind. Against the live database that is destructive.\n\n' +
         'Point DATABASE_URL at a local database:\n\n' +
-        `  DATABASE_URL="postgresql://$(process.env.USER ?? 'you')@localhost:5432/ahmadassi" npm run e2e\n\n` +
+        `  DATABASE_URL="postgresql://${process.env.USER ?? 'you'}@localhost:5432/ahmadassi" npm run e2e\n\n` +
         'Or, if you genuinely mean to run against this one, set\n' +
         'E2E_ALLOW_REMOTE_DATABASE=true\n',
     );

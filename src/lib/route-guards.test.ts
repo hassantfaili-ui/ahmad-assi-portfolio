@@ -52,6 +52,42 @@ function relative(file: string): string {
   return file.slice(process.cwd().length + 1);
 }
 
+/** One function's body, from its signature to the next top level close brace. */
+function bodyOf(source: string, name: string): string {
+  const start = source.indexOf(`export async function ${name}(`);
+  if (start === -1) return '';
+  const end = source.indexOf('\n}', start);
+  return source.slice(start, end === -1 ? undefined : end);
+}
+
+/** The HTTP method handlers a route file exports. Next recognises exactly these. */
+function exportedHandlers(source: string): string[] {
+  return [
+    ...source.matchAll(/export\s+async\s+function\s+(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s*\(/g),
+  ].map((match) => match[1]);
+}
+
+/**
+ * The handlers in a route source that do not guard themselves.
+ *
+ * Per handler, not per file, and both halves are demanded: the guard must be
+ * called, and its verdict must be the thing returned. Matching the whole file
+ * would let an unguarded second handler ride in on the first one's guard, and
+ * matching the call alone would accept `await requireIdentityOr401()` with the
+ * result thrown away, which refuses nobody.
+ */
+function unguardedHandlers(source: string): string[] {
+  return exportedHandlers(source).filter((method) => {
+    const body = bodyOf(source, method);
+    if (!body) return true;
+
+    const call = body.match(/const\s+([A-Za-z0-9_]+)\s*=\s*await\s+requireIdentityOr401\(\)/);
+    if (!call) return true;
+
+    return !new RegExp(`if\\s*\\(\\s*${call[1]}\\s*\\)\\s*return\\s+${call[1]}\\b`).test(body);
+  });
+}
+
 describe('every API route handler guards itself', () => {
   const all = routeFiles(API_ROOT);
   const files = all.filter((file) => !(relative(file) in EXEMPT));
@@ -72,16 +108,70 @@ describe('every API route handler guards itself', () => {
   );
 
   it.each(files.map((file) => [relative(file), file]))(
-    '%s calls requireIdentityOr401',
+    '%s guards every handler it exports',
     (_label, file) => {
       const source = readFileSync(file, 'utf8');
-      expect(source).toContain('requireIdentityOr401');
 
-      // Imported and called, not merely mentioned in a comment.
+      // Imported, not merely mentioned in a comment.
       expect(source).toMatch(/import\s*\{[^}]*requireIdentityOr401[^}]*\}\s*from/);
-      expect(source).toMatch(/await\s+requireIdentityOr401\(\)/);
+
+      // A route file exporting no recognisable handler would otherwise pass
+      // with nothing checked, which is the vacuous pass this file exists to stop.
+      expect(exportedHandlers(source).length).toBeGreaterThan(0);
+
+      expect(unguardedHandlers(source)).toEqual([]);
     },
   );
+});
+
+/**
+ * Proof the per-handler matcher catches what per-file matching could not.
+ *
+ * The fixture is exactly the shape of the gap: a guarded GET, then a PATCH
+ * added to the same file later. The old assertions matched the import and one
+ * awaited call anywhere in the source, and this fixture satisfies both, so the
+ * old check would have waved the PATCH through. Asserted here so the gap cannot
+ * quietly reopen in a refactor of the matcher.
+ */
+describe('the per-handler matcher itself', () => {
+  const guardedGetUnguardedPatch = [
+    "import { requireIdentityOr401 } from '@/lib/api-auth';",
+    '',
+    'export async function GET(): Promise<Response> {',
+    '  const unauthorised = await requireIdentityOr401();',
+    '  if (unauthorised) return unauthorised;',
+    '  return Response.json({ ok: true });',
+    '}',
+    '',
+    'export async function PATCH(): Promise<Response> {',
+    '  return Response.json({ patched: true });',
+    '}',
+    '',
+  ].join('\n');
+
+  it('catches an unguarded handler hiding behind a guarded one', () => {
+    // The old per-file matching is satisfied by this source. That is the gap.
+    expect(guardedGetUnguardedPatch).toMatch(/import\s*\{[^}]*requireIdentityOr401[^}]*\}\s*from/);
+    expect(guardedGetUnguardedPatch).toMatch(/await\s+requireIdentityOr401\(\)/);
+
+    expect(unguardedHandlers(guardedGetUnguardedPatch)).toEqual(['PATCH']);
+  });
+
+  it('does not flag the handler that really is guarded', () => {
+    expect(unguardedHandlers(guardedGetUnguardedPatch)).not.toContain('GET');
+  });
+
+  it('catches a guard whose verdict is discarded', () => {
+    const discarded = [
+      'export async function DELETE(): Promise<Response> {',
+      '  const unauthorised = await requireIdentityOr401();',
+      '  return Response.json({ ok: true });',
+      '}',
+      '',
+    ].join('\n');
+
+    expect(unguardedHandlers(discarded)).toEqual(['DELETE']);
+  });
 });
 
 /**
@@ -107,14 +197,6 @@ function exportedActions(source: string): string[] {
   return [...source.matchAll(/export\s+async\s+function\s+([A-Za-z0-9_]+)\s*\(/g)].map(
     (match) => match[1],
   );
-}
-
-/** One function's body, from its signature to the next top level close brace. */
-function bodyOf(source: string, name: string): string {
-  const start = source.indexOf(`export async function ${name}(`);
-  if (start === -1) return '';
-  const end = source.indexOf('\n}', start);
-  return source.slice(start, end === -1 ? undefined : end);
 }
 
 describe('every server action checks the identity', () => {

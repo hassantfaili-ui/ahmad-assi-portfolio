@@ -10,6 +10,13 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 import { getR2Env } from './env';
+import {
+  MAX_DOCUMENT_BYTES,
+  MAX_IMAGE_BYTES,
+  MAX_VIDEO_BYTES,
+  validateUpload,
+  type MediaKind,
+} from './upload-policy';
 
 /**
  * R2 over the S3 API.
@@ -99,9 +106,65 @@ function sanitiseFileName(fileName: string): string {
  */
 export function buildObjectKey(prefix: string, fileName: string): string {
   const name = `${Date.now()}-${randomUUID()}-${sanitiseFileName(fileName)}`;
-  const folder = prefix.replace(/^\/+/, '').replace(/\/+$/, '');
+  // Dot segments are dropped, not resolved. A prefix is a label under this
+  // bucket, never a path with a parent, so '..' in one can only be an escape
+  // attempt. Filtering it here keeps the "no key outside its prefix" guarantee
+  // inside this function instead of resting on every caller validating first.
+  const folder = prefix
+    .split('/')
+    .filter((segment) => segment !== '' && segment !== '.' && segment !== '..')
+    .join('/');
 
   return folder ? `${folder}/${name}` : name;
+}
+
+/**
+ * The ceiling for each kind, restated from the private LIMITS table in
+ * upload-policy.ts. The exported constants are the shared truth, so the two
+ * tables can only ever differ in shape, not in size.
+ */
+const CEILINGS: Record<MediaKind, number> = {
+  image: MAX_IMAGE_BYTES,
+  video: MAX_VIDEO_BYTES,
+  poster: MAX_IMAGE_BYTES,
+  document: MAX_DOCUMENT_BYTES,
+};
+
+/**
+ * Whether an object that actually landed is within the ceiling for its kind.
+ *
+ * validateUpload already judges size, but only as part of a verdict taken
+ * before the bytes move, and a presigned PUT binds no length. So the size the
+ * browser was validated against and the size R2 is now holding are two
+ * different claims, and only the second one counts. This is the half the
+ * complete route needs on its own, after HeadObject has reported the truth.
+ * A kind this table does not recognise gets the smallest ceiling, because an
+ * unrecognised kind is the client's word rather than a policy.
+ */
+export function sizeVerdict(
+  kind: MediaKind,
+  bytes: number,
+): { ok: true } | { ok: false; limit: number } {
+  const limit = CEILINGS[kind] ?? MAX_DOCUMENT_BYTES;
+  return bytes > limit ? { ok: false, limit } : { ok: true };
+}
+
+/**
+ * What a key's extension promises the object at it must be, or null when the
+ * extension is not one the upload policy accepts.
+ *
+ * The complete route uses this to hold a landed object to the content type its
+ * key was signed for, since the PUT itself cannot be held to it: content-type
+ * is not in a presigned URL's SignedHeaders, so the uploader may send whatever
+ * it likes and R2 will record it. The size passed here is a placeholder and
+ * the reported type is left empty on purpose. At that point the stored type is
+ * the claim being judged, so it cannot also be the evidence.
+ */
+export function keyExpectation(key: string): { kind: MediaKind; contentType: string } | null {
+  const name = key.split('/').pop() || key;
+  const verdict = validateUpload({ name, size: 1, type: '' });
+
+  return verdict.ok ? { kind: verdict.kind, contentType: verdict.contentType } : null;
 }
 
 /**

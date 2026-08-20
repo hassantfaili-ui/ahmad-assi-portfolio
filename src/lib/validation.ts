@@ -11,6 +11,8 @@
  * node builtins, no process.env, no server-only.
  */
 
+import { extractYouTubeId } from './youtube-id';
+
 export type FieldErrors = Record<string, string>;
 
 export const CATEGORIES = [
@@ -147,6 +149,14 @@ export function validateFilm(input: FilmInput): FieldErrors {
   const errors: FieldErrors = {};
   if (input.sourceMediaIds.length === 0 && !required(input.youtubeId)) {
     errors.film = 'A film needs either an uploaded file or a YouTube id.';
+  }
+
+  /* Checked whenever something was pasted, not only when the film depends on
+     it. A string no shape matches used to save cleanly, and the first sign of
+     it was a visitor pressing play on a player with nothing behind it. */
+  if (required(input.youtubeId) && extractYouTubeId(input.youtubeId ?? '') === null) {
+    errors.film =
+      'That does not look like a YouTube id or link. Paste the address of the video or the part after v=.';
   }
   if (!input.posterMediaId && input.sourceMediaIds.length > 0) {
     errors.filmPoster =

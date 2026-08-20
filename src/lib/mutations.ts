@@ -52,6 +52,21 @@ const DENIED: SaveResult<never> = { ok: false, message: 'You are not signed in.'
 /** Everything a project edit could have changed. */
 function revalidateProject(slug: string) {
   for (const path of projectPaths(slug)) revalidatePath(path);
+  revalidateProjectNeighbours();
+}
+
+/**
+ * The pages a project write changes without touching their rows.
+ *
+ * Every project page carries prev and next links to its neighbours by running
+ * order, so deleting, unpublishing or reordering one project changes pages
+ * that were never themselves written. And the sitemap lists every published
+ * slug. Left out, a cached neighbour keeps pointing at a project that is
+ * gone, and the sitemap keeps advertising it, until the next redeploy.
+ */
+function revalidateProjectNeighbours() {
+  revalidatePath('/work/[slug]', 'page');
+  revalidatePath('/sitemap.xml');
 }
 
 // -------------------------------------------------------------- projects ---
@@ -162,6 +177,8 @@ export async function reorderProjects(idsInOrder: string[]): Promise<SaveResult>
   revalidatePath(PATHS.home);
   revalidatePath(PATHS.architecture);
   revalidatePath(PATHS.print);
+  /* A new running order moves prev and next on every project page. */
+  revalidateProjectNeighbours();
 
   const missing = idsInOrder.length - usable.length;
   return {

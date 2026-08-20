@@ -13,8 +13,16 @@ import {
   getSignedDownloadUrl,
   getSignedUploadUrl,
   headObject,
+  keyExpectation,
   objectExists,
+  sizeVerdict,
 } from './r2';
+import {
+  MAX_DOCUMENT_BYTES,
+  MAX_IMAGE_BYTES,
+  MAX_VIDEO_BYTES,
+  type MediaKind,
+} from './upload-policy';
 
 const ACCOUNT = 'abc123account';
 const BUCKET = 'ahmadassi-media-test';
@@ -116,6 +124,84 @@ describe('buildObjectKey', () => {
   it('normalises a prefix given with stray slashes', () => {
     expect(buildObjectKey('/projects/lincoln/', 'a.jpg')).toMatch(/^projects\/lincoln\/\d+-/);
     expect(buildObjectKey('', 'a.jpg')).toMatch(/^\d+-/);
+  });
+
+  /**
+   * The prefix is supposed to be chosen by the server, but "supposed to" is not
+   * a guarantee. The presign route validates the slug it splices in, and this
+   * is the backstop for a future caller that forgets: a dot segment surviving
+   * into a key would mint 'projects/../../x' shaped keys outside the prefix the
+   * route's own comment promises the caller can never reach.
+   */
+  it('drops dot segments out of the prefix rather than letting them traverse', () => {
+    expect(buildObjectKey('../../etc', 'a.jpg')).toMatch(/^etc\/\d+-/);
+    expect(buildObjectKey('projects/../../x', 'a.jpg')).toMatch(/^projects\/x\/\d+-/);
+    expect(buildObjectKey('projects/../../x', 'a.jpg')).not.toContain('..');
+    expect(buildObjectKey('projects/lincoln-beach', 'a.jpg')).toMatch(
+      /^projects\/lincoln-beach\/\d+-/,
+    );
+  });
+});
+
+describe('sizeVerdict', () => {
+  it('passes a file at its ceiling and refuses one just past it', () => {
+    expect(sizeVerdict('image', MAX_IMAGE_BYTES)).toEqual({ ok: true });
+    expect(sizeVerdict('image', MAX_IMAGE_BYTES + 1)).toEqual({
+      ok: false,
+      limit: MAX_IMAGE_BYTES,
+    });
+  });
+
+  it('holds each kind to its own ceiling, not to a shared one', () => {
+    expect(sizeVerdict('video', MAX_IMAGE_BYTES + 1)).toEqual({ ok: true });
+    expect(sizeVerdict('video', MAX_VIDEO_BYTES + 1)).toEqual({
+      ok: false,
+      limit: MAX_VIDEO_BYTES,
+    });
+    expect(sizeVerdict('document', MAX_DOCUMENT_BYTES + 1)).toEqual({
+      ok: false,
+      limit: MAX_DOCUMENT_BYTES,
+    });
+    expect(sizeVerdict('poster', MAX_IMAGE_BYTES)).toEqual({ ok: true });
+  });
+
+  /**
+   * The kind can arrive from the request body when the key's extension gives no
+   * answer, and a made up kind must not buy a made up ceiling. The smallest
+   * limit is the only safe answer for a claim nothing can verify.
+   */
+  it('gives an unrecognised kind the smallest ceiling rather than none', () => {
+    expect(sizeVerdict('banana' as MediaKind, MAX_DOCUMENT_BYTES + 1)).toEqual({
+      ok: false,
+      limit: MAX_DOCUMENT_BYTES,
+    });
+  });
+});
+
+describe('keyExpectation', () => {
+  it('reads the promise out of the key extension', () => {
+    expect(keyExpectation('projects/lincoln/1755640000000-abc-render.jpg')).toEqual({
+      kind: 'image',
+      contentType: 'image/jpeg',
+    });
+    expect(keyExpectation('media/1755640000000-abc-walkthrough-1440.mp4')).toEqual({
+      kind: 'video',
+      contentType: 'video/mp4',
+    });
+    expect(keyExpectation('documents/1755640000000-abc-cv.pdf')).toEqual({
+      kind: 'document',
+      contentType: 'application/pdf',
+    });
+  });
+
+  /**
+   * Null, not a guess. A key with no accepted extension cannot have come out of
+   * the presign policy, so there is no promise for the complete route to hold
+   * the object to, and pretending otherwise would judge it against noise.
+   */
+  it('promises nothing for a key with no accepted extension', () => {
+    expect(keyExpectation('media/1755640000000-abc-file')).toBeNull();
+    expect(keyExpectation('media/1755640000000-abc-page.html')).toBeNull();
   });
 });
 

@@ -2,8 +2,9 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 
 import { SortableList } from './SortableList';
 
@@ -108,6 +109,62 @@ describe('SortableList, from the keyboard', () => {
     handleFor('Renewal Square').focus();
     await userEvent.keyboard('{Enter}{Tab}a');
     expect(onReorder).not.toHaveBeenCalled();
+  });
+
+  it('keeps focus with the moved handle without stealing it back later', async () => {
+    /* A stateful parent, because the failure needs the render that moves the
+       row: the restore is queued at commit, and the question is when it runs.
+       Restoring focus inside requestAnimationFrame meant "whenever the browser
+       next paints", which under load is after the person has tabbed away, so
+       the late callback yanked focus back to a handle they had already left.
+       That is the mechanism behind the red CI runs. The frame callbacks are
+       collected by hand here to play the slow machine: whatever the list may
+       have queued runs only after focus has legitimately moved on, and by then
+       it must have nothing left to do. */
+    function Reorderable() {
+      const [rows, setRows] = useState(ROWS);
+      return (
+        <SortableList
+          items={rows}
+          getId={(row) => row.id}
+          getLabel={(row) => row.title}
+          onReorder={(ids) => {
+            const byId = new Map(rows.map((row) => [row.id, row]));
+            setRows(ids.flatMap((id) => byId.get(id) ?? []));
+          }}
+          renderItem={(row) => <span>{row.title}</span>}
+        />
+      );
+    }
+
+    const frames: FrameRequestCallback[] = [];
+    const heldFrames = vi
+      .spyOn(window, 'requestAnimationFrame')
+      .mockImplementation((callback) => {
+        frames.push(callback);
+        return frames.length;
+      });
+
+    try {
+      render(<Reorderable />);
+      handleFor('Lincoln Beach Center').focus();
+      await userEvent.keyboard('{ArrowDown}');
+
+      /* Focus followed the moved handle in the same breath as the render that
+         moved it, not on some later frame. */
+      expect(handleFor('Lincoln Beach Center')).toHaveAccessibleName(/Position 2 of 3/);
+      expect(handleFor('Lincoln Beach Center')).toHaveFocus();
+
+      /* The person moves on, and only then does the slow frame arrive. */
+      handleFor('Renewal Square').focus();
+      act(() => {
+        for (const callback of frames.splice(0)) callback(performance.now());
+      });
+
+      expect(handleFor('Renewal Square')).toHaveFocus();
+    } finally {
+      heldFrames.mockRestore();
+    }
   });
 
   it('does not move anything while disabled', async () => {

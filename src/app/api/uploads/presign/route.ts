@@ -57,6 +57,16 @@ const PREFIXES: Record<string, (slug?: string) => string> = {
   profile: () => 'profile',
 };
 
+/**
+ * Mirrors SLUG_SHAPE in src/lib/slug.ts, which keeps it private. The comment on
+ * PREFIXES promises the caller never controls the prefix, and a slug passed
+ * through on a typeof check alone was quietly breaking that promise:
+ * 'projects/../../x' is slug-typed and traversal-shaped at the same time.
+ * buildObjectKey drops dot segments as a backstop, but a slug that fails this
+ * shape was never made by this site, so it is refused rather than repaired.
+ */
+const SLUG_SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
 export async function POST(request: Request): Promise<NextResponse> {
   const unauthorised = await requireIdentityOr401();
   if (unauthorised) return unauthorised;
@@ -83,7 +93,15 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (!buildPrefix) {
     return NextResponse.json({ error: 'Unknown upload destination.' }, { status: 400 });
   }
-  const prefix = buildPrefix(typeof body.slug === 'string' ? body.slug : undefined);
+
+  const slug = typeof body.slug === 'string' ? body.slug : undefined;
+  if (slug !== undefined && !SLUG_SHAPE.test(slug)) {
+    return NextResponse.json(
+      { error: 'That project slug is not one this site could have made.' },
+      { status: 400 },
+    );
+  }
+  const prefix = buildPrefix(slug);
 
   const uploads: PresignedUpload[] = [];
   const rejected: { name: string; error: string }[] = [];

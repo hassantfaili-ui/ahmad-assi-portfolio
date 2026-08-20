@@ -12,9 +12,13 @@
  * from this database, so building from a laptop and deploying it replaces the
  * live site with a copy of the laptop and silently undoes every edit made in
  * the admin since.
+ *
+ * Case-insensitive, because hostnames are: LOCALHOST reaches exactly the same
+ * machine as localhost, so a capitalised spelling must not slip a laptop
+ * database past the deploy guard.
  */
 export function isLocalDatabase(url) {
-  return /@(localhost|127\.0\.0\.1|\[::1\])[:/]/.test(url ?? '');
+  return /@(localhost|127\.0\.0\.1|\[::1\])[:/]/i.test(url ?? '');
 }
 
 /** The same string with the password replaced, safe to print in an error. */

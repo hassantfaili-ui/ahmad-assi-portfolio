@@ -17,6 +17,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { extractYouTubeId } from '@/lib/youtube-id';
+
 import Reveal from './Reveal';
 
 import styles from './Film.module.css';
@@ -29,19 +31,11 @@ export interface FilmProps {
   caption?: string | null;
 }
 
-/** Accepts a bare id, a watch URL, a youtu.be link or an embed URL. */
-function youtubeId(raw: string): string {
-  const s = raw.trim();
-  const m =
-    s.match(/[?&]v=([\w-]{6,})/) ||
-    s.match(/youtu\.be\/([\w-]{6,})/) ||
-    s.match(/\/embed\/([\w-]{6,})/) ||
-    s.match(/^([\w-]{6,})$/);
-  return m ? m[1] : s;
-}
-
 export default function Film({ sources, youtubeId: youtube, poster, caption }: FilmProps) {
-  const id = youtube ? youtubeId(youtube) : null;
+  /* The extractor returns null for a string no shape matches, so a junk id
+     saved before validation refused them falls through to the uploaded
+     sources, or to nothing, rather than to an iframe that can never play. */
+  const id = youtube ? extractYouTubeId(youtube) : null;
 
   /* Nothing is requested from Google until this flips. */
   const [playing, setPlaying] = useState(false);
