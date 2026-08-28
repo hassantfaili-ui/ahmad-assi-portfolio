@@ -17,13 +17,19 @@ import { LAYOUTS, type FieldErrors } from '@/lib/validation';
 import type { EditorGroup, EditorImage } from '@/components/admin/MediaPanel';
 
 /**
- * The arrangement: groups of images, in order, each image with its own
- * description.
+ * The arrangement: groups of pictures, in order, each picture with its own
+ * description and its own caption.
  *
  * This holds no data of its own. Every change is handed back up through
  * MediaPanel to ProjectForm, which owns the arrangement and is the only thing
  * on this screen that saves anything. Two lists that both think they are the
  * truth is how an image ends up in two places at once, or in neither.
+ *
+ * There is no box for a caption on a group any more. The caption belonged to
+ * the group, so the words under one render were the words under every render
+ * beside it, and saying something about a single photograph was impossible.
+ * Each picture carries its own now, and the group is only the shape they sit
+ * in on the page.
  */
 
 /** How each layout reads to somebody who has never seen the word triptych. */
@@ -63,20 +69,29 @@ export interface GroupEditorProps {
   onChange: (change: (current: EditorGroup[]) => EditorGroup[]) => void;
   onAddGroup: () => void;
   onAddImages: (groupId: string, items: UploadedItem[]) => void;
+  /** Sends a picture down to the drawings, description and all. */
+  onMoveToDrawings: (groupId: string, imageId: string) => void;
 }
 
+/**
+ * How a group is announced when it is being dragged or moved by keyboard.
+ *
+ * It used to be the group's caption, which no longer exists. The first
+ * picture's description says which group this is in the same way, and to
+ * somebody who cannot see the thumbnails it is the only thing that does.
+ */
 function groupLabel(group: EditorGroup): string {
-  const caption = group.caption.trim();
-  if (caption) return caption;
+  const first = group.images[0]?.alt.trim();
+  if (first) return `the group starting with ${first}`;
   const count = group.images.length;
-  return count === 1 ? 'a group of one image' : `a group of ${count} images`;
+  return count === 1 ? 'a group of one picture' : `a group of ${count} pictures`;
 }
 
 /**
  * A group is dragged by its handle, never by its own fields.
  *
- * Without this, pressing into the caption box to select a word starts dragging
- * the whole group instead, because the row around it is a drag source.
+ * Without this, pressing into a text box to select a word starts dragging the
+ * whole group instead, because the row around it is a drag source.
  */
 function cancelDrag(event: React.DragEvent) {
   event.preventDefault();
@@ -101,6 +116,7 @@ export function GroupEditor({
   onChange,
   onAddGroup,
   onAddImages,
+  onMoveToDrawings,
 }: GroupEditorProps) {
   const [openDropzone, setOpenDropzone] = useState<string | null>(null);
   const [pendingRemoval, setPendingRemoval] = useState<EditorGroup | null>(null);
@@ -241,19 +257,14 @@ export function GroupEditor({
           <div className="grid gap-4">
             <div
               onDragStart={cancelDrag}
-              className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-start"
+              className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end"
             >
-              <Field
-                label={`Group ${groupIndex + 1} caption`}
-                htmlFor={`group-${group.id}-caption`}
-                hint="Shown under these pictures on the page. Leave it empty for none."
-              >
-                <Input
-                  value={group.caption}
-                  onChange={(event) => updateGroup(group.id, { caption: event.target.value })}
-                  placeholder="Nothing under these pictures"
-                />
-              </Field>
+              <p className="text-sm font-medium text-neutral-700">
+                Group {groupIndex + 1}
+                <span className="ml-2 font-normal text-neutral-500">
+                  {group.images.length} {group.images.length === 1 ? 'picture' : 'pictures'}
+                </span>
+              </p>
 
               <Field label="How they sit" htmlFor={`group-${group.id}-layout`}>
                 <Select
@@ -299,7 +310,10 @@ export function GroupEditor({
                       {/* A minimum rather than nothing, so the controls beside
                           it wrap onto their own line instead of squeezing the
                           description down to a box two words wide. */}
-                      <div className="min-w-[12rem] flex-1" onDragStart={cancelDrag}>
+                      <div
+                        className="grid min-w-[12rem] flex-1 gap-2 sm:grid-cols-2"
+                        onDragStart={cancelDrag}
+                      >
                         <Field
                           label="What this picture shows"
                           htmlFor={`image-${image.id}-alt`}
@@ -312,6 +326,26 @@ export function GroupEditor({
                               updateImage(group.id, image.id, { alt: event.target.value })
                             }
                             placeholder="The courtyard at dusk, seen from the north walk"
+                          />
+                        </Field>
+
+                        {/* Its own, not the group's. The description says what
+                            the photograph is, for somebody who cannot see it;
+                            this is the line printed under it for everybody.
+                            Named at length because the film further down the
+                            screen has a caption too, and two boxes called
+                            Caption are two boxes nobody can tell apart by
+                            name. */}
+                        <Field
+                          label="Caption for this picture"
+                          htmlFor={`image-${image.id}-caption`}
+                        >
+                          <Input
+                            value={image.caption ?? ''}
+                            onChange={(event) =>
+                              updateImage(group.id, image.id, { caption: event.target.value })
+                            }
+                            placeholder="Nothing under this picture"
                           />
                         </Field>
                       </div>
@@ -333,6 +367,15 @@ export function GroupEditor({
                             ))}
                           </Select>
                         )}
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onMoveToDrawings(group.id, image.id)}
+                        >
+                          Move to the drawings
+                        </Button>
 
                         <Button
                           type="button"

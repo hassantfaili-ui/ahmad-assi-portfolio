@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Check } from 'lucide-react';
 
 import { Dropzone } from '@/components/admin/Dropzone';
@@ -44,13 +44,28 @@ export interface EditorImage {
   id: string;
   mediaId: string;
   alt: string;
+  /**
+   * The words printed under this photograph on the page.
+   *
+   * A caption belongs to a photograph, not to a group of them. It used to
+   * belong to the group, so changing the words under one render changed the
+   * words under every render beside it, and there was no way at all to say
+   * something about one picture. The stored group captions were copied down
+   * onto each of their pictures, so nothing was lost in the move.
+   */
+  caption?: string;
   media: EditorMedia;
 }
 
 export interface EditorGroup {
   id: string;
   layout: 'pair' | 'full' | 'triptych';
-  caption: string;
+  /**
+   * @deprecated A caption belongs to a picture. Nothing on this screen writes
+   * this any more; it is carried, untouched, so that saving a project does not
+   * empty the column the old words were copied down from.
+   */
+  caption?: string;
   images: EditorImage[];
 }
 
@@ -59,6 +74,14 @@ export interface EditorDrawing {
   mediaId: string;
   alt: string;
   drawingType: string;
+  /**
+   * Carried across a move, never saved. A drawing has nowhere on the page to
+   * print a caption, so this only exists so that moving a picture into the
+   * drawings and back again inside one sitting does not lose the words. Once it
+   * is saved as a drawing the caption is gone, because there is nothing holding
+   * it.
+   */
+  caption?: string;
   media: EditorMedia;
 }
 
@@ -78,6 +101,7 @@ function imagesFromUpload(items: UploadedItem[]): EditorImage[] {
       id: localId(),
       mediaId: item.media.id,
       alt: '',
+      caption: '',
       media: {
         id: item.media.id,
         key: item.media.key,
@@ -119,6 +143,48 @@ function countImages(groups: EditorGroup[]): number {
   return groups.reduce((total, group) => total + group.images.length, 0);
 }
 
+/**
+ * A photograph, put where a photograph goes: at the end of the last group, or
+ * in a group of its own when the project has none yet.
+ *
+ * Everything that hands a picture back to the arrangement comes through here,
+ * so a cover that has been taken off and a drawing that has turned back into a
+ * picture both land in the same, findable place, at the bottom of the pictures,
+ * rather than each somewhere of its own.
+ *
+ * The ids are made by the caller and passed in, so this stays a plain function
+ * of the list it is handed and running it twice cannot invent two rows.
+ */
+function intoLastGroup(
+  current: EditorGroup[],
+  image: EditorImage,
+  newGroupId: string,
+): EditorGroup[] {
+  /* One across the page, because it is one picture on its own. */
+  if (current.length === 0) return [{ id: newGroupId, layout: 'full', images: [image] }];
+
+  const last = current.length - 1;
+  return current.map((group, index) =>
+    index === last ? { ...group, images: [...group.images, image] } : group,
+  );
+}
+
+/**
+ * A photograph that has just stopped being the cover and is in no group.
+ *
+ * Changing or clearing the cover used to make that photograph disappear off the
+ * screen: nothing else on the project pointed at it, so there was nowhere left
+ * for it to show, and getting it back meant hunting for the file and uploading
+ * it a second time. It waits here instead, with the description it had as the
+ * cover, until Ahmad says where it goes.
+ */
+interface StrayCover {
+  media: EditorMedia;
+  alt: string;
+  /** Set once it has a home, so the note says what happened rather than vanishing. */
+  kept: boolean;
+}
+
 export interface MediaPanelProps {
   /** Where uploaded files are filed in the bucket. */
   slug: string;
@@ -158,14 +224,13 @@ export function MediaPanel({
   onLeadImageChange,
   onLeadImageAltChange,
 }: MediaPanelProps) {
+  const [strayCover, setStrayCover] = useState<StrayCover | null>(null);
+
   const startGroupFromUpload = useCallback(
     (items: UploadedItem[]) => {
       const images = imagesFromUpload(items);
       if (images.length === 0) return;
-      onGroupsChange((current) => [
-        ...current,
-        { id: localId(), layout: 'pair', caption: '', images },
-      ]);
+      onGroupsChange((current) => [...current, { id: localId(), layout: 'pair', images }]);
     },
     [onGroupsChange],
   );
@@ -189,7 +254,6 @@ export function MediaPanel({
             {
               id: `group-${Date.now()}`,
               layout: 'pair' as const,
-              caption: '',
               images,
             },
           ];
@@ -204,10 +268,7 @@ export function MediaPanel({
   );
 
   const addEmptyGroup = useCallback(() => {
-    onGroupsChange((current) => [
-      ...current,
-      { id: localId(), layout: 'pair', caption: '', images: [] },
-    ]);
+    onGroupsChange((current) => [...current, { id: localId(), layout: 'pair', images: [] }]);
   }, [onGroupsChange]);
 
   const addDrawings = useCallback(
@@ -223,6 +284,70 @@ export function MediaPanel({
       onDrawingsChange((current) => [...current, ...added]);
     },
     [onDrawingsChange],
+  );
+
+  /**
+   * A picture becomes a drawing, and a drawing becomes a picture.
+   *
+   * Both directions read the row being moved out of the list this render is
+   * showing, which is the list Ahmad is looking at and pointing at. Both halves
+   * of the move are still functions of the current lists, so a batch of uploads
+   * landing between the click and the render is not overwritten by either one.
+   */
+  const moveImageToDrawings = useCallback(
+    (groupId: string, imageId: string) => {
+      const moving = groups
+        .find((group) => group.id === groupId)
+        ?.images.find((image) => image.id === imageId);
+      if (!moving) return;
+
+      const drawingId = localId();
+
+      onGroupsChange((current) =>
+        current.map((group) =>
+          group.id === groupId
+            ? { ...group, images: group.images.filter((image) => image.id !== imageId) }
+            : group,
+        ),
+      );
+      onDrawingsChange((current) => [
+        ...current,
+        {
+          id: drawingId,
+          mediaId: moving.mediaId,
+          alt: moving.alt,
+          caption: moving.caption,
+          /* Something rather than nothing, since this is printed under the
+             sheet on the page. Ahmad can say what it really is. */
+          drawingType: 'Drawing',
+          media: moving.media,
+        },
+      ]);
+    },
+    [groups, onGroupsChange, onDrawingsChange],
+  );
+
+  const moveDrawingToPictures = useCallback(
+    (drawingId: string) => {
+      const moving = drawings.find((drawing) => drawing.id === drawingId);
+      if (!moving) return;
+
+      /* What kind of drawing it was has nowhere to go: a picture is not a plan
+         or a section. The description comes with it, because it describes the
+         same photograph either way. */
+      const image: EditorImage = {
+        id: localId(),
+        mediaId: moving.mediaId,
+        alt: moving.alt,
+        caption: moving.caption ?? '',
+        media: moving.media,
+      };
+      const groupId = localId();
+
+      onDrawingsChange((current) => current.filter((drawing) => drawing.id !== drawingId));
+      onGroupsChange((current) => intoLastGroup(current, image, groupId));
+    },
+    [drawings, onGroupsChange, onDrawingsChange],
   );
 
   const updateDrawing = useCallback(
@@ -252,6 +377,51 @@ export function MediaPanel({
     [onDrawingsChange],
   );
 
+  /**
+   * Picking a cover, and noticing what the last one is about to become.
+   *
+   * A cover that also sits in a group is on screen whatever happens to it. One
+   * that does not is the whole project's only reference to that photograph, so
+   * taking it off is the moment it would disappear, and that is the moment to
+   * say so and offer it somewhere to go.
+   */
+  const chooseCover = useCallback(
+    (mediaId: string | null) => {
+      let outgoing: EditorMedia | null = null;
+      if (leadImageId && leadImageId !== mediaId) {
+        outgoing = coverChoices(groups, leadImage).find((media) => media.id === leadImageId) ?? null;
+      }
+
+      const stillShown =
+        outgoing === null ||
+        groups.some((group) => group.images.some((image) => image.media.id === outgoing?.id));
+
+      onLeadImageChange(mediaId);
+      setStrayCover(
+        outgoing && !stillShown ? { media: outgoing, alt: leadImageAlt, kept: false } : null,
+      );
+    },
+    [groups, leadImage, leadImageId, leadImageAlt, onLeadImageChange],
+  );
+
+  const keepStrayCover = useCallback(() => {
+    if (!strayCover || strayCover.kept) return;
+
+    /* Made out here, so the update below is a plain function of the groups it
+       is handed and cannot invent two different rows if it runs twice. */
+    const image: EditorImage = {
+      id: localId(),
+      mediaId: strayCover.media.id,
+      alt: strayCover.alt,
+      caption: '',
+      media: strayCover.media,
+    };
+    const groupId = localId();
+
+    onGroupsChange((current) => intoLastGroup(current, image, groupId));
+    setStrayCover({ ...strayCover, kept: true });
+  }, [strayCover, onGroupsChange]);
+
   const choices = coverChoices(groups, leadImage);
   const imageCount = countImages(groups);
 
@@ -273,7 +443,7 @@ export function MediaPanel({
           accept="image"
           onUploaded={startGroupFromUpload}
           label="Drop renders here to start a new group"
-          hint="Or paste them, or choose them below. A group is a set of pictures that share one caption."
+          hint="Or paste them, or choose them below. A group is a set of pictures that sit together on the page, and each one has its own caption."
         />
 
         <GroupEditor
@@ -283,6 +453,7 @@ export function MediaPanel({
           onChange={onGroupsChange}
           onAddGroup={addEmptyGroup}
           onAddImages={addToGroup}
+          onMoveToDrawings={moveImageToDrawings}
         />
       </section>
 
@@ -295,6 +466,57 @@ export function MediaPanel({
             This is the picture that shows on the home page.
           </span>
         </div>
+
+        {strayCover && (
+          <div
+            role="status"
+            className="flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+          >
+            <Image
+              src={strayCover.media.key}
+              alt=""
+              width={112}
+              height={84}
+              sizes="112px"
+              className="h-12 w-16 shrink-0 rounded bg-neutral-200 object-cover"
+            />
+
+            {strayCover.kept ? (
+              <>
+                <p className="min-w-[12rem] flex-1">
+                  That photograph is back with the pictures above, at the end of the last group.
+                  Nothing changes on the site until you save.
+                </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setStrayCover(null)}
+                >
+                  Done
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="min-w-[12rem] flex-1">
+                  That photograph was the cover, and it is in none of the groups above, so nothing
+                  on the project shows it now.
+                </p>
+                <Button type="button" variant="outline" size="sm" onClick={keepStrayCover}>
+                  Put it with the pictures
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setStrayCover(null)}
+                >
+                  Leave it out
+                </Button>
+              </>
+            )}
+          </div>
+        )}
 
         {choices.length === 0 ? (
           <p className="rounded-lg border border-dashed border-neutral-300 px-4 py-6 text-center text-sm text-neutral-500">
@@ -310,7 +532,7 @@ export function MediaPanel({
                     <button
                       type="button"
                       aria-pressed={chosen}
-                      onClick={() => onLeadImageChange(chosen ? null : media.id)}
+                      onClick={() => chooseCover(chosen ? null : media.id)}
                       className={
                         chosen
                           ? 'relative block overflow-hidden rounded-lg ring-2 ring-neutral-900 ring-offset-2'
@@ -426,14 +648,25 @@ export function MediaPanel({
                   </Field>
                 </div>
 
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeDrawing(drawing.id)}
-                >
-                  Take out
-                </Button>
+                <div className="grid gap-1">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => moveDrawingToPictures(drawing.id)}
+                  >
+                    Move to the pictures
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeDrawing(drawing.id)}
+                  >
+                    Take out
+                  </Button>
+                </div>
               </div>
             )}
           />

@@ -211,8 +211,19 @@ function buildPayload(
     published,
     groups: groups.map((group) => ({
       layout: group.layout,
+      /* Carried, never edited. A caption belongs to a photograph now: every
+         group caption was copied down onto its pictures before this screen
+         changed, and the project page prints the picture's own. It still goes
+         back exactly as it arrived rather than as nothing, because sending
+         nothing empties the column on the first save of every project, and
+         that copy of the words is worth keeping until the new ones have made
+         the trip out to the database and back at least once. */
       caption: group.caption,
-      images: group.images.map((image) => ({ mediaId: image.mediaId, alt: image.alt })),
+      images: group.images.map((image) => ({
+        mediaId: image.mediaId,
+        alt: image.alt,
+        caption: image.caption ?? null,
+      })),
     })),
     drawings: drawings.map((drawing) => ({
       mediaId: drawing.mediaId,

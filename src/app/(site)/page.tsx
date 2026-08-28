@@ -1,13 +1,23 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
-import HeroFilm from '@/components/site/HeroFilm';
+import ClosingFilm from '@/components/site/ClosingFilm';
+import HeroFilm, { type HeroSources } from '@/components/site/HeroFilm';
 import ProjectGrid from '@/components/site/ProjectGrid';
 import Reveal from '@/components/site/Reveal';
 import { mediaUrl, posterUrl } from '@/lib/media-url';
-import { getHeroFilm, getProfile, getPublishedProjects } from '@/lib/queries';
+import {
+  getClosingFilm,
+  getHeroFilm,
+  getProfile,
+  getPublishedProjects,
+  type FilmView,
+} from '@/lib/queries';
 
 /* Short enough to read over moving footage. The full version is on the resume. */
+/* The fallback only. The paragraph itself is edited on the Home screen and
+   comes from the profile; this is what an empty database reads as, the same way
+   FALLBACK_NAME works below. */
 const INTRO =
   'A graduate of the Bachelor of Architectural Studies at Carleton University, ' +
   'majoring in urbanism. I work between design and the site itself: masterplans ' +
@@ -25,6 +35,29 @@ function telHref(phone: string): string {
   return `tel:${phone.replace(/[^\d+]/g, '')}`;
 }
 
+/**
+ * The two encodes a film hands the browser: the tallest and the shortest of
+ * whatever has been uploaded.
+ *
+ * The migration writes 1440 and 720, and the film component decides between
+ * them in the browser. Reading the two ends of the list rather than two fixed
+ * heights means a third encode added later widens the choice instead of
+ * breaking it, and one encode alone simply gets used for both.
+ *
+ * Both films on this page want the same answer, which is why it is a function
+ * now rather than six lines written out twice.
+ */
+function encodesOf(film: FilmView | null): HeroSources {
+  const encodes = film?.sources ?? [];
+  const largest = encodes[0]?.media.key;
+  const smallest = encodes[encodes.length - 1]?.media.key;
+
+  return {
+    large: largest ? mediaUrl(largest) : null,
+    small: smallest ? mediaUrl(smallest) : null,
+  };
+}
+
 export async function generateMetadata(): Promise<Metadata> {
   const { profile } = await getProfile();
 
@@ -40,10 +73,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Home() {
-  const [projects, { profile }, hero] = await Promise.all([
+  const [projects, { profile }, hero, closing] = await Promise.all([
     getPublishedProjects(),
     getProfile(),
     getHeroFilm(),
+    getClosingFilm(),
   ]);
 
   const name = profile?.name ?? FALLBACK_NAME;
@@ -56,14 +90,15 @@ export default async function Home() {
   const email = profile?.email ?? '';
   const phone = profile?.phone ?? '';
 
-  /* Two encodes, the tallest and the shortest of whatever has been uploaded.
-     The migration writes 1440 and 720, and HeroFilm decides between them in the
-     browser. Reading the two ends of the list rather than two fixed heights
-     means a third encode added later widens the choice instead of breaking it,
-     and one encode alone simply gets used for both. */
-  const encodes = hero?.sources ?? [];
-  const largest = encodes[0]?.media.key;
-  const smallest = encodes[encodes.length - 1]?.media.key;
+  const closingSources = encodesOf(closing);
+  const closingPoster = closing?.poster ? posterUrl(closing.poster.key) : null;
+
+  /* Whether the band has anything to put behind itself, which is a different
+     question from whether a closing film row exists. A row with no encodes and
+     no poster yet would otherwise darken the band and dim the type for the sake
+     of an empty black rectangle. Nothing on this page changes until Ahmad has
+     actually uploaded footage. */
+  const hasClosingFilm = Boolean(closingSources.large || closingSources.small || closingPoster);
 
   return (
     <>
@@ -72,13 +107,10 @@ export default async function Home() {
         eyebrow={`${profile?.discipline ?? ''} \u00a0/\u00a0 ${profile?.location ?? ''}`}
         name={firstName}
         surname={surname}
-        intro={INTRO}
+        intro={profile?.welcome?.trim() || INTRO}
         ctaLabel="Architecture"
         ctaHref="/architecture"
-        sources={{
-          large: largest ? mediaUrl(largest) : null,
-          small: smallest ? mediaUrl(smallest) : null,
-        }}
+        sources={encodesOf(hero)}
         poster={hero?.poster ? posterUrl(hero.poster.key) : null}
       />
 
@@ -90,8 +122,17 @@ export default async function Home() {
       </section>
 
       {/* About and the invitation sit side by side and share a row, so the page
-          closes on one gesture rather than two stacked centred blocks. */}
-      <section className="band closing">
+          closes on one gesture rather than two stacked centred blocks.
+
+          With a closing film uploaded, that row plays over a second walkthrough
+          the way the name at the top plays over the first. The film goes in
+          before the grid and is lifted out of the flow entirely, so the two
+          columns sit exactly where they sat without it. The class is what turns
+          the band dark and re-colours the type for it; with no footage the band
+          is unchanged, which is the state today. */}
+      <section className={hasClosingFilm ? 'band closing has-film' : 'band closing'}>
+        {hasClosingFilm && <ClosingFilm sources={closingSources} poster={closingPoster} />}
+
         <div className="closing-grid">
           <Reveal className="closing-about">
             <h2 className="closing-heading">About</h2>

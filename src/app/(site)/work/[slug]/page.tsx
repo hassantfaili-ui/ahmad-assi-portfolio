@@ -25,9 +25,14 @@ const FALLBACK_NAME = 'Ahmad Assi';
  * What the layout gives each figure, so the loader is asked for that width
  * rather than for the width of the master file. The gallery is two columns and
  * becomes one at 880px, and the drawing sheets are a single 70rem column.
+ *
+ * The cover takes the narrower half of the row it shares with the description,
+ * a little under 40% of the window until the grid reaches its 72rem cap, and
+ * the whole window once that row stacks.
  */
 const STAGGER_SIZES = '(max-width: 880px) 100vw, 50vw';
 const SHEET_SIZES = '(max-width: 70rem) 100vw, 70rem';
+const COVER_SIZES = '(max-width: 880px) 100vw, (max-width: 80rem) 40vw, 32rem';
 
 interface WorkPageProps {
   params: Promise<{ slug: string }>;
@@ -100,11 +105,19 @@ export default async function WorkPage({ params }: WorkPageProps) {
 
   const adjacent = await getAdjacentProjects(slug);
 
-  /* Every image from every group, each carrying the caption of the group it
-     came from, so the gallery can be laid out as one run of figures. */
-  const gallery = project.imageGroups.flatMap((group) =>
-    group.images.map((image) => ({ ...image, caption: group.caption })),
-  );
+  const cover = project.leadImage;
+
+  /* Every picture from every group, laid out as one run of figures. Each keeps
+     its own caption: the group caption is deprecated and was copied down onto
+     every picture under it, so a set of four no longer has to share a sentence
+     Ahmad can only write once.
+
+     The cover is left out. It sits beside the description above now, and a
+     cover nobody chose is the first picture of the first group, which is
+     exactly the one that would otherwise appear twice. */
+  const gallery = project.imageGroups
+    .flatMap((group) => group.images)
+    .filter((image) => image.media.id !== cover?.id);
 
   return (
     <>
@@ -132,14 +145,36 @@ export default async function WorkPage({ params }: WorkPageProps) {
       </Reveal>
 
       <div className="band">
-        {/* The body is markdown: headings, tables and emphasis all appear in
-            the eighteen project files, and rendering it as plain paragraphs
-            published the source. markdown-it runs with html off, so the only
-            markup that reaches the page is markup it produced. */}
-        <Reveal
-          className="prose"
-          dangerouslySetInnerHTML={{ __html: renderMarkdown(project.body) }}
-        />
+        {/* The writing and the cover share a row, the photograph held against
+            the middle of the text rather than breaking into it.
+
+            The words take the left. The two have to stack with the photograph
+            after the text on a narrow screen, so the text has to come first in
+            the markup, and putting it first on the page as well means what is
+            read and what is seen stay in the same order at every width. A
+            project with no cover has nothing to sit beside, so it keeps the
+            single centred column it has always had. */}
+        <div className={cover ? 'about-grid' : undefined}>
+          {/* The body is markdown: headings, tables and emphasis all appear in
+              the eighteen project files, and rendering it as plain paragraphs
+              published the source. markdown-it runs with html off, so the only
+              markup that reaches the page is markup it produced. */}
+          <Reveal
+            className="prose"
+            dangerouslySetInnerHTML={{ __html: renderMarkdown(project.body) }}
+          />
+          {cover && (
+            <Reveal as="figure" className="about-cover">
+              <Image
+                src={cover.key}
+                alt={project.leadImageAlt}
+                width={cover.width ?? 1600}
+                height={cover.height ?? 1067}
+                sizes={COVER_SIZES}
+              />
+            </Reveal>
+          )}
+        </div>
       </div>
 
       {project.film && (
@@ -159,31 +194,25 @@ export default async function WorkPage({ params }: WorkPageProps) {
         </section>
       )}
 
-      <div className="stagger">
-        {project.leadImage && (
-          <Reveal as="figure">
-            <Image
-              src={project.leadImage.key}
-              alt={project.leadImageAlt}
-              width={project.leadImage.width ?? 1600}
-              height={project.leadImage.height ?? 1067}
-              sizes={STAGGER_SIZES}
-            />
-          </Reveal>
-        )}
-        {gallery.map((image) => (
-          <Reveal as="figure" key={image.id}>
-            <Image
-              src={image.media.key}
-              alt={image.alt}
-              width={image.media.width ?? 1600}
-              height={image.media.height ?? 1067}
-              sizes={STAGGER_SIZES}
-            />
-            {image.caption && <figcaption>{image.caption}</figcaption>}
-          </Reveal>
-        ))}
-      </div>
+      {/* Guarded, because the gallery can now come up empty: the cover has left
+          it, and a project whose only picture was its cover would otherwise be
+          a run of padding with nothing in it. */}
+      {gallery.length > 0 && (
+        <div className="stagger">
+          {gallery.map((image) => (
+            <Reveal as="figure" key={image.id}>
+              <Image
+                src={image.media.key}
+                alt={image.alt}
+                width={image.media.width ?? 1600}
+                height={image.media.height ?? 1067}
+                sizes={STAGGER_SIZES}
+              />
+              {image.caption && <figcaption>{image.caption}</figcaption>}
+            </Reveal>
+          ))}
+        </div>
+      )}
 
       {project.drawings.length > 0 && (
         <section className="band" aria-labelledby="drawings">

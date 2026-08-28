@@ -134,7 +134,7 @@ export type ProjectDetail = ProjectSummary & {
     id: string;
     layout: 'pair' | 'full' | 'triptych';
     caption: string | null;
-    images: { id: string; alt: string; media: MediaRef }[];
+    images: { id: string; alt: string; caption: string | null; media: MediaRef }[];
   }[];
   drawings: { id: string; alt: string; drawingType: string; media: MediaRef }[];
 };
@@ -175,7 +175,7 @@ export async function getProjectBySlug(slug: string): Promise<ProjectDetail | nu
           layout: true,
           caption: true,
           images: {
-            select: { id: true, alt: true, media: { select: mediaSelect } },
+            select: { id: true, alt: true, caption: true, media: { select: mediaSelect } },
             orderBy: { order: 'asc' },
           },
         },
@@ -245,10 +245,25 @@ export async function getProfile() {
 }
 
 /** The site hero film is the one Film row with no project attached. */
-export async function getHeroFilm(): Promise<FilmView | null> {
+/**
+ * A film that belongs to a fixed place on the site rather than to a project.
+ *
+ * "hero" plays behind the name at the top of the home page, "closing" behind
+ * About and Get in touch at the bottom of it. They used to be identified by
+ * having no project, which was enough while there was only one of them.
+ */
+export async function getSiteFilm(slot: 'hero' | 'closing'): Promise<FilmView | null> {
   const row = await db.film.findFirst({
-    where: { projectId: null },
+    where: { slot },
     select: filmInclude,
   });
   return toFilmView(row);
+}
+
+export async function getHeroFilm(): Promise<FilmView | null> {
+  return getSiteFilm('hero');
+}
+
+export async function getClosingFilm(): Promise<FilmView | null> {
+  return getSiteFilm('closing');
 }

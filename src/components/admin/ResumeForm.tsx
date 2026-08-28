@@ -11,6 +11,7 @@ import {
 } from 'react';
 
 import { Dropzone } from '@/components/admin/Dropzone';
+import { GuardedLink } from '@/components/admin/GuardedLink';
 import { SortableList } from '@/components/admin/SortableList';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,10 +21,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/toast';
 import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
 import { useSaveFlag } from '@/hooks/use-save-flag';
-import { CONTACT_DEFAULTS } from '@/lib/contact-defaults';
 import type { UploadedItem } from '@/hooks/use-uploads';
 import { runAction } from '@/lib/action-result';
-import { mediaUrl } from '@/lib/media-url';
 import {
   saveProfile,
   saveResumeLists,
@@ -39,8 +38,18 @@ import { hasErrors, validateProfile, type FieldErrors } from '@/lib/validation';
  * Two buttons rather than one because there are two writes underneath, and they
  * are not interchangeable: saveProfile upserts a single row, saveResumeLists
  * deletes every list and writes it again. One button over both would mean a
- * corrected telephone number rewriting seven tables, and a half finished list
- * being republished because a detail above it changed.
+ * corrected job title rewriting seven tables, and a half finished list being
+ * republished because a detail above it changed.
+ *
+ * What the contact page says is not edited here any more, it is edited on the
+ * Contact screen, and that includes the four boxes that show on both pages: the
+ * email address, the telephone number, where he is and the resume PDF. They are
+ * still sent by both saves, exactly as this page loaded them, because
+ * saveProfile writes the whole row and saveResumeLists rewrites every list. A
+ * value left out of a payload is not left alone, it is erased. The cost is a
+ * narrow one: saving here after editing the contact screen in another tab puts
+ * the older contact details back, because this tab is still holding the values
+ * it opened with.
  *
  * Every list keeps a local uid on each row. The rows in the database have no
  * stable identity across a save, since the save deletes and recreates them, so
@@ -54,7 +63,8 @@ import { hasErrors, validateProfile, type FieldErrors } from '@/lib/validation';
 
 // ------------------------------------------------------------------ types ---
 
-interface FileRef {
+/** One file in the library, as much of it as an editing screen needs. */
+export interface FileRef {
   id: string;
   key: string;
   bytes: number;
@@ -63,11 +73,15 @@ interface FileRef {
 }
 
 /**
- * Exactly what this screen reads, declared here rather than imported from
+ * Exactly what getProfile returns, declared here rather than imported from
  * src/lib/queries.ts, because that module is server only. The shape getProfile
- * returns satisfies it, so the page hands its result straight over.
+ * returns satisfies it, so a page hands its result straight over.
+ *
+ * The contact screen reads the same thing and imports this type rather than
+ * writing a second copy of it. Both screens need all of it, not just their own
+ * half, because both of their saves rewrite everything they touch.
  */
-export interface ResumeData {
+export interface ProfileData {
   profile: {
     name: string;
     discipline: string;
@@ -119,12 +133,6 @@ interface FactRow {
   items: TextRow[];
 }
 
-interface SocialRow {
-  uid: string;
-  label: string;
-  href: string;
-}
-
 interface ExperienceRow {
   uid: string;
   role: string;
@@ -155,24 +163,26 @@ interface EntryRow {
   year: string;
 }
 
+/**
+ * The boxes in the top half of this screen.
+ *
+ * Shorter than the profile row it belongs to. Where he is, his email address,
+ * his telephone number, the line about what he is looking for, the words on the
+ * contact page and the two PDFs are all edited on the Contact screen now, so
+ * they are not fields here. The save still sends them, straight through from
+ * what the page loaded with.
+ */
 type ProfileFields = {
   name: string;
   discipline: string;
   credential: string;
   registration: string;
-  location: string;
   yearsExperience: string;
-  availability: string;
   issued: string;
   welcome: string;
   positioning: string;
   portraitAlt: string;
-  email: string;
-  phone: string;
   references: string;
-  contactStatus: string;
-  contactHeading: string;
-  contactBlurb: string;
 };
 
 // ---------------------------------------------------------------- helpers ---
@@ -228,7 +238,7 @@ const SECTIONS: { id: Section; title: string; description: string }[] = [
   },
 ];
 
-function entryRowsFor(all: ResumeData['entries'], section: Section): EntryRow[] {
+function entryRowsFor(all: ProfileData['entries'], section: Section): EntryRow[] {
   return all
     .filter((entry) => entry.section === section)
     .map((entry) => ({
@@ -270,6 +280,34 @@ function blankIn(section: string, noun: string, values: string[], what: string):
   return `${noun} ${index + 1} under ${section} has no ${what}. Fill it in, or remove it, then save again.`;
 }
 
+/** A, B and C. */
+function said(items: string[]): string {
+  if (items.length < 2) return items[0] ?? '';
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
+/**
+ * What the contact screen owns and this save still insists on.
+ *
+ * saveProfile checks the whole row, and the whole row includes three boxes that
+ * are not on this screen any more. Without this the save would be refused with
+ * nothing marked and nothing here to correct.
+ */
+const ON_THE_CONTACT_SCREEN: Record<string, string> = {
+  location: 'where you are',
+  email: 'your email address',
+  phone: 'your telephone number',
+};
+
+function contactProblem(errors: FieldErrors): string | null {
+  const missing = Object.keys(errors)
+    .filter((field) => field in ON_THE_CONTACT_SCREEN)
+    .map((field) => ON_THE_CONTACT_SCREEN[field]);
+
+  if (missing.length === 0) return null;
+  return `Something on the Contact screen is still blank: ${said(missing)}. This save needs it. Fill it in there, then save here again.`;
+}
+
 /**
  * A setter that also marks its half of the screen as unsaved.
  *
@@ -295,7 +333,7 @@ function marking<T>(
 
 // ------------------------------------------------------------ the screen ---
 
-export function ResumeForm({ data }: { data: ResumeData }) {
+export function ResumeForm({ data }: { data: ProfileData }) {
   const { push } = useToast();
 
   // One flag for each save button, because the two halves are written by two
@@ -319,19 +357,12 @@ export function ResumeForm({ data }: { data: ResumeData }) {
     discipline: data.profile?.discipline ?? '',
     credential: data.profile?.credential ?? '',
     registration: data.profile?.registration ?? '',
-    location: data.profile?.location ?? '',
     yearsExperience: data.profile?.yearsExperience ?? '',
-    availability: data.profile?.availability ?? '',
     issued: data.profile?.issued ?? '',
     welcome: data.profile?.welcome ?? '',
     positioning: data.profile?.positioning ?? '',
     portraitAlt: data.profile?.portraitAlt ?? '',
-    email: data.profile?.email ?? '',
-    phone: data.profile?.phone ?? '',
     references: data.profile?.references ?? '',
-    contactStatus: data.profile?.contactStatus ?? '',
-    contactHeading: data.profile?.contactHeading ?? '',
-    contactBlurb: data.profile?.contactBlurb ?? '',
   }));
 
   const [longBio, setLongBioState] = useState<TextRow[]>(() =>
@@ -340,16 +371,9 @@ export function ResumeForm({ data }: { data: ResumeData }) {
   const [portrait, setPortraitState] = useState<FileRef | null>(
     () => data.profile?.portraitMedia ?? null,
   );
-  const [cv, setCvState] = useState<FileRef | null>(() => data.profile?.cvMedia ?? null);
-  const [portfolio, setPortfolioState] = useState<FileRef | null>(
-    () => data.profile?.portfolioMedia ?? null,
-  );
 
   const [facts, setFactsState] = useState<FactRow[]>(() =>
     data.facts.map((fact) => ({ uid: nextUid(), label: fact.label, items: toTextRows(fact.items) })),
-  );
-  const [social, setSocialState] = useState<SocialRow[]>(() =>
-    data.social.map((link) => ({ uid: nextUid(), label: link.label, href: link.href })),
   );
   const [experience, setExperienceState] = useState<ExperienceRow[]>(() =>
     data.experience.map((entry) => ({
@@ -401,11 +425,8 @@ export function ResumeForm({ data }: { data: ResumeData }) {
   const setFields = marking(setFieldsState, profileFlag.markDirty);
   const setLongBio = marking(setLongBioState, profileFlag.markDirty);
   const setPortrait = marking(setPortraitState, profileFlag.markDirty);
-  const setCv = marking(setCvState, profileFlag.markDirty);
-  const setPortfolio = marking(setPortfolioState, profileFlag.markDirty);
 
   const setFacts = marking(setFactsState, listsFlag.markDirty);
-  const setSocial = marking(setSocialState, listsFlag.markDirty);
   const setExperience = marking(setExperienceState, listsFlag.markDirty);
   const setEducation = marking(setEducationState, listsFlag.markDirty);
   const setSkillGroups = marking(setSkillGroupsState, listsFlag.markDirty);
@@ -424,22 +445,40 @@ export function ResumeForm({ data }: { data: ResumeData }) {
     // the counter past this number, settle then leaves the badge up, and the
     // work that never went is still marked as work.
     const at = profileFlag.snapshot();
+    const profile = data.profile;
 
     const input: ProfileInput = {
       ...fields,
       longBio: longBio.map((row) => row.text),
       portraitMediaId: portrait?.id ?? null,
-      cvMediaId: cv?.id ?? null,
-      portfolioMediaId: portfolio?.id ?? null,
+
+      /* Everything the contact screen owns, exactly as this page loaded it.
+         saveProfile upserts the whole row, so a field left out of this object
+         is not left alone, it is written back empty. */
+      location: profile?.location ?? '',
+      availability: profile?.availability ?? '',
+      email: profile?.email ?? '',
+      phone: profile?.phone ?? '',
+      contactStatus: profile?.contactStatus ?? '',
+      contactHeading: profile?.contactHeading ?? '',
+      contactBlurb: profile?.contactBlurb ?? '',
+      cvMediaId: profile?.cvMedia?.id ?? null,
+      portfolioMediaId: profile?.portfolioMedia?.id ?? null,
     };
 
-    // Checked here first so an empty telephone box says so straight away rather
-    // than after a round trip. The same rules run again on the server.
+    // Checked here first so an empty box says so straight away rather than
+    // after a round trip. The same rules run again on the server.
     const found = validateProfile(input);
     if (hasErrors(found)) {
+      const elsewhere = contactProblem(found);
       setProfileErrors(found);
-      setProfileNotice(null);
-      push('A few of your details still need filling in. They are marked below.', 'error');
+      setProfileNotice(elsewhere);
+      push(
+        elsewhere
+          ? 'This cannot be saved yet. The note at the top says why.'
+          : 'A few of your details still need filling in. They are marked below.',
+        'error',
+      );
       return;
     }
 
@@ -447,7 +486,9 @@ export function ResumeForm({ data }: { data: ResumeData }) {
       const result = await runAction(() => saveProfile(input));
 
       if (!result.ok) {
-        setProfileErrors(result.errors ?? {});
+        const back = result.errors ?? {};
+        setProfileErrors(back);
+        setProfileNotice(contactProblem(back));
         push(result.message ?? 'Your details were not saved. Check the boxes marked below.', 'error');
         return;
       }
@@ -476,7 +517,6 @@ export function ResumeForm({ data }: { data: ResumeData }) {
         'name',
       ) ??
       blankIn('Skills', 'Group', skillGroups.map((group) => group.label), 'heading') ??
-      blankIn('Elsewhere', 'Link', social.map((link) => link.label), 'name') ??
       SECTIONS.reduce<string | null>(
         (found, section) =>
           found ??
@@ -495,7 +535,11 @@ export function ResumeForm({ data }: { data: ResumeData }) {
         label: fact.label,
         items: fact.items.map((item) => item.text),
       })),
-      social: social.map((link) => ({ label: link.label, href: link.href })),
+      /* The links under Elsewhere, exactly as this page loaded them. They are
+         edited on the Contact screen, and saveResumeLists deletes every list
+         and writes it again, so leaving them out would not leave them alone, it
+         would delete them. */
+      social: data.social.map((link) => ({ label: link.label, href: link.href })),
       experience: experience.map((entry) => ({
         role: entry.role,
         firm: entry.firm,
@@ -543,19 +587,28 @@ export function ResumeForm({ data }: { data: ResumeData }) {
       <section>
         <SaveBar
           title="Your details"
-          description="Your name, how you describe yourself, your portrait, your PDFs and how people reach you. This button saves everything in this half. The lists below have their own button."
+          description="Your name, how you describe yourself, your portrait and the writing about you. This button saves everything in this half. The lists below have their own button."
           label="Save your details"
           busy={savingProfile}
           dirty={profileFlag.dirty}
           onSave={onSaveProfile}
         />
 
+        <Moved>
+          Your email address, telephone number, where you are, the two PDFs and the words on the
+          contact page are edited on the{' '}
+          <GuardedLink href="/admin/contact" className="underline underline-offset-4">
+            Contact
+          </GuardedLink>{' '}
+          screen now.
+        </Moved>
+
         <Notice text={profileNotice} />
 
         <div className="grid gap-6">
           <Panel
             title="Who you are"
-            description="These lines appear across the site: in the header, the footer, and at the top of the resume and contact pages."
+            description="These lines appear across the site: in the header, the footer, and at the top of the resume page."
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <Field
@@ -611,20 +664,6 @@ export function ResumeForm({ data }: { data: ResumeData }) {
               </Field>
 
               <Field
-                label="Where you are"
-                htmlFor="profile-location"
-                required
-                error={profileErrors.location}
-                hint="Shown on the home page, the resume page, the contact page and in the footer."
-              >
-                <Input
-                  value={fields.location}
-                  placeholder="Ottawa, Ontario"
-                  onChange={(event) => setField('location', event.target.value)}
-                />
-              </Field>
-
-              <Field
                 label="Where you are in your career"
                 htmlFor="profile-years"
                 hint="Sits beside your degree on the resume page. For example, Graduated 2025."
@@ -633,18 +672,6 @@ export function ResumeForm({ data }: { data: ResumeData }) {
                   value={fields.yearsExperience}
                   placeholder="Graduated 2025"
                   onChange={(event) => setField('yearsExperience', event.target.value)}
-                />
-              </Field>
-
-              <Field
-                label="What you are looking for"
-                htmlFor="profile-availability"
-                hint="The sentence under the Contact heading, and on the printed PDF."
-              >
-                <Input
-                  value={fields.availability}
-                  placeholder="Seeking a position with a professional firm"
-                  onChange={(event) => setField('availability', event.target.value)}
                 />
               </Field>
 
@@ -759,117 +786,18 @@ export function ResumeForm({ data }: { data: ResumeData }) {
           </Panel>
 
           <Panel
-            title="Your PDFs"
-            description="The two files people download from the site. Each button only appears once its file is here."
+            title="How the resume page ends"
+            description="The last line under everything else on the resume page."
           >
-            <DocumentSlot
-              title="Resume PDF"
-              hint="The download button on the resume page, and one of the two on the contact page."
-              file={cv}
-              onClear={() => setCv(null)}
-              onUploaded={(items) => {
-                const file = firstFile(items);
-                if (file) setCv(file);
-              }}
-            />
-
-            <DocumentSlot
-              title="Portfolio PDF"
-              hint="The other download button on the contact page."
-              file={portfolio}
-              onClear={() => setPortfolio(null)}
-              onUploaded={(items) => {
-                const file = firstFile(items);
-                if (file) setPortfolio(file);
-              }}
-            />
-          </Panel>
-
-          <Panel
-            title="How to reach you"
-            description="Your email address is the only route on the contact page, so it has to be right."
-          >
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field
-                label="Email address"
-                htmlFor="profile-email"
-                required
-                error={profileErrors.email}
-              >
-                <Input
-                  type="email"
-                  value={fields.email}
-                  placeholder="you@example.com"
-                  onChange={(event) => setField('email', event.target.value)}
-                />
-              </Field>
-
-              <Field
-                label="Telephone number"
-                htmlFor="profile-phone"
-                required
-                error={profileErrors.phone}
-              >
-                <Input
-                  type="tel"
-                  value={fields.phone}
-                  placeholder="613-291-8074"
-                  onChange={(event) => setField('phone', event.target.value)}
-                />
-              </Field>
-            </div>
-
             <Field
               label="References"
               htmlFor="profile-references"
-              hint="The last line of the resume page. It is shown in lower case after the word References, so Available upon request reads as References available upon request. Left blank, that is what it falls back to."
+              hint="It is shown in lower case after the word References, so Available upon request reads as References available upon request. Left blank, that is what it falls back to."
             >
               <Input
                 value={fields.references}
                 placeholder="Available upon request"
                 onChange={(event) => setField('references', event.target.value)}
-              />
-            </Field>
-          </Panel>
-
-          <Panel
-            title="What the contact page says"
-            description="The words on the contact page itself. Your email address, telephone number, where you are and the links to elsewhere all come from the boxes above, and appear there automatically."
-          >
-            <Field
-              label="Line above the title"
-              htmlFor="profile-contact-status"
-              hint="Sits beside where you are, at the top of the contact page. Left blank it reads Available now."
-            >
-              <Input
-                value={fields.contactStatus}
-                placeholder={CONTACT_DEFAULTS.status}
-                onChange={(event) => setField('contactStatus', event.target.value)}
-              />
-            </Field>
-
-            <Field
-              label="Heading"
-              htmlFor="profile-contact-heading"
-              hint="Above the invitation to write. Left blank it reads Write to me."
-            >
-              <Input
-                value={fields.contactHeading}
-                placeholder={CONTACT_DEFAULTS.heading}
-                onChange={(event) => setField('contactHeading', event.target.value)}
-              />
-            </Field>
-
-            <Field
-              label="The invitation itself"
-              htmlFor="profile-contact-blurb"
-              hint="A short paragraph under the heading, saying what to send you and what you will send back. Left blank it falls back to the wording the site launched with."
-            >
-              <Textarea
-                rows={4}
-                value={fields.contactBlurb}
-                placeholder={CONTACT_DEFAULTS.blurb}
-                onChange={(event) => setField('contactBlurb', event.target.value)}
               />
             </Field>
           </Panel>
@@ -885,6 +813,14 @@ export function ResumeForm({ data }: { data: ResumeData }) {
           dirty={listsFlag.dirty}
           onSave={onSaveLists}
         />
+
+        <Moved>
+          The links under Elsewhere are edited on the{' '}
+          <GuardedLink href="/admin/contact" className="underline underline-offset-4">
+            Contact
+          </GuardedLink>{' '}
+          screen now, since that is the only page they appear on.
+        </Moved>
 
         <Notice text={listsNotice} />
 
@@ -1231,62 +1167,6 @@ export function ResumeForm({ data }: { data: ResumeData }) {
             />
           </Panel>
 
-          <Panel
-            title="Elsewhere"
-            description="Links under Elsewhere on the contact page. Leave this empty and the whole block is left off."
-          >
-            {social.length === 0 ? (
-              <Empty text="No links yet, so nothing appears under Elsewhere." />
-            ) : (
-              <SortableList
-                items={social}
-                getId={(link) => link.uid}
-                getLabel={(link) => link.label || 'a link with no name'}
-                onReorder={(ids) => setSocial(reorder(social, ids))}
-                renderItem={(link, index) => (
-                  <div className="grid gap-4">
-                    <RowHeader
-                      title={`Link ${index + 1}`}
-                      onRemove={() => setSocial(without(social, index))}
-                      removeLabel={`link ${index + 1}, ${link.label || 'no name'}`}
-                    />
-
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <Field label="What it says" htmlFor={`social-${link.uid}-label`}>
-                        <Input
-                          value={link.label}
-                          placeholder="LinkedIn"
-                          onChange={(event) =>
-                            setSocial(replace(social, index, { ...link, label: event.target.value }))
-                          }
-                        />
-                      </Field>
-
-                      <Field
-                        label="Where it goes"
-                        htmlFor={`social-${link.uid}-href`}
-                        hint="The full address, starting with https://"
-                      >
-                        <Input
-                          value={link.href}
-                          placeholder="https://www.linkedin.com/in/"
-                          onChange={(event) =>
-                            setSocial(replace(social, index, { ...link, href: event.target.value }))
-                          }
-                        />
-                      </Field>
-                    </div>
-                  </div>
-                )}
-              />
-            )}
-
-            <AddButton
-              label="Add a link"
-              onClick={() => setSocial([...social, { uid: nextUid(), label: '', href: '' }])}
-            />
-          </Panel>
-
           {SECTIONS.map((section) => {
             const rows = entries[section.id];
 
@@ -1425,6 +1305,21 @@ function Panel({
       <p className="mt-1 max-w-3xl text-sm text-neutral-600">{description}</p>
       <div className="mt-5 grid gap-5">{children}</div>
     </section>
+  );
+}
+
+/**
+ * Where a box that used to be here went.
+ *
+ * Quieter than a warning, because nothing is wrong. It exists so that moving
+ * the contact boxes to their own screen does not leave him hunting the one form
+ * he knows for a telephone number that is no longer in it.
+ */
+function Moved({ children }: { children: ReactNode }) {
+  return (
+    <p className="mb-6 rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-600">
+      {children}
+    </p>
   );
 }
 
@@ -1584,65 +1479,5 @@ function LineList({
         <AddButton label={addLabel} onClick={() => onChange([...rows, { uid: nextUid(), text: '' }])} />
       </div>
     </DragBoundary>
-  );
-}
-
-/** One of the two downloadable PDFs, with whatever is on the site now. */
-function DocumentSlot({
-  title,
-  hint,
-  file,
-  onClear,
-  onUploaded,
-}: {
-  title: string;
-  hint: string;
-  file: FileRef | null;
-  onClear: () => void;
-  onUploaded: (items: UploadedItem[]) => void;
-}) {
-  return (
-    <div className="grid gap-3 rounded-lg border border-neutral-200 p-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium text-neutral-800">{title}</p>
-          <p className="text-xs text-neutral-500">{hint}</p>
-        </div>
-
-        {file && (
-          <div className="flex items-center gap-2">
-            <a
-              href={mediaUrl(file.key)}
-              target="_blank"
-              rel="noreferrer"
-              className="text-sm underline underline-offset-4 hover:text-neutral-600"
-            >
-              Open it
-            </a>
-            <Button type="button" variant="ghost" size="sm" onClick={onClear}>
-              Take it off
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {file ? (
-        <p className="text-xs text-neutral-500">
-          {`${fileName(file.key)}, ${formatBytes(file.bytes)}`}
-        </p>
-      ) : (
-        <p className="text-xs text-neutral-500">
-          Nothing here yet, so no button for it appears on the site.
-        </p>
-      )}
-
-      <Dropzone
-        destination="document"
-        accept="document"
-        onUploaded={onUploaded}
-        label={`Drop the ${title} here`}
-        hint="One PDF, up to 32 MB. Dropping a new one replaces the one above."
-      />
-    </div>
   );
 }

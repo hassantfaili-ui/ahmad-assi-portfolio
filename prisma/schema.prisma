@@ -174,6 +174,12 @@ model ProjectImage {
 
   /// Required. It is the sentence a screen reader announces.
   alt   String
+
+  /// What this one picture is captioned with on the page. It used to be one
+  /// caption per group, which meant four photographs sharing a sentence that
+  /// could only be true of one of them.
+  caption String?
+
   order Int    @default(0)
 
   @@index([groupId, order])
@@ -199,6 +205,12 @@ model Film {
 
   projectId String?  @unique
   project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  /// Which fixed place on the site this film plays in, for the films that
+  /// belong to no project: "hero" behind the name at the top of the home page,
+  /// "closing" behind About and Get in touch at the bottom of it. Null for a
+  /// project's own film, which is identified by its project instead.
+  slot String? @unique
 
   posterMediaId String?
   posterMedia   Media?  @relation("FilmPoster", fields: [posterMediaId], references: [id], onDelete: SetNull)
@@ -240,6 +252,9 @@ model Profile {
   availability    String
   issued          String
 
+  /// The sentences under his name on the home page. It held a greeting the
+  /// Astro site used and nothing rendered it, so it now carries the paragraph
+  /// that was written into the home page itself and could not be edited.
   welcome     String
   positioning String
   /// The About block on the home page, one string per paragraph.

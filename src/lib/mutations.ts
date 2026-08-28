@@ -214,8 +214,9 @@ export async function setProjectTier(
 
 export interface GroupInput {
   layout: 'pair' | 'full' | 'triptych';
+  /** @deprecated A caption belongs to a picture. Kept so an older payload still parses. */
   caption?: string | null;
-  images: { mediaId: string; alt: string }[];
+  images: { mediaId: string; alt: string; caption?: string | null }[];
 }
 
 export interface DrawingInput {
@@ -231,8 +232,60 @@ export interface FilmInput {
   sources: { mediaId: string; height: number }[];
 }
 
-/** projectId null is the site hero film. */
+export type FilmSlot = 'hero' | 'closing';
+
+/**
+ * A film that belongs to a place on the site rather than to a project.
+ *
+ * "hero" plays behind the name at the top of the home page, "closing" behind
+ * About and Get in touch at the bottom. Having no project used to be enough to
+ * mean "the hero", which stopped being true the moment the home page wanted a
+ * second one.
+ */
+export async function saveSiteFilm(slot: FilmSlot, input: FilmInput): Promise<SaveResult> {
+  if (!(await authorised())) return DENIED;
+
+  const errors = validateFilm({
+    sourceMediaIds: input.sources.map((source) => source.mediaId),
+    youtubeId: input.youtubeId,
+    posterMediaId: input.posterMediaId,
+  });
+  if (hasErrors(errors)) return { ok: false, errors };
+
+  await db.$transaction([
+    db.film.deleteMany({ where: { slot } }),
+    db.film.create({
+      data: {
+        slot,
+        projectId: null,
+        posterMediaId: input.posterMediaId ?? null,
+        youtubeId: input.youtubeId?.trim() || null,
+        caption: input.caption?.trim() || null,
+        sources: {
+          create: input.sources.map((source) => ({
+            mediaId: source.mediaId,
+            height: source.height,
+          })),
+        },
+      },
+    }),
+  ]);
+
+  revalidatePath(PATHS.home);
+  return { ok: true };
+}
+
+export async function deleteSiteFilm(slot: FilmSlot): Promise<SaveResult> {
+  if (!(await authorised())) return DENIED;
+
+  await db.film.deleteMany({ where: { slot } });
+  revalidatePath(PATHS.home);
+  return { ok: true };
+}
+
+/** projectId null still means the hero, so an older caller keeps working. */
 export async function saveFilm(projectId: string | null, input: FilmInput): Promise<SaveResult> {
+  if (projectId === null) return saveSiteFilm('hero', input);
   if (!(await authorised())) return DENIED;
 
   const errors = validateFilm({
@@ -247,6 +300,7 @@ export async function saveFilm(projectId: string | null, input: FilmInput): Prom
     db.film.create({
       data: {
         projectId,
+        slot: null,
         posterMediaId: input.posterMediaId ?? null,
         youtubeId: input.youtubeId?.trim() || null,
         caption: input.caption?.trim() || null,
@@ -270,7 +324,10 @@ export async function saveFilm(projectId: string | null, input: FilmInput): Prom
   return { ok: true };
 }
 
+/** projectId null still means the hero, so an older caller keeps working. */
 export async function deleteFilm(projectId: string | null): Promise<SaveResult> {
+  if (projectId === null) return deleteSiteFilm('hero');
+
   if (!(await authorised())) return DENIED;
 
   await db.film.deleteMany({ where: { projectId } });

@@ -122,12 +122,18 @@ test.describe('the projects list', () => {
   test('the navigation bar reaches every screen', async ({ page }) => {
     await page.goto('/admin');
     for (const [label, path] of [
-      ['Media', '/admin/media'],
+      ['Home', '/admin/home'],
       ['Resume', '/admin/resume'],
-      ['Settings', '/admin/settings'],
+      ['Contact', '/admin/contact'],
+      ['Media', '/admin/media'],
       ['Projects', '/admin'],
     ] as const) {
-      await page.getByRole('link', { name: label, exact: true }).click();
+      /* Scoped to the bar itself. The screens now point at each other in their
+         own copy, so "Contact" alone matches three links on the page and this
+         test is about the navigation bar. */
+      await page.getByRole('navigation', { name: 'Editing' })
+        .getByRole('link', { name: label, exact: true })
+        .click();
       await page.waitForURL(new RegExp(path.replace('/', '\\/')));
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     }
@@ -135,7 +141,16 @@ test.describe('the projects list', () => {
 });
 
 test.describe('the editing screens all render', () => {
-  for (const path of ['/admin', '/admin/media', '/admin/resume', '/admin/settings']) {
+  for (const path of [
+    '/admin',
+    '/admin/home',
+    '/admin/resume',
+    '/admin/contact',
+    '/admin/media',
+    /* The old address of the hero film screen. It is a redirect now, and it is
+       here because a bookmark pointing at it must still land somewhere real. */
+    '/admin/settings',
+  ]) {
     test(`${path} renders without a client exception`, async ({ page }) => {
       const failures: string[] = [];
       page.on('pageerror', (error) => failures.push(error.message));

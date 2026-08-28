@@ -7,17 +7,27 @@ import { GuardedLink } from '@/components/admin/GuardedLink';
 
 import { cn } from '@/lib/utils';
 
+/**
+ * The order of the site, not the order these screens were built in.
+ *
+ * Home first because it is the page a visitor lands on, then the projects that
+ * fill it, then the two pages behind it, then the library everything else draws
+ * from. Settings is gone: its only content was the film behind Ahmad's name,
+ * which is the first thing on the home page and is edited there now. The route
+ * still exists and redirects, so a bookmark does not break.
+ */
 const LINKS = [
+  { href: '/admin/home', label: 'Home' },
   { href: '/admin', label: 'Projects' },
-  { href: '/admin/media', label: 'Media' },
   { href: '/admin/resume', label: 'Resume' },
-  { href: '/admin/settings', label: 'Settings' },
+  { href: '/admin/contact', label: 'Contact' },
+  { href: '/admin/media', label: 'Media' },
 ];
 
 /**
  * The bar above every editing screen.
  *
- * Its four links go through GuardedLink rather than Link, and that is the whole
+ * Its links go through GuardedLink rather than Link, and that is the whole
  * point of the shared unsaved work registry. A client side route change does
  * not fire beforeunload, so before this these were the one exit nothing
  * watched: writing ten minutes of description and then clicking Resume out of

@@ -41,6 +41,17 @@ import { ProjectForm } from './ProjectForm';
 import type { EditorGroup } from './MediaPanel';
 
 const media = { id: 'm1', key: 'projects/garden-heights/a.jpg', bytes: 1000, width: 1600, height: 900 };
+const second = { id: 'm2', key: 'projects/garden-heights/b.jpg', bytes: 1000, width: 1600, height: 900 };
+
+/* A photograph that is the cover and is in no group, which is the only way a
+   cover can be the project's one reference to a file. */
+const loose = {
+  id: 'm3',
+  key: 'projects/garden-heights/loose.jpg',
+  bytes: 1000,
+  width: 1600,
+  height: 900,
+};
 
 const project = {
   id: 'p1',
@@ -66,14 +77,46 @@ const project = {
   leadImage: media,
 };
 
+/* Two pictures in the one group, because most of what is being guarded here is
+   a change to one of them landing on the other. */
 const groups: EditorGroup[] = [
   {
     id: 'g1',
     layout: 'full',
-    caption: 'The old caption',
-    images: [{ id: 'i1', mediaId: 'm1', alt: 'A picture of the courtyard', media }],
+    caption: 'The old group caption',
+    images: [
+      { id: 'i1', mediaId: 'm1', alt: 'A picture of the courtyard', caption: 'At dusk', media },
+      {
+        id: 'i2',
+        mediaId: 'm2',
+        alt: 'The stair from the landing',
+        caption: '',
+        media: second,
+      },
+    ],
   },
 ];
+
+/** The caption boxes on the pictures, in the order the pictures are in. */
+function captionBoxes(): HTMLElement[] {
+  return screen.getAllByLabelText('Caption for this picture');
+}
+
+interface SavedPayload {
+  fields: { location: string; leadImageId: string | null };
+  published: boolean;
+  groups: {
+    caption?: string | null;
+    images: { mediaId: string; alt: string; caption?: string | null }[];
+  }[];
+  drawings: { mediaId: string; alt: string; drawingType: string }[];
+}
+
+/** What the one button actually sent, which is the only thing worth asserting. */
+function sent(): SavedPayload {
+  const [, payload] = saveWholeProject.mock.calls[0] as unknown as [string, SavedPayload];
+  return payload;
+}
 
 beforeEach(() => {
   saveWholeProject.mockClear();
@@ -83,22 +126,18 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('the one save button', () => {
-  it('sends a caption typed into a group, which is what it did not do before', async () => {
+  it('sends a caption typed on a picture, which is what it did not do before', async () => {
     const user = userEvent.setup({ delay: null });
     render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
 
-    const caption = screen.getByLabelText('Group 1 caption');
+    const caption = captionBoxes()[0];
     await user.clear(caption);
     await user.type(caption, 'The new caption');
 
     await user.click(screen.getByRole('button', { name: 'Save everything' }));
 
     await waitFor(() => expect(saveWholeProject).toHaveBeenCalledTimes(1));
-    const [, payload] = saveWholeProject.mock.calls[0] as unknown as [
-      string,
-      { groups: { caption?: string | null }[] },
-    ];
-    expect(payload.groups[0].caption).toBe('The new caption');
+    expect(sent().groups[0].images[0].caption).toBe('The new caption');
   });
 
   it('sends the words on the left in the same press as the pictures on the right', async () => {
@@ -109,26 +148,22 @@ describe('the one save button', () => {
     await user.clear(location);
     await user.type(location, 'Tripoli');
 
-    const caption = screen.getByLabelText('Group 1 caption');
+    const caption = captionBoxes()[0];
     await user.clear(caption);
     await user.type(caption, 'Both at once');
 
     await user.click(screen.getByRole('button', { name: 'Save everything' }));
 
     await waitFor(() => expect(saveWholeProject).toHaveBeenCalledTimes(1));
-    const [, payload] = saveWholeProject.mock.calls[0] as unknown as [
-      string,
-      { fields: { location: string }; groups: { caption?: string | null }[] },
-    ];
-    expect(payload.fields.location).toBe('Tripoli');
-    expect(payload.groups[0].caption).toBe('Both at once');
+    expect(sent().fields.location).toBe('Tripoli');
+    expect(sent().groups[0].images[0].caption).toBe('Both at once');
   });
 
   it('does not put a project on the site behind the back of an unsaved edit', async () => {
     const user = userEvent.setup({ delay: null });
     render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
 
-    const caption = screen.getByLabelText('Group 1 caption');
+    const caption = captionBoxes()[0];
     await user.clear(caption);
     await user.type(caption, 'Typed but not saved');
 
@@ -146,12 +181,8 @@ describe('the one save button', () => {
     await user.click(screen.getByRole('button', { name: 'Save everything' }));
 
     await waitFor(() => expect(saveWholeProject).toHaveBeenCalledTimes(1));
-    const [, payload] = saveWholeProject.mock.calls[0] as unknown as [
-      string,
-      { published: boolean; groups: { caption?: string | null }[] },
-    ];
-    expect(payload.published).toBe(true);
-    expect(payload.groups[0].caption).toBe('Typed but not saved');
+    expect(sent().published).toBe(true);
+    expect(sent().groups[0].images[0].caption).toBe('Typed but not saved');
   });
 
   it('counts a change of mind about the site as unsaved work of its own', async () => {
@@ -174,9 +205,139 @@ describe('the one save button', () => {
 
     expect(screen.queryByText('Not saved yet')).toBeNull();
 
-    const caption = screen.getByLabelText('Group 1 caption');
-    await user.type(caption, '!');
+    await user.type(captionBoxes()[0], '!');
 
     expect(screen.getByText('Not saved yet')).toBeTruthy();
+  });
+});
+
+describe('a caption on each picture', () => {
+  it('lands on the picture it was typed on and not on the one beside it', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
+
+    /* The words used to belong to the group, so this box did not exist and
+       every picture in the group carried the same line. */
+    expect(screen.queryByLabelText('Group 1 caption')).toBeNull();
+
+    const boxes = captionBoxes();
+    expect(boxes).toHaveLength(2);
+
+    await user.clear(boxes[0]);
+    await user.type(boxes[0], 'The courtyard in the evening');
+
+    await user.click(screen.getByRole('button', { name: 'Save everything' }));
+
+    await waitFor(() => expect(saveWholeProject).toHaveBeenCalledTimes(1));
+    const [group] = sent().groups;
+    expect(group.images[0].caption).toBe('The courtyard in the evening');
+    expect(group.images[1].caption).toBe('');
+    expect(captionBoxes()[1]).toHaveValue('');
+  });
+
+  it('keeps the stored caption on the picture it was stored against', async () => {
+    render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
+
+    expect(captionBoxes()[0]).toHaveValue('At dusk');
+    expect(captionBoxes()[1]).toHaveValue('');
+  });
+});
+
+describe('taking the cover off', () => {
+  /** A project whose cover is a photograph that is in none of its groups. */
+  const withLooseCover = {
+    ...project,
+    leadImageId: 'm3',
+    leadImageAlt: 'The front of the building',
+    leadImage: loose,
+  };
+
+  it('offers the photograph a home rather than dropping it off the screen', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<ProjectForm project={withLooseCover} groups={groups} drawings={[]} film={null} />);
+
+    await user.click(screen.getByRole('button', { name: 'This is the cover. Press to unset it.' }));
+
+    /* Said plainly, with something to do about it. Ahmad used to be left to
+       notice on his own that the photograph had gone, and to upload it again. */
+    expect(screen.getByText(/in none of the groups above/)).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'Put it with the pictures' }));
+
+    expect(screen.getByText(/back with the pictures above/)).toBeTruthy();
+
+    /* On screen, in the arrangement, with a box of its own. */
+    expect(screen.getAllByLabelText('What this picture shows*')).toHaveLength(3);
+    expect(screen.getByText('3 in 1 group')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'Save everything' }));
+
+    await waitFor(() => expect(saveWholeProject).toHaveBeenCalledTimes(1));
+    const [group] = sent().groups;
+    expect(group.images.map((image) => image.mediaId)).toEqual(['m1', 'm2', 'm3']);
+    /* The description it had as the cover comes with it. Without that the save
+       is refused for a picture with nothing said about it. */
+    expect(group.images[2].alt).toBe('The front of the building');
+    expect(sent().fields.leadImageId).toBeNull();
+  });
+
+  it('says nothing when the outgoing cover is one of the pictures anyway', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
+
+    await user.click(screen.getByRole('button', { name: 'This is the cover. Press to unset it.' }));
+
+    /* That photograph is still in group one, three inches up the screen. */
+    expect(screen.queryByRole('button', { name: 'Put it with the pictures' })).toBeNull();
+    expect(screen.getByText('2 in 1 group')).toBeTruthy();
+  });
+});
+
+describe('moving a picture between the pictures and the drawings', () => {
+  it('takes a picture out of its group and into the drawings, description and all', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
+
+    await user.click(screen.getAllByRole('button', { name: 'Move to the drawings' })[0]);
+
+    expect(screen.getByText('1 in 1 group')).toBeTruthy();
+    expect(screen.getByText('1 sheet')).toBeTruthy();
+    /* A kind he can change, rather than an empty box under a sheet. */
+    expect(screen.getByLabelText('Kind of drawing')).toHaveValue('Drawing');
+
+    await user.click(screen.getByRole('button', { name: 'Save everything' }));
+
+    await waitFor(() => expect(saveWholeProject).toHaveBeenCalledTimes(1));
+    expect(sent().groups[0].images.map((image) => image.mediaId)).toEqual(['m2']);
+    expect(sent().drawings).toEqual([
+      { mediaId: 'm1', alt: 'A picture of the courtyard', drawingType: 'Drawing' },
+    ]);
+  });
+
+  it('brings a drawing back to the pictures, description and all', async () => {
+    const user = userEvent.setup({ delay: null });
+    const drawings = [
+      {
+        id: 'd1',
+        mediaId: 'm3',
+        alt: 'Ground floor plan, showing the courtyard',
+        drawingType: 'Plan',
+        media: loose,
+      },
+    ];
+    render(<ProjectForm project={project} groups={groups} drawings={drawings} film={null} />);
+
+    await user.click(screen.getByRole('button', { name: 'Move to the pictures' }));
+
+    expect(screen.getByText('No drawings on this project. It does not need any.')).toBeTruthy();
+    expect(screen.getByText('3 in 1 group')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'Save everything' }));
+
+    await waitFor(() => expect(saveWholeProject).toHaveBeenCalledTimes(1));
+    expect(sent().drawings).toEqual([]);
+    const [group] = sent().groups;
+    expect(group.images.map((image) => image.mediaId)).toEqual(['m1', 'm2', 'm3']);
+    expect(group.images[2].alt).toBe('Ground floor plan, showing the courtyard');
   });
 });
