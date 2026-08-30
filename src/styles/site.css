@@ -1091,16 +1091,16 @@ button {
    deliberate rhythm out of what is really a set of comparable views, and with
    pictures of different proportions no two rows ever lined up.
 
-   Contained rather than cropped, and that is not fussiness. Three quarters of
-   these are already three by two and fill the shape exactly, with no bars and
-   nothing lost. The rest are mostly drawings that happen to live among the
-   photographs, the whole of Building Systems among them, and a drawing loses
-   its meaning the moment a label or an edge is cut off. So the odd upright one
-   sits centred on white instead, and the row still lines up. */
+   Filled rather than letterboxed, at Ahmad's direction. Three quarters of these
+   are already three by two and lose nothing at all. The upright ones are cropped
+   to the middle rather than sitting on white bars, which is the evenness he
+   asked for: a grid of one shape, with no picture treated as an exception.
+   Anything that must be read edge to edge belongs in the drawings below, which
+   are never cropped. */
 .stagger figure img {
   aspect-ratio: 3 / 2;
-  object-fit: contain;
-  background: #fff;
+  object-fit: cover;
+  object-position: center;
   display: block;
 }
 .stagger figcaption {
