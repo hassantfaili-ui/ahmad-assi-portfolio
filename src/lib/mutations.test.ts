@@ -32,8 +32,12 @@ const { db } = vi.hoisted(() => ({
       findMany: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
+      count: vi.fn(async () => 0),
     },
-    $transaction: vi.fn(async () => []),
+    $transaction: vi.fn(async (...args: unknown[]) => {
+      void args;
+      return [] as unknown[];
+    }),
   },
 }));
 vi.mock('@/lib/db', () => ({ db }));
@@ -94,3 +98,69 @@ describe('reorderProjects', () => {
     ]);
   });
 });
+
+/**
+ * The caption has to survive the write, not merely the payload.
+ *
+ * It once did not. The type accepted a caption per picture, the screen sent
+ * one, and the create that actually writes the row left the field out, so
+ * every save wrote nothing over whatever was there. Ahmad lost fifteen
+ * captions in one press and the screen said Saved. The test that existed
+ * asserted the payload the screen builds, which was right the whole time, so
+ * it stayed green throughout.
+ *
+ * This asserts the write itself: what saveWholeProject hands to the database.
+ */
+describe('what a whole project save writes for each picture', () => {
+  it('carries the caption and the description onto the row it creates', async () => {
+    const { saveWholeProject } = await import('./mutations');
+
+    db.project.findUnique.mockResolvedValue({ slug: 'a-project' });
+    db.project.findMany.mockResolvedValue([]);
+    db.project.count.mockResolvedValue(0);
+
+    const created: unknown[] = [];
+    db.$transaction.mockImplementation(async (...args: unknown[]) => {
+      const run = args[0];
+      if (typeof run !== 'function') return [];
+      const tx = {
+        project: { update: vi.fn() },
+        imageGroup: { deleteMany: vi.fn(), create: vi.fn((args: unknown) => created.push(args)) },
+        drawing: { deleteMany: vi.fn(), createMany: vi.fn() },
+        film: { deleteMany: vi.fn(), create: vi.fn() },
+      };
+      await (run as (tx: unknown) => Promise<unknown>)(tx);
+      return [];
+    });
+
+    await saveWholeProject('p1', {
+      fields: {
+        title: 'A project', slug: 'a-project', sheet: 'A-101', category: 'Residential',
+        year: 2024, location: 'Ottawa', buildingType: 'House', area: '', status: 'Built',
+        role: 'Designer', contribution: 'All of it', summary: 'A summary of the project.',
+        body: '', credit: 'Sole author', tier: 'index', order: 1,
+        leadImageId: null, leadImageAlt: '',
+      },
+      published: false,
+      groups: [
+        {
+          layout: 'pair',
+          images: [
+            { mediaId: 'm1', alt: 'The courtyard', caption: 'Phase two, from the street' },
+            { mediaId: 'm2', alt: 'The lookout', caption: null },
+          ],
+        },
+      ],
+      drawings: [],
+      film: null,
+    });
+
+    const images = (created[0] as { data: { images: { create: { alt: string; caption: string | null }[] } } })
+      .data.images.create;
+
+    expect(images[0]).toMatchObject({ alt: 'The courtyard', caption: 'Phase two, from the street' });
+    /* Absent stays absent rather than becoming an empty string, so the page
+       prints no caption at all instead of an empty line under the picture. */
+    expect(images[1]).toMatchObject({ alt: 'The lookout', caption: null });
+  });
+})

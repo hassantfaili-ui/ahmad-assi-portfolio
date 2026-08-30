@@ -2,6 +2,8 @@ import { SignedOut } from '@/components/admin/SignedOut';
 import { getIdentity } from '@/lib/access';
 import { notFound } from 'next/navigation';
 
+import { toEditorDrawings, toEditorGroups } from '@/lib/editor-shape';
+
 import { ProjectForm } from '@/components/admin/ProjectForm';
 import type { EditorMedia } from '@/components/admin/MediaPanel';
 import { getProjectForEditing } from '@/lib/admin-queries';
@@ -54,25 +56,8 @@ export default async function ProjectEditorPage({ params }: ProjectEditorPagePro
      way there is nothing to edit, and the 404 says so. */
   if (!project) notFound();
 
-  const groups = project.imageGroups.map((group) => ({
-    id: group.id,
-    layout: group.layout,
-    caption: group.caption ?? '',
-    images: group.images.map((image) => ({
-      id: image.id,
-      mediaId: image.mediaId,
-      alt: image.alt,
-      media: toMedia(image.media),
-    })),
-  }));
-
-  const drawings = project.drawings.map((drawing) => ({
-    id: drawing.id,
-    mediaId: drawing.mediaId,
-    alt: drawing.alt,
-    drawingType: drawing.drawingType,
-    media: toMedia(drawing.media),
-  }));
+  const groups = toEditorGroups(project.imageGroups);
+  const drawings = toEditorDrawings(project.drawings);
 
   const film = project.film
     ? {

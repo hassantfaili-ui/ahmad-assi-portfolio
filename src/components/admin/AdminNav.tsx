@@ -56,11 +56,16 @@ export function AdminNav({ email }: { email: string }) {
                   <GuardedLink
                     href={link.href}
                     aria-current={current ? 'page' : undefined}
+                    /* Marked with a rule under the name rather than a filled
+                       block. A solid black pill reads as a blotted out label
+                       from across the room, which is the opposite of what
+                       saying "you are here" is for. Both states carry the same
+                       border width so nothing shifts as the page changes. */
                     className={cn(
-                      'rounded-md px-3 py-1.5 text-sm transition-colors',
+                      'rounded-t-md border-b-2 px-3 py-1.5 text-sm transition-colors',
                       current
-                        ? 'bg-neutral-900 text-white'
-                        : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900',
+                        ? 'border-neutral-900 font-medium text-neutral-900'
+                        : 'border-transparent text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900',
                     )}
                   >
                     {link.label}

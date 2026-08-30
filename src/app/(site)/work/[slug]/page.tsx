@@ -32,7 +32,7 @@ const FALLBACK_NAME = 'Ahmad Assi';
  */
 const STAGGER_SIZES = '(max-width: 880px) 100vw, 50vw';
 const SHEET_SIZES = '(max-width: 70rem) 100vw, 70rem';
-const COVER_SIZES = '(max-width: 880px) 100vw, (max-width: 80rem) 40vw, 32rem';
+const COVER_SIZES = '(max-width: 880px) 100vw, (max-width: 68rem) 92vw, 62rem';
 
 interface WorkPageProps {
   params: Promise<{ slug: string }>;
@@ -144,37 +144,33 @@ export default async function WorkPage({ params }: WorkPageProps) {
         ))}
       </Reveal>
 
-      <div className="band">
-        {/* The writing and the cover share a row, the photograph held against
-            the middle of the text rather than breaking into it.
-
-            The words take the left. The two have to stack with the photograph
-            after the text on a narrow screen, so the text has to come first in
-            the markup, and putting it first on the page as well means what is
-            read and what is seen stay in the same order at every width. A
-            project with no cover has nothing to sit beside, so it keeps the
-            single centred column it has always had. */}
-        <div className={cover ? 'about-grid' : undefined}>
-          {/* The body is markdown: headings, tables and emphasis all appear in
-              the eighteen project files, and rendering it as plain paragraphs
-              published the source. markdown-it runs with html off, so the only
-              markup that reaches the page is markup it produced. */}
-          <Reveal
-            className="prose"
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(project.body) }}
+      {/* The one photograph that stands for the project, across the middle of
+          the page between the sheet of facts and the writing. It sat beside the
+          text for a while and read as a column of furniture next to a column of
+          words; given the width of the page to itself it behaves like the plate
+          it is. */}
+      {cover && (
+        <Reveal as="figure" className="cover-plate">
+          <Image
+            src={cover.key}
+            alt={project.leadImageAlt}
+            width={cover.width ?? 1600}
+            height={cover.height ?? 1067}
+            sizes={COVER_SIZES}
+            priority
           />
-          {cover && (
-            <Reveal as="figure" className="about-cover">
-              <Image
-                src={cover.key}
-                alt={project.leadImageAlt}
-                width={cover.width ?? 1600}
-                height={cover.height ?? 1067}
-                sizes={COVER_SIZES}
-              />
-            </Reveal>
-          )}
-        </div>
+        </Reveal>
+      )}
+
+      <div className="band">
+        {/* The body is markdown: headings, tables and emphasis all appear in
+            the project text, and rendering it as plain paragraphs published the
+            source. markdown-it runs with html off, so the only markup that
+            reaches the page is markup it produced. */}
+        <Reveal
+          className="prose"
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(project.body) }}
+        />
       </div>
 
       {project.film && (

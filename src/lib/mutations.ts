@@ -461,6 +461,7 @@ export async function saveWholeProject(
             create: group.images.map((image, imageIndex) => ({
               mediaId: image.mediaId,
               alt: image.alt.trim(),
+              caption: image.caption?.trim() || null,
               order: imageIndex,
             })),
           },
