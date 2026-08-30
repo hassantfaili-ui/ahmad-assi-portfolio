@@ -1094,22 +1094,17 @@ button {
   border: 1px solid var(--line);
 }
 
-/* Every picture fills the same shape, so a row reads as a row.
+/* Each picture keeps its own proportions and is shown whole.
 
-   The offset that used to step every second picture down the page made a
-   deliberate rhythm out of what is really a set of comparable views, and with
-   pictures of different proportions no two rows ever lined up.
+   Forcing them all into one shape was tried both ways and neither was right:
+   cropping to fill cut the top and bottom off the upright ones, and containing
+   them left white bars down the sides. A drawing or a render is a considered
+   image, and the way it was framed is part of it.
 
-   Filled rather than letterboxed, at Ahmad's direction. Three quarters of these
-   are already three by two and lose nothing at all. The upright ones are cropped
-   to the middle rather than sitting on white bars, which is the evenness he
-   asked for: a grid of one shape, with no picture treated as an exception.
-   Anything that must be read edge to edge belongs in the drawings below, which
-   are never cropped. */
+   The rows still start level, which is the part that was actually wrong before:
+   every second picture used to carry a top margin and step down the page. They
+   begin together and end where their own shapes end. */
 .stagger figure img {
-  aspect-ratio: 3 / 2;
-  object-fit: cover;
-  object-position: center;
   display: block;
 }
 .stagger figcaption {
@@ -1164,13 +1159,11 @@ button {
 }
 .sheets img {
   width: 100%;
-  /* Contained, not cropped. A drawing is measured line work: cutting an edge
-     off removes information, which a photograph survives and a section does
-     not. The sheet stays a constant shape so the rows line up, and a drawing
-     of any proportion sits centred on white inside it. */
-  aspect-ratio: 4 / 3;
+  /* Its own proportions, like the pictures above. A drawing is measured line
+     work, so it is never cropped, and boxing it into one shape only moved the
+     loss from the drawing to the white bars around it. Two to a row, starting
+     level, each ending where its own sheet ends. */
   height: auto;
-  object-fit: contain;
   display: block;
   border: 1px solid var(--line);
   background: #fff;
