@@ -1038,6 +1038,15 @@ button {
 /* The cover, across the middle of the page between the facts and the writing.
    It is the one photograph that stands for the project, so it is given the
    width to be looked at rather than the width left over beside a paragraph. */
+/* The sheet of facts already ends with its own measure of space. Where a cover
+   follows it, that space and the cover's own were adding up to twice the gap
+   anyone asked for, on every project page. The facts give theirs up and the
+   cover keeps its own, so the space above the photograph matches the space
+   below it. */
+.meta:has(+ .cover-plate) {
+  padding-bottom: 0;
+}
+
 .cover-plate {
   max-width: 62rem;
   /* No bottom margin: the band underneath brings its own top padding, and the
