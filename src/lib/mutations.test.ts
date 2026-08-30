@@ -34,6 +34,9 @@ const { db } = vi.hoisted(() => ({
       delete: vi.fn(),
       count: vi.fn(async () => 0),
     },
+    /* deleteProject reads these to know which pictures' French to forget. */
+    projectImage: { findMany: vi.fn(async () => []) },
+    drawing: { findMany: vi.fn(async () => []) },
     $transaction: vi.fn(async (...args: unknown[]) => {
       void args;
       return [] as unknown[];
@@ -41,6 +44,15 @@ const { db } = vi.hoisted(() => ({
   },
 }));
 vi.mock('@/lib/db', () => ({ db }));
+
+/* Server only, because it reaches the database. The writes under test call it
+   to forget the French belonging to rows they delete; what it does is its own
+   module's business and is tested there. */
+vi.mock('@/lib/translations', () => ({
+  forgetTranslations: vi.fn(async () => {}),
+  saveTranslations: vi.fn(async () => {}),
+  translationsFor: vi.fn(async () => new Map()),
+}));
 
 import { deleteProject, reorderProjects, setProjectPublished } from './mutations';
 

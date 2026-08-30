@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache';
 import { getIdentity } from '@/lib/access';
 import { PATHS, profilePaths, projectPaths } from '@/lib/cache-tags';
 import { CONTACT_DEFAULTS } from '@/lib/contact-defaults';
+import { pictureKey } from '@/lib/translate';
+import { forgetTranslations } from '@/lib/translations';
 import { resolveCover } from '@/lib/cover-image';
 import { db } from '@/lib/db';
 import { toSlug, uniqueSlug } from '@/lib/slug';
@@ -121,7 +123,23 @@ export async function deleteProject(id: string): Promise<SaveResult> {
      from the schema, but Media does not: deleting a project must never remove a
      photograph that another project also shows. Tidying the library is a
      separate, deliberate act with its own reference check. */
+  /* The French goes with it. A translation points at its row by a plain string,
+     so nothing in the database removes these when the project does, and a
+     project created later could inherit sentences written about a different
+     one. The pictures are named by project and file, so clearing anything
+     starting with this project's id clears the pictures and the drawings too. */
+  const pictures = await db.projectImage.findMany({
+    where: { group: { projectId: id } },
+    select: { mediaId: true },
+  });
+  const drawings = await db.drawing.findMany({ where: { projectId: id }, select: { mediaId: true } });
+
   await db.project.delete({ where: { id } });
+
+  await forgetTranslations('Project', [id]);
+  await forgetTranslations('ProjectImage', pictures.map((row) => pictureKey(id, row.mediaId)));
+  await forgetTranslations('Drawing', drawings.map((row) => pictureKey(id, row.mediaId)));
+  await forgetTranslations('Film', [id]);
 
   revalidateProject(project.slug);
   return { ok: true, message: 'Project deleted. The files it used are still in the library.' };

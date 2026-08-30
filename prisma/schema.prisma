@@ -365,3 +365,37 @@ model ResumeEntry {
 
   @@index([section, order])
 }
+
+/// A field of a row, said in another language.
+///
+/// One table rather than a French column beside every English one. There are
+/// about fifty fields worth translating across eleven models, and doubling them
+/// would mean a schema change, a query change and an editor change every time a
+/// field is added, with half of them silently forgotten. Here a field becomes
+/// translatable by being asked for.
+///
+/// English is the record itself and is never stored here. French left blank
+/// falls back to it, which is what makes the site usable from the first day
+/// rather than the day the last box is filled in.
+model Translation {
+  id String @id @default(cuid())
+
+  /// Only "fr" today. A column rather than an enum so a third language is data.
+  locale String
+
+  /// The model and row this belongs to, as plain strings: a real relation would
+  /// need one nullable foreign key per model and a migration for the next one.
+  /// Nothing reads a translation without its row already in hand, so a dangling
+  /// one is invisible rather than dangerous, and deleting the row deletes these
+  /// through cleanup rather than through a constraint.
+  model    String
+  recordId String
+  field    String
+
+  value String
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([locale, model, recordId, field])
+  @@index([locale, model, recordId])
+}
