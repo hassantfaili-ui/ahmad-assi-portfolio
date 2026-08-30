@@ -263,7 +263,7 @@ export function ProjectPanels({ projects, locale = 'en' }: ProjectPanelsProps) {
                   data-panel-close=""
                   onClick={() => close(project.slug)}
                 >
-                  Close
+                  {words(locale).close}
                 </button>
               </p>
             </div>

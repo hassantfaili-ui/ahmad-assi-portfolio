@@ -49,7 +49,7 @@ export default function Header({ name, locale = 'en' }: { name: string; locale?:
 
       {/* The dictionary has no word for this label yet, so French readers hear
           the English one. It happens to be the same word in both. */}
-      <nav aria-label="Pages">
+      <nav aria-label={w.pages}>
         <ul className="pages">
           {PAGES.map((p) => {
             /* Compared against the pathname in its localised form, so /fr/resume
@@ -68,11 +68,12 @@ export default function Header({ name, locale = 'en' }: { name: string; locale?:
 
       {/* The two switches share one cell. The header is a three column grid and
           a fourth child would wrap the row, so they are grouped rather than
-          placed side by side. Language first, which leaves the theme switch at
-          the end of the row where it has always been. */}
+          placed side by side. The theme switch keeps the place it has always
+          had and the language sits to the right of it, where Ahmad asked for
+          it. */}
       <div className="switches">
-        <LanguageToggle locale={locale} />
         <ThemeToggle locale={locale} />
+        <LanguageToggle locale={locale} />
       </div>
     </header>
   );

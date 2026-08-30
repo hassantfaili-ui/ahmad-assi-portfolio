@@ -97,7 +97,7 @@ export function Rail({ count, children, locale = 'en' }: RailProps) {
               type="button"
               className="rail-btn"
               data-rail-prev=""
-              aria-label="Scroll projects left"
+              aria-label={words(locale).scrollLeft}
               disabled={atStart}
               onClick={() => nudge(-1)}
             >
@@ -109,7 +109,7 @@ export function Rail({ count, children, locale = 'en' }: RailProps) {
               type="button"
               className="rail-btn"
               data-rail-next=""
-              aria-label="Scroll projects right"
+              aria-label={words(locale).scrollRight}
               disabled={atEnd}
               onClick={() => nudge(1)}
             >

@@ -85,7 +85,7 @@ export default function Film({
             data-youtube={id}
             /* The dictionary has no phrase for this yet, nor for the note
                below, so both stay English on the French pages for now. */
-            aria-label="Play the walkthrough film"
+            aria-label={words(locale).playTheFilm}
             onClick={() => setPlaying(true)}
           >
             {/* A plain img, not next/image: the poster arrives as a finished URL
