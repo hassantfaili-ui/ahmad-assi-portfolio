@@ -18,12 +18,39 @@ export const PATHS = {
   project: (slug: string) => `/work/${slug}`,
 } as const;
 
-/** Every listing a project appears in, plus its own page. */
-export function projectPaths(slug: string): string[] {
-  return [PATHS.home, PATHS.architecture, PATHS.print, PATHS.project(slug)];
+/**
+ * The same page in both languages.
+ *
+ * Every path below existed before the site had a French half, and adding /fr
+ * without adding it here meant an edit regenerated the English page and left
+ * the French one showing the old words until the next deploy. The site is one
+ * site in two languages, so a write regenerates both or it has not finished.
+ *
+ * The print sheet is English only and has no French twin, so it is left alone.
+ */
+function bothLanguages(paths: string[]): string[] {
+  return paths.flatMap((path) =>
+    path === PATHS.print ? [path] : [path, path === '/' ? '/fr' : `/fr${path}`],
+  );
 }
 
-/** The profile is in the header and footer of every page. */
+/** One path in both languages, for a write that regenerates a single page. */
+export function inBothLanguages(path: string): string[] {
+  return bothLanguages([path]);
+}
+
+/** Every listing a project appears in, plus its own page, in both languages. */
+export function projectPaths(slug: string): string[] {
+  return bothLanguages([PATHS.home, PATHS.architecture, PATHS.print, PATHS.project(slug)]);
+}
+
+/** The profile is in the header and footer of every page, in both languages. */
 export function profilePaths(): string[] {
-  return [PATHS.home, PATHS.architecture, PATHS.resume, PATHS.contact, PATHS.print];
+  return bothLanguages([
+    PATHS.home,
+    PATHS.architecture,
+    PATHS.resume,
+    PATHS.contact,
+    PATHS.print,
+  ]);
 }

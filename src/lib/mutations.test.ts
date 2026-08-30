@@ -60,11 +60,21 @@ import { deleteProject, reorderProjects, setProjectPublished } from './mutations
 
 /* The listings, the project's own page, every other project page by pattern,
    and the sitemap. In this order, which is the order the code walks them. */
+/**
+ * Both languages, because the site is one site said twice.
+ *
+ * Adding /fr without adding it here meant an edit regenerated the English page
+ * and left the French one showing the old words until somebody deployed. The
+ * print sheet has no French twin, so it appears once.
+ */
 const EVERYTHING_A_PROJECT_TOUCHES = [
   ['/'],
+  ['/fr'],
   ['/architecture'],
+  ['/fr/architecture'],
   ['/print'],
   ['/work/garden-heights'],
+  ['/fr/work/garden-heights'],
   ['/work/[slug]', 'page'],
   ['/sitemap.xml'],
 ];
@@ -105,7 +115,9 @@ describe('reorderProjects', () => {
     expect(result.ok).toBe(true);
     expect(revalidatePath.mock.calls).toEqual([
       ['/'],
+      ['/fr'],
       ['/architecture'],
+      ['/fr/architecture'],
       ['/print'],
       ['/work/[slug]', 'page'],
       ['/sitemap.xml'],

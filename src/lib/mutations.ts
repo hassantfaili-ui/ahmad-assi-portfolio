@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { getIdentity } from '@/lib/access';
-import { PATHS, profilePaths, projectPaths } from '@/lib/cache-tags';
+import { PATHS, inBothLanguages, profilePaths, projectPaths } from '@/lib/cache-tags';
 import { CONTACT_DEFAULTS } from '@/lib/contact-defaults';
 import { pictureKey } from '@/lib/translate';
 import { forgetTranslations, saveTranslations } from '@/lib/translations';
@@ -108,7 +108,7 @@ export async function createProject(title: string): Promise<SaveResult<{ id: str
     select: { id: true, slug: true },
   });
 
-  revalidatePath(PATHS.home);
+  for (const path of inBothLanguages(PATHS.home)) revalidatePath(path);
   revalidatePath(PATHS.architecture);
   return { ok: true, data: project };
 }
@@ -192,8 +192,8 @@ export async function reorderProjects(idsInOrder: string[]): Promise<SaveResult>
     usable.map((id, index) => db.project.update({ where: { id }, data: { order: index + 1 } })),
   );
 
-  revalidatePath(PATHS.home);
-  revalidatePath(PATHS.architecture);
+  for (const path of inBothLanguages(PATHS.home)) revalidatePath(path);
+  for (const path of inBothLanguages(PATHS.architecture)) revalidatePath(path);
   revalidatePath(PATHS.print);
   /* A new running order moves prev and next on every project page. */
   revalidateProjectNeighbours();
@@ -291,7 +291,7 @@ export async function saveSiteFilm(slot: FilmSlot, input: FilmInput): Promise<Sa
     }),
   ]);
 
-  revalidatePath(PATHS.home);
+  for (const path of inBothLanguages(PATHS.home)) revalidatePath(path);
   return { ok: true };
 }
 
@@ -299,7 +299,7 @@ export async function deleteSiteFilm(slot: FilmSlot): Promise<SaveResult> {
   if (!(await authorised())) return DENIED;
 
   await db.film.deleteMany({ where: { slot } });
-  revalidatePath(PATHS.home);
+  for (const path of inBothLanguages(PATHS.home)) revalidatePath(path);
   return { ok: true };
 }
 
@@ -335,7 +335,7 @@ export async function saveFilm(projectId: string | null, input: FilmInput): Prom
   ]);
 
   if (projectId === null) {
-    revalidatePath(PATHS.home);
+    for (const path of inBothLanguages(PATHS.home)) revalidatePath(path);
   } else {
     const project = await db.project.findUnique({ where: { id: projectId }, select: { slug: true } });
     if (project) revalidateProject(project.slug);
@@ -353,7 +353,7 @@ export async function deleteFilm(projectId: string | null): Promise<SaveResult> 
   await db.film.deleteMany({ where: { projectId } });
 
   if (projectId === null) {
-    revalidatePath(PATHS.home);
+    for (const path of inBothLanguages(PATHS.home)) revalidatePath(path);
   } else {
     const project = await db.project.findUnique({ where: { id: projectId }, select: { slug: true } });
     if (project) revalidateProject(project.slug);
@@ -566,7 +566,7 @@ export async function saveWholeProject(
   });
 
   revalidateProject(existing.slug);
-  if (slug !== existing.slug) revalidatePath(PATHS.project(slug));
+  if (slug !== existing.slug) for (const path of inBothLanguages(PATHS.project(slug))) revalidatePath(path);
 
   const leadCount = await db.project.count({ where: { tier: 'lead', published: true } });
 
@@ -945,6 +945,6 @@ export async function saveResumeLists(
     ]);
   }
 
-  revalidatePath(PATHS.resume);
+  for (const path of inBothLanguages(PATHS.resume)) revalidatePath(path);
   return { ok: true };
 }
