@@ -4,8 +4,9 @@ import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 import { LEAD_SIZES, RAIL_SIZES } from './ProjectCard';
+import { CATEGORY_WORDS, STATUS_WORDS, words } from '@/lib/dictionary';
+import { localePath, type Locale } from '@/lib/i18n';
 import type { ProjectSummary } from '@/lib/queries';
-import { STATUS_LABELS } from '@/lib/validation';
 
 /**
  * The expansions.
@@ -29,6 +30,7 @@ import { STATUS_LABELS } from '@/lib/validation';
 export interface ProjectPanelsProps {
   /** The leads and the strip, in the order they appear in the grid. */
   projects: ProjectSummary[];
+  locale?: Locale;
 }
 
 /**
@@ -45,16 +47,23 @@ export interface ProjectPanelsProps {
  * means the browser serves it from cache.
  */
 
-/** Only rows that have a value. An empty row is worse than no row. */
-function facts(project: ProjectSummary): [string, string][] {
-  const status = STATUS_LABELS[project.status as keyof typeof STATUS_LABELS] ?? project.status;
+/**
+ * Only rows that have a value. An empty row is worse than no row.
+ *
+ * The labels and the status are the site's vocabulary rather than Ahmad's
+ * writing, so both come from the dictionary. The building type, the place and
+ * the role are his, and another lane translates those.
+ */
+function facts(project: ProjectSummary, locale: Locale): [string, string][] {
+  const w = words(locale);
+  // The enum cannot hold a space, so it is never shown raw.
+  const status = STATUS_WORDS[locale][project.status] ?? project.status;
   const rows: [string, string][] = [
-    ['Type', project.buildingType],
-    ['Location', project.location],
-    ['Year', String(project.year)],
-    // The enum cannot hold a space, so it is never shown raw.
-    ['Status', status],
-    ['Role', project.role],
+    [w.projectType, project.buildingType],
+    [w.location, project.location],
+    [w.year, String(project.year)],
+    [w.status, status],
+    [w.role, project.role],
   ];
   return rows.filter(([, value]) => value);
 }
@@ -76,7 +85,7 @@ function subscribeToHash(onChange: () => void): () => void {
   return () => window.removeEventListener('hashchange', onChange);
 }
 
-export function ProjectPanels({ projects }: ProjectPanelsProps) {
+export function ProjectPanels({ projects, locale = 'en' }: ProjectPanelsProps) {
   /**
    * Which panel is open, from two sources.
    *
@@ -222,7 +231,7 @@ export function ProjectPanels({ projects }: ProjectPanelsProps) {
 
             <div className="panel-text">
               <p className="eyebrow">
-                {project.category}
+                {CATEGORY_WORDS[locale][project.category] ?? project.category}
                 {/* Written as escapes: a literal non-breaking space in source is invisible. */}
                 {' \u00a0/\u00a0 '}
                 <em>{project.year}</em>
@@ -233,7 +242,7 @@ export function ProjectPanels({ projects }: ProjectPanelsProps) {
               <p className="panel-summary">{project.summary}</p>
 
               <dl className="panel-facts">
-                {facts(project).map(([label, value]) => (
+                {facts(project, locale).map(([label, value]) => (
                   <div key={label}>
                     <dt>{label}</dt>
                     <dd>{value}</dd>
@@ -241,9 +250,12 @@ export function ProjectPanels({ projects }: ProjectPanelsProps) {
                 ))}
               </dl>
 
+              {/* The dictionary has no phrase for either of these yet, so the
+                  French panel shows the English words until it does. */}
               <p className="panel-actions">
-                <a className="btn" href={`/work/${project.slug}`}>
-                  Full sheet <span className="i" aria-hidden="true">{'\u2192'}</span>
+                <a className="btn" href={localePath(locale, `/work/${project.slug}`)}>
+                  {words(locale).fullSheet}{' '}
+                  <span className="i" aria-hidden="true">{'\u2192'}</span>
                 </a>
                 <button
                   className="panel-close"

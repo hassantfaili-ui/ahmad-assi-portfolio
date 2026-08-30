@@ -2,6 +2,9 @@
 
 import { useCallback, useSyncExternalStore } from 'react';
 
+import { words } from '@/lib/dictionary';
+import type { Locale } from '@/lib/i18n';
+
 type Theme = 'light' | 'dark';
 
 /**
@@ -47,7 +50,7 @@ function apply(next: Theme) {
   window.dispatchEvent(new Event(THEME_EVENT));
 }
 
-export default function ThemeToggle() {
+export default function ThemeToggle({ locale = 'en' }: { locale?: Locale }) {
   const theme = useSyncExternalStore(subscribe, readTheme, serverTheme);
 
   const flip = useCallback(() => {
@@ -65,8 +68,12 @@ export default function ThemeToggle() {
        Astro build byte for byte. */
     <button className="theme" type="button" data-theme-toggle aria-pressed={theme === 'dark'} onClick={flip}>
       {/* The label names the theme the press would give you, not the one you
-          are in, which is why it reads Dark while the page is light. */}
-      <span data-theme-label>{theme === 'dark' ? 'Light' : 'Dark'}</span>
+          are in, which is why it reads Dark while the page is light.
+
+          Only the dark half of that is in the dictionary, so the light half is
+          still an English literal and shows through untranslated on the French
+          pages until there is a word for it. */}
+      <span data-theme-label>{theme === 'dark' ? 'Light' : words(locale).theme}</span>
     </button>
   );
 }

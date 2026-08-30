@@ -5,6 +5,7 @@ import { useCallback, useState } from 'react';
 import { ImagePlus, Plus } from 'lucide-react';
 
 import { Dropzone } from '@/components/admin/Dropzone';
+import { FrenchBox } from '@/components/admin/ProjectFrench';
 import { SortableList } from '@/components/admin/SortableList';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -12,6 +13,7 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import type { UploadedItem } from '@/hooks/use-uploads';
+import type { ImageFrench } from '@/lib/editor-shape';
 import { LAYOUTS, type FieldErrors } from '@/lib/validation';
 
 import type { EditorGroup, EditorImage } from '@/components/admin/MediaPanel';
@@ -158,6 +160,30 @@ export function GroupEditor({
                 ...group,
                 images: group.images.map((image) =>
                   image.id === imageId ? { ...image, ...changes } : image,
+                ),
+              }
+            : group,
+        ),
+      );
+    },
+    [onChange],
+  );
+
+  /* Merged into whatever the picture is holding now, not into a copy captured
+     when this render ran. Otherwise typing in the French caption would put back
+     the French description as it was a moment ago, which on a screen where an
+     upload can land mid sentence is a real way to lose a line. */
+  const updateImageFrench = useCallback(
+    (groupId: string, imageId: string, changes: Partial<ImageFrench>) => {
+      onChange((current) =>
+        current.map((group) =>
+          group.id === groupId
+            ? {
+                ...group,
+                images: group.images.map((image) =>
+                  image.id === imageId
+                    ? { ...image, french: { ...image.french, ...changes } }
+                    : image,
                 ),
               }
             : group,
@@ -314,20 +340,32 @@ export function GroupEditor({
                         className="grid min-w-[12rem] flex-1 gap-2 sm:grid-cols-2"
                         onDragStart={cancelDrag}
                       >
-                        <Field
-                          label="What this picture shows"
-                          htmlFor={`image-${image.id}-alt`}
-                          required
-                          error={errors[`groups.${groupIndex}.images.${imageIndex}.alt`]}
-                        >
-                          <Input
-                            value={image.alt}
-                            onChange={(event) =>
-                              updateImage(group.id, image.id, { alt: event.target.value })
+                        <div>
+                          <Field
+                            label="What this picture shows"
+                            htmlFor={`image-${image.id}-alt`}
+                            required
+                            error={errors[`groups.${groupIndex}.images.${imageIndex}.alt`]}
+                          >
+                            <Input
+                              value={image.alt}
+                              onChange={(event) =>
+                                updateImage(group.id, image.id, { alt: event.target.value })
+                              }
+                              placeholder="The courtyard at dusk, seen from the north walk"
+                            />
+                          </Field>
+
+                          <FrenchBox
+                            label="What this picture shows"
+                            htmlFor={`image-${image.id}-alt-fr`}
+                            english={image.alt}
+                            value={image.french.alt}
+                            onChange={(value) =>
+                              updateImageFrench(group.id, image.id, { alt: value })
                             }
-                            placeholder="The courtyard at dusk, seen from the north walk"
                           />
-                        </Field>
+                        </div>
 
                         {/* Its own, not the group's. The description says what
                             the photograph is, for somebody who cannot see it;
@@ -336,18 +374,30 @@ export function GroupEditor({
                             screen has a caption too, and two boxes called
                             Caption are two boxes nobody can tell apart by
                             name. */}
-                        <Field
-                          label="Caption for this picture"
-                          htmlFor={`image-${image.id}-caption`}
-                        >
-                          <Input
-                            value={image.caption ?? ''}
-                            onChange={(event) =>
-                              updateImage(group.id, image.id, { caption: event.target.value })
+                        <div>
+                          <Field
+                            label="Caption for this picture"
+                            htmlFor={`image-${image.id}-caption`}
+                          >
+                            <Input
+                              value={image.caption ?? ''}
+                              onChange={(event) =>
+                                updateImage(group.id, image.id, { caption: event.target.value })
+                              }
+                              placeholder="Nothing under this picture"
+                            />
+                          </Field>
+
+                          <FrenchBox
+                            label="Caption for this picture"
+                            htmlFor={`image-${image.id}-caption-fr`}
+                            english={image.caption ?? ''}
+                            value={image.french.caption}
+                            onChange={(value) =>
+                              updateImageFrench(group.id, image.id, { caption: value })
                             }
-                            placeholder="Nothing under this picture"
                           />
-                        </Field>
+                        </div>
                       </div>
 
                       <div className="grid gap-1" onDragStart={cancelDrag}>

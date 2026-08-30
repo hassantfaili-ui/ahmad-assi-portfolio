@@ -1,5 +1,6 @@
 import Image from 'next/image';
 
+import { localePath, type Locale } from '@/lib/i18n';
 import type { ProjectSummary } from '@/lib/queries';
 
 /**
@@ -16,6 +17,11 @@ export interface ProjectCardProps {
   project: ProjectSummary;
   /** True for the three large cards at the top of the grid. */
   lead?: boolean;
+  /**
+   * No word on the card belongs to the site: the title, the year and the place
+   * are all Ahmad's. The language is here for the address the card links to.
+   */
+  locale?: Locale;
 }
 
 /**
@@ -41,7 +47,7 @@ function place(location: string): string {
 export const LEAD_SIZES = '(max-width: 900px) 100vw, 33vw';
 export const RAIL_SIZES = '(max-width: 700px) 72vw, 21rem';
 
-export function ProjectCard({ project, lead = false }: ProjectCardProps) {
+export function ProjectCard({ project, lead = false, locale = 'en' }: ProjectCardProps) {
   const image = project.leadImage;
 
   return (
@@ -53,7 +59,7 @@ export function ProjectCard({ project, lead = false }: ProjectCardProps) {
         the same click, and the expansion is the behaviour that has to win.
       */}
       <a
-        href={`/work/${project.slug}`}
+        href={localePath(locale, `/work/${project.slug}`)}
         data-expand={project.slug}
         aria-expanded="false"
         aria-controls={`panel-${project.slug}`}

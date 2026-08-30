@@ -30,6 +30,9 @@
 import Link from 'next/link';
 import { useEffect, useRef, type CSSProperties } from 'react';
 
+import { words } from '@/lib/dictionary';
+import type { Locale } from '@/lib/i18n';
+
 export interface HeroSources {
   large: string | null;
   small: string | null;
@@ -87,6 +90,13 @@ export interface HeroFilmProps {
   /** Already built URLs, not object keys: the caller runs them through mediaUrl. */
   sources: HeroSources;
   poster: string | null;
+  /**
+   * The credit in the corner is the only phrase this component owns. The
+   * eyebrow, the introduction and the button are the caller's words, and
+   * ctaHref is the caller's address: a French page has to hand this one a
+   * French one.
+   */
+  locale?: Locale;
 }
 
 export default function HeroFilm({
@@ -98,6 +108,7 @@ export default function HeroFilm({
   ctaHref,
   sources,
   poster,
+  locale = 'en',
 }: HeroFilmProps) {
   const filmRef = useRef<HTMLVideoElement>(null);
   const { large, small } = sources;
@@ -229,8 +240,10 @@ export default function HeroFilm({
         </p>
       </div>
 
+      {/* The project is named, so the name stays as it is written. The word
+          beside it belongs to the site. */}
       <p className="film-credit" aria-hidden="true">
-        Lincoln Beach Center &nbsp;/&nbsp; Walkthrough
+        Lincoln Beach Center &nbsp;/&nbsp; {words(locale).walkthrough}
       </p>
     </section>
   );

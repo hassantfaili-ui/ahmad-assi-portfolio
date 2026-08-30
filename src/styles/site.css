@@ -1577,6 +1577,53 @@ button {
   border-color: var(--ink);
 }
 
+/* The two switches sit together in the header's last column. They are grouped
+   rather than dropped in side by side because .top is a three column grid, and
+   a fourth child would push the pages onto a row of their own. */
+.switches {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* The language switch: cut from the same cloth as .theme, and deliberately not
+   sharing its rule. That one dresses a button, this one dresses a link, so it
+   starts from the anchor reset rather than the button reset and the two stay
+   free to differ where a link has to. */
+.lang {
+  font-family: var(--data);
+  font-size: var(--t-data);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--rule);
+  transition: color 0.2s var(--ease), border-color 0.2s var(--ease),
+    background 0.2s var(--ease);
+}
+.lang:hover {
+  color: var(--invert-ink);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+/* A small phone now carries the name and two switches on one row, and Français
+   is a long word for 320px. The pair gives up padding and some of its tracking
+   rather than pushing the name off the side of the screen: the wordmark is set
+   to nowrap, so anything that does not fit overflows the page rather than
+   wrapping. Measured on the widest label the switch can hold. */
+@media (max-width: 400px) {
+  .switches {
+    gap: 0.3rem;
+  }
+  .switches > .lang,
+  .switches > .theme {
+    padding: 0.45rem 0.5rem;
+    letter-spacing: 0.08em;
+  }
+}
+
 /* ---------------------------------------------------------------- footer --- */
 /* Ends on an invitation rather than stopping. */
 
@@ -1655,8 +1702,9 @@ button {
 }
 
 @media (max-width: 880px) {
-  /* Two rows, not three: name and switch share the first, the pages take the
-     second. Without explicit placement the switch is pushed to a third row. */
+  /* Two rows, not three: the name and the switches share the first, the pages
+     take the second. Without explicit placement the switches are pushed to a
+     third row. */
   .top {
     grid-template-columns: 1fr auto;
     row-gap: 0.9rem;
@@ -1665,7 +1713,7 @@ button {
     grid-column: 1;
     grid-row: 1;
   }
-  .top > .theme {
+  .top > .switches {
     grid-column: 2;
     grid-row: 1;
   }

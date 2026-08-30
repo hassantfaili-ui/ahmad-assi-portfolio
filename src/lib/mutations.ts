@@ -6,7 +6,7 @@ import { getIdentity } from '@/lib/access';
 import { PATHS, profilePaths, projectPaths } from '@/lib/cache-tags';
 import { CONTACT_DEFAULTS } from '@/lib/contact-defaults';
 import { pictureKey } from '@/lib/translate';
-import { forgetTranslations } from '@/lib/translations';
+import { forgetTranslations, saveTranslations } from '@/lib/translations';
 import { resolveCover } from '@/lib/cover-image';
 import { db } from '@/lib/db';
 import { toSlug, uniqueSlug } from '@/lib/slug';
@@ -234,16 +234,18 @@ export interface GroupInput {
   layout: 'pair' | 'full' | 'triptych';
   /** @deprecated A caption belongs to a picture. Kept so an older payload still parses. */
   caption?: string | null;
-  images: { mediaId: string; alt: string; caption?: string | null }[];
+  images: { mediaId: string; alt: string; caption?: string | null; french?: FrenchFields }[];
 }
 
 export interface DrawingInput {
   mediaId: string;
   alt: string;
   drawingType: string;
+  french?: FrenchFields;
 }
 
 export interface FilmInput {
+  french?: FrenchFields;
   posterMediaId?: string | null;
   youtubeId?: string | null;
   caption?: string | null;
@@ -361,6 +363,9 @@ export async function deleteFilm(projectId: string | null): Promise<SaveResult> 
 }
 
 
+/** Field name to French words, for one row. Blank means not translated. */
+export type FrenchFields = Record<string, string | null | undefined>;
+
 export interface WholeProjectInput {
   /**
    * When the screen that is saving last read this project.
@@ -378,6 +383,11 @@ export interface WholeProjectInput {
    */
   baseUpdatedAt: string | null;
   fields: ProjectInput;
+  /**
+   * The French for the project's own fields. Optional, so a screen that has not
+   * been taught the second language still saves exactly as it did.
+   */
+  french?: FrenchFields;
   /** Whether the project is on the site, saved with everything else. */
   published: boolean;
   groups: GroupInput[];
@@ -560,6 +570,42 @@ export async function saveWholeProject(
 
   const leadCount = await db.project.count({ where: { tier: 'lead', published: true } });
 
+  /* The French, written after the English rather than inside the transaction.
+     It lives in its own table and a failure here must not roll back a save that
+     otherwise worked: losing a translation is a bad afternoon, losing the
+     project is a bad week.
+
+     Nothing is keyed by a picture's row id, because the write above deleted and
+     recreated every one of them. A picture is named by the project and the file
+     it shows, which is what survives. */
+  await saveTranslations('fr', 'Project', id, input.french ?? {});
+
+  const shown = input.groups.flatMap((group) => group.images);
+  for (const image of shown) {
+    await saveTranslations('fr', 'ProjectImage', pictureKey(id, image.mediaId), image.french ?? {});
+  }
+  for (const drawing of input.drawings) {
+    await saveTranslations('fr', 'Drawing', pictureKey(id, drawing.mediaId), drawing.french ?? {});
+  }
+  await saveTranslations('fr', 'Film', id, input.film?.french ?? {});
+
+  /* Anything that used to be in this project and is not any more takes its
+     French with it, or the table grows by every picture he ever removes and a
+     photograph added back later wears a sentence written about something else. */
+  const stillHere = new Set([
+    ...shown.map((image) => pictureKey(id, image.mediaId)),
+    ...input.drawings.map((drawing) => pictureKey(id, drawing.mediaId)),
+  ]);
+  const held = await db.translation.findMany({
+    where: { model: { in: ['ProjectImage', 'Drawing'] }, recordId: { startsWith: `${id}:` } },
+    select: { model: true, recordId: true },
+  });
+  const stale = held.filter((row) => !stillHere.has(row.recordId));
+  for (const model of ['ProjectImage', 'Drawing'] as const) {
+    const ids = stale.filter((row) => row.model === model).map((row) => row.recordId);
+    await forgetTranslations(model, ids);
+  }
+
   /* The saved version goes back so the screen can answer the next save with it,
      rather than still holding the version it first opened and refusing itself. */
   const saved = await db.project.findUnique({ where: { id }, select: { updatedAt: true } });
@@ -574,6 +620,15 @@ export async function saveWholeProject(
 // ---------------------------------------------------------------- resume ---
 
 export interface ProfileInput {
+  /**
+   * The French of the words on the screen that is saving, by field.
+   *
+   * Only the fields that screen shows: Home sends three, Contact sends its
+   * handful, Resume sends the rest. saveTranslations writes what it is handed
+   * and leaves the rest alone, which is the one place the whole row rule does
+   * not apply, because a translation is its own row rather than a column here.
+   */
+  french?: FrenchFields;
   name: string;
   discipline: string;
   credential: string;
@@ -636,10 +691,39 @@ export async function saveProfile(input: ProfileInput): Promise<SaveResult> {
     create: { id: 'profile', ...fields },
   });
 
+  await saveTranslations('fr', 'Profile', 'profile', input.french ?? {});
+
+  /* A paragraph he deleted takes its French with it. The long biography is
+     stored a line at a time, numbered, so without this the French of a removed
+     paragraph would be inherited by whatever paragraph slid into its place. */
+  const spare = await db.translation.findMany({
+    where: { locale: 'fr', model: 'Profile', recordId: 'profile', field: { startsWith: 'longBio.' } },
+    select: { field: true },
+  });
+  const gone = spare
+    .map((row) => row.field)
+    .filter((field) => Number(field.slice('longBio.'.length)) >= fields.longBio.length);
+  if (gone.length > 0) {
+    await db.translation.deleteMany({
+      where: { locale: 'fr', model: 'Profile', recordId: 'profile', field: { in: gone } },
+    });
+  }
+
   /* The profile is in the header and the footer of every page, so this is the
      one write that legitimately regenerates the whole site. */
   for (const path of profilePaths()) revalidatePath(path);
   return { ok: true };
+}
+
+/** The French of the lists, each array in the same order as the English one. */
+export interface ResumeListsFrench {
+  facts?: { label: string; items: string[] }[];
+  social?: { label: string }[];
+  experience?: { role: string; location: string; period: string; contributions: string[] }[];
+  education?: { credential: string; institution: string; note: string }[];
+  skillGroups?: { label: string; items: string[] }[];
+  languages?: string[];
+  entries?: { title: string; detail: string }[];
 }
 
 export interface ResumeLists {
@@ -663,8 +747,45 @@ export interface ResumeLists {
  * Same reasoning as the image groups. These are short ordered lists edited as a
  * unit in one form, and a diff would be more code than the thing it saves.
  */
-export async function saveResumeLists(lists: ResumeLists): Promise<SaveResult> {
+export async function saveResumeLists(
+  lists: ResumeLists & { french?: ResumeListsFrench },
+): Promise<SaveResult> {
   if (!(await authorised())) return DENIED;
+
+  /* Every row here is about to be deleted and written again, so the French
+     pointing at the old ids is forgotten before the rewrite. Nothing in the
+     database does that for us, and a cuid handed out again is not a risk worth
+     leaving open. */
+  const doomed = await Promise.all([
+    db.fact.findMany({ select: { id: true } }),
+    db.socialLink.findMany({ select: { id: true } }),
+    db.experienceEntry.findMany({ select: { id: true } }),
+    db.educationEntry.findMany({ select: { id: true } }),
+    db.skillGroup.findMany({ select: { id: true, items: { select: { id: true } } } }),
+    db.language.findMany({ select: { id: true } }),
+    db.resumeEntry.findMany({ select: { id: true } }),
+  ]);
+  const [oldFacts, oldSocial, oldExperience, oldEducation, oldSkillGroups, oldLanguages, oldEntries] =
+    doomed as [
+      { id: string }[],
+      { id: string }[],
+      { id: string }[],
+      { id: string }[],
+      { id: string; items: { id: string }[] }[],
+      { id: string }[],
+      { id: string }[],
+    ];
+
+  await Promise.all([
+    forgetTranslations('Fact', oldFacts.map((row) => row.id)),
+    forgetTranslations('SocialLink', oldSocial.map((row) => row.id)),
+    forgetTranslations('ExperienceEntry', oldExperience.map((row) => row.id)),
+    forgetTranslations('EducationEntry', oldEducation.map((row) => row.id)),
+    forgetTranslations('SkillGroup', oldSkillGroups.map((row) => row.id)),
+    forgetTranslations('Skill', oldSkillGroups.flatMap((row) => row.items.map((item) => item.id))),
+    forgetTranslations('Language', oldLanguages.map((row) => row.id)),
+    forgetTranslations('ResumeEntry', oldEntries.map((row) => row.id)),
+  ]);
 
   /* One interactive transaction over the whole rewrite, skill groups included.
      They used to be created in a plain loop after the transaction committed,
@@ -753,6 +874,76 @@ export async function saveResumeLists(lists: ResumeLists): Promise<SaveResult> {
       });
     }
   });
+
+  /* Written after the rewrite, paired by position: the row at index n in the
+     list just written is the row the French at index n belongs to. Each list is
+     read back in the order it was handed over, which for the resume entries
+     means by their own order rather than by section, or the awards would wear
+     the volunteering's French. */
+  const french = lists.french;
+  if (french) {
+    const [facts, social, experience, education, skillGroups, languages, entries] = await Promise.all([
+      db.fact.findMany({ orderBy: { order: 'asc' }, select: { id: true } }),
+      db.socialLink.findMany({ orderBy: { order: 'asc' }, select: { id: true } }),
+      db.experienceEntry.findMany({ orderBy: { order: 'asc' }, select: { id: true } }),
+      db.educationEntry.findMany({ orderBy: { order: 'asc' }, select: { id: true } }),
+      db.skillGroup.findMany({
+        orderBy: { order: 'asc' },
+        select: { id: true, items: { orderBy: { order: 'asc' }, select: { id: true } } },
+      }),
+      db.language.findMany({ orderBy: { order: 'asc' }, select: { id: true } }),
+      db.resumeEntry.findMany({ orderBy: { order: 'asc' }, select: { id: true } }),
+    ]);
+
+    const numbered = (field: string, values: string[] | undefined) =>
+      Object.fromEntries((values ?? []).map((value, index) => [`${field}.${index}`, value]));
+
+    await Promise.all([
+      ...facts.map((row, index) =>
+        saveTranslations('fr', 'Fact', row.id, {
+          label: french.facts?.[index]?.label,
+          ...numbered('items', french.facts?.[index]?.items),
+        }),
+      ),
+      ...social.map((row, index) =>
+        saveTranslations('fr', 'SocialLink', row.id, { label: french.social?.[index]?.label }),
+      ),
+      ...experience.map((row, index) =>
+        saveTranslations('fr', 'ExperienceEntry', row.id, {
+          role: french.experience?.[index]?.role,
+          location: french.experience?.[index]?.location,
+          period: french.experience?.[index]?.period,
+          ...numbered('contributions', french.experience?.[index]?.contributions),
+        }),
+      ),
+      ...education.map((row, index) =>
+        saveTranslations('fr', 'EducationEntry', row.id, {
+          credential: french.education?.[index]?.credential,
+          institution: french.education?.[index]?.institution,
+          note: french.education?.[index]?.note,
+        }),
+      ),
+      ...skillGroups.map((row, index) =>
+        saveTranslations('fr', 'SkillGroup', row.id, { label: french.skillGroups?.[index]?.label }),
+      ),
+      ...skillGroups.flatMap((row, groupIndex) =>
+        row.items.map((item, itemIndex) =>
+          saveTranslations('fr', 'Skill', item.id, {
+            name: french.skillGroups?.[groupIndex]?.items?.[itemIndex],
+          }),
+        ),
+      ),
+      ...languages.map((row, index) =>
+        saveTranslations('fr', 'Language', row.id, { text: french.languages?.[index] }),
+      ),
+      ...entries.map((row, index) =>
+        saveTranslations('fr', 'ResumeEntry', row.id, {
+          title: french.entries?.[index]?.title,
+          detail: french.entries?.[index]?.detail,
+        }),
+      ),
+    ]);
+  }
 
   revalidatePath(PATHS.resume);
   return { ok: true };

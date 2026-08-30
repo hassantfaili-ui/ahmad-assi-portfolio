@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useCallback, useState } from 'react';
 
 import { Dropzone } from '@/components/admin/Dropzone';
+import { FrenchBox } from '@/components/admin/ProjectFrench';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -11,6 +12,7 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
 import type { UploadedFilm, UploadedItem } from '@/hooks/use-uploads';
+import type { FilmFrench } from '@/lib/editor-shape';
 import { mediaUrl } from '@/lib/media-url';
 import { formatBytes } from '@/lib/upload-policy';
 import type { FieldErrors } from '@/lib/validation';
@@ -40,10 +42,21 @@ export interface EditorFilm {
   posterMedia: EditorMedia | null;
   youtubeId: string;
   caption: string;
+  /**
+   * The caption in French, for the /fr page. Not part of the film's row: it is
+   * written to the Translation table against it. Blank means the English shows.
+   */
+  french: FilmFrench;
   sources: { height: number; media: EditorMedia }[];
 }
 
-const EMPTY_FILM: EditorFilm = { posterMedia: null, youtubeId: '', caption: '', sources: [] };
+const EMPTY_FILM: EditorFilm = {
+  posterMedia: null,
+  youtubeId: '',
+  caption: '',
+  french: { caption: '' },
+  sources: [],
+};
 
 function toEditorMedia(media: { id: string; key: string; bytes: number; width: number | null; height: number | null }): EditorMedia {
   return {
@@ -103,6 +116,18 @@ export function FilmEditor({ film, savedFilm, errors, onChange }: FilmEditorProp
       /* An edit on a project with no film starts one. A YouTube id typed into
          an empty section is a perfectly ordinary way to add a walkthrough. */
       onChange((current) => ({ ...(current ?? EMPTY_FILM), ...changes }));
+    },
+    [onChange],
+  );
+
+  /* Merged into the film as it is now, for the same reason as above: an upload
+     landing mid sentence must not put back an older French caption. */
+  const changeFrench = useCallback(
+    (changes: Partial<FilmFrench>) => {
+      onChange((current) => {
+        const film = current ?? EMPTY_FILM;
+        return { ...film, french: { ...film.french, ...changes } };
+      });
     },
     [onChange],
   );
@@ -266,17 +291,27 @@ export function FilmEditor({ film, savedFilm, errors, onChange }: FilmEditorProp
         </p>
       )}
 
-      <Field
-        label="Caption"
-        htmlFor="film-caption"
-        hint="A line under the film. Leave it empty for none."
-      >
-        <Input
-          value={film?.caption ?? ''}
-          onChange={(event) => change({ caption: event.target.value })}
-          placeholder="A walk from the entrance court through to the roof terrace"
+      <div>
+        <Field
+          label="Caption"
+          htmlFor="film-caption"
+          hint="A line under the film. Leave it empty for none."
+        >
+          <Input
+            value={film?.caption ?? ''}
+            onChange={(event) => change({ caption: event.target.value })}
+            placeholder="A walk from the entrance court through to the roof terrace"
+          />
+        </Field>
+
+        <FrenchBox
+          label="Caption"
+          htmlFor="film-caption-fr"
+          english={film?.caption ?? ''}
+          value={film?.french.caption ?? ''}
+          onChange={(value) => changeFrench({ caption: value })}
         />
-      </Field>
+      </div>
 
       <Field
         label="YouTube id"

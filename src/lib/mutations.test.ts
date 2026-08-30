@@ -34,9 +34,11 @@ const { db } = vi.hoisted(() => ({
       delete: vi.fn(),
       count: vi.fn(async () => 0),
     },
-    /* deleteProject reads these to know which pictures' French to forget. */
+    /* deleteProject reads these to know which pictures' French to forget, and
+       saveWholeProject reads the translations to prune the ones left behind. */
     projectImage: { findMany: vi.fn(async () => []) },
     drawing: { findMany: vi.fn(async () => []) },
+    translation: { findMany: vi.fn(async () => []) },
     $transaction: vi.fn(async (...args: unknown[]) => {
       void args;
       return [] as unknown[];

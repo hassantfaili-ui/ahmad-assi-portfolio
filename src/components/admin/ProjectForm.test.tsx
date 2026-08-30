@@ -53,6 +53,22 @@ const loose = {
   height: 900,
 };
 
+/* Part translated, which is the ordinary state of every project for as long as
+   it takes Ahmad to work through seventeen of them. The blanks are not missing
+   data, they are the design: the French page shows the English for those. */
+const french = {
+  title: 'Les hauteurs du jardin',
+  location: '',
+  buildingType: '',
+  area: '',
+  role: '',
+  contribution: '',
+  summary: '',
+  body: '',
+  credit: '',
+  leadImageAlt: '',
+};
+
 const project = {
   id: 'p1',
   updatedAt: '2026-08-30T03:00:00.000Z',
@@ -76,6 +92,7 @@ const project = {
   leadImageId: 'm1',
   leadImageAlt: 'The front of the building',
   leadImage: media,
+  french,
 };
 
 /* Two pictures in the one group, because most of what is being guarded here is
@@ -86,12 +103,24 @@ const groups: EditorGroup[] = [
     layout: 'full',
     caption: 'The old group caption',
     images: [
-      { id: 'i1', mediaId: 'm1', alt: 'A picture of the courtyard', caption: 'At dusk', media },
+      {
+        id: 'i1',
+        mediaId: 'm1',
+        alt: 'A picture of the courtyard',
+        caption: 'At dusk',
+        /* Already translated, and never touched by any test that is about the
+           English. Whatever the English boxes do, these words have to come back
+           out of the payload exactly as they went in, or the next save writes
+           over a translation nobody asked it to touch. */
+        french: { alt: 'Une photo de la cour', caption: 'Au crepuscule' },
+        media,
+      },
       {
         id: 'i2',
         mediaId: 'm2',
         alt: 'The stair from the landing',
         caption: '',
+        french: { alt: '', caption: '' },
         media: second,
       },
     ],
@@ -103,14 +132,34 @@ function captionBoxes(): HTMLElement[] {
   return screen.getAllByLabelText('Caption for this picture');
 }
 
+/** The French caption boxes, which only exist once the switch has been pressed. */
+function frenchCaptionBoxes(): HTMLElement[] {
+  return screen.getAllByLabelText('Caption for this picture, in French');
+}
+
+async function showFrench(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+  await user.click(screen.getByRole('button', { name: 'Show the French boxes' }));
+}
+
 interface SavedPayload {
   fields: { location: string; leadImageId: string | null };
+  french: { title: string; summary: string; leadImageAlt: string };
   published: boolean;
   groups: {
     caption?: string | null;
-    images: { mediaId: string; alt: string; caption?: string | null }[];
+    images: {
+      mediaId: string;
+      alt: string;
+      caption?: string | null;
+      french: { alt: string; caption: string };
+    }[];
   }[];
-  drawings: { mediaId: string; alt: string; drawingType: string }[];
+  drawings: {
+    mediaId: string;
+    alt: string;
+    drawingType: string;
+    french: { alt: string; drawingType: string };
+  }[];
 }
 
 /** What the one button actually sent, which is the only thing worth asserting. */
@@ -311,7 +360,15 @@ describe('moving a picture between the pictures and the drawings', () => {
     await waitFor(() => expect(saveWholeProject).toHaveBeenCalledTimes(1));
     expect(sent().groups[0].images.map((image) => image.mediaId)).toEqual(['m2']);
     expect(sent().drawings).toEqual([
-      { mediaId: 'm1', alt: 'A picture of the courtyard', drawingType: 'Drawing' },
+      {
+        mediaId: 'm1',
+        alt: 'A picture of the courtyard',
+        drawingType: 'Drawing',
+        /* The French description comes with it. The kind of drawing is blank
+           because Drawing above is the site's word, not one Ahmad wrote, so
+           there is nothing yet to have translated. */
+        french: { alt: 'Une photo de la cour', drawingType: '' },
+      },
     ]);
   });
 
@@ -323,6 +380,7 @@ describe('moving a picture between the pictures and the drawings', () => {
         mediaId: 'm3',
         alt: 'Ground floor plan, showing the courtyard',
         drawingType: 'Plan',
+        french: { alt: 'Plan du rez de chaussee', drawingType: 'Plan' },
         media: loose,
       },
     ];
@@ -340,5 +398,159 @@ describe('moving a picture between the pictures and the drawings', () => {
     const [group] = sent().groups;
     expect(group.images.map((image) => image.mediaId)).toEqual(['m1', 'm2', 'm3']);
     expect(group.images[2].alt).toBe('Ground floor plan, showing the courtyard');
+  });
+});
+
+/**
+ * The French half of the same screen.
+ *
+ * It is saved by the same button, in the same payload, in the same press. A
+ * second button here would be the four button screen all over again, one
+ * language further along, and the failure would look identical: words typed,
+ * nothing warned, nothing sent.
+ */
+describe('the French boxes', () => {
+  it('sends a French caption typed on a picture, on that picture', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
+
+    await showFrench(user);
+
+    const boxes = frenchCaptionBoxes();
+    expect(boxes).toHaveLength(2);
+
+    await user.clear(boxes[1]);
+    await user.type(boxes[1], "L'escalier vu du palier");
+
+    await user.click(screen.getByRole('button', { name: 'Save everything' }));
+
+    await waitFor(() => expect(saveWholeProject).toHaveBeenCalledTimes(1));
+    const [group] = sent().groups;
+    expect(group.images[1].french.caption).toBe("L'escalier vu du palier");
+    /* And not on the picture beside it, which is the mistake the group caption
+       made for years. */
+    expect(group.images[0].french.caption).toBe('Au crepuscule');
+  });
+
+  it('leaves a stored translation exactly as it was when nothing is typed in it', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
+
+    /* The English is edited and the French is never even looked at, which is
+       the common case: most saves of a translated project are English edits.
+       The French still has to make the round trip untouched, because the save
+       writes every field it is handed and a blank would delete the row. */
+    const caption = captionBoxes()[0];
+    await user.clear(caption);
+    await user.type(caption, 'At first light');
+
+    await user.click(screen.getByRole('button', { name: 'Save everything' }));
+
+    await waitFor(() => expect(saveWholeProject).toHaveBeenCalledTimes(1));
+    const [group] = sent().groups;
+    expect(group.images[0].caption).toBe('At first light');
+    expect(group.images[0].french).toEqual({
+      alt: 'Une photo de la cour',
+      caption: 'Au crepuscule',
+    });
+    expect(sent().french.title).toBe('Les hauteurs du jardin');
+  });
+
+  it('carries every French box on every save, blank ones included', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
+
+    await user.click(screen.getByRole('button', { name: 'Save everything' }));
+
+    await waitFor(() => expect(saveWholeProject).toHaveBeenCalledTimes(1));
+    /* Blank has to be sent, not left out. Left out would read to the save as
+       "leave the stored one alone", and there would then be no way to clear a
+       translation that is wrong. */
+    expect(sent().french.summary).toBe('');
+    expect(sent().groups[0].images[1].french).toEqual({ alt: '', caption: '' });
+  });
+
+  it('sends French typed with the boxes hidden again afterwards', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
+
+    await showFrench(user);
+    const title = screen.getByLabelText('Title, in French');
+    await user.clear(title);
+    await user.type(title, 'Les hauteurs');
+
+    /* Hiding the boxes is a way of looking at the screen, not a way of undoing
+       work. Work that is on the screen and work that is in the payload have to
+       be the same work whatever is being shown. */
+    await user.click(screen.getByRole('button', { name: 'Hide the French boxes' }));
+    expect(screen.queryByLabelText('Title, in French')).toBeNull();
+    expect(screen.getByText('Not saved yet')).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'Save everything' }));
+
+    await waitFor(() => expect(saveWholeProject).toHaveBeenCalledTimes(1));
+    expect(sent().french.title).toBe('Les hauteurs');
+  });
+
+  it('counts what is written, so hidden French is never silent', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
+
+    /* Nine boxes down the left, the cover's description, two pictures at two
+       boxes each, and the film's caption: fifteen. Three of them have words in
+       them before anything is typed, and the count says so with the boxes
+       still hidden, which is the point of counting at all. */
+    expect(screen.getByText(/3 of 15 boxes written/)).toBeTruthy();
+
+    await showFrench(user);
+    await user.type(screen.getByLabelText('Where it is, in French'), 'Beyrouth');
+
+    expect(screen.getByText(/4 of 15 boxes written/)).toBeTruthy();
+  });
+});
+
+describe('the English boxes, with the French beside them', () => {
+  it('shows nothing in French until it is asked to', () => {
+    render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
+
+    /* An ordinary edit is not a translation, and most edits are ordinary. The
+       screen stays the size it was until Ahmad says he is translating. */
+    expect(screen.queryByLabelText('Title, in French')).toBeNull();
+    expect(screen.queryAllByLabelText('Caption for this picture, in French')).toHaveLength(0);
+    expect(captionBoxes()).toHaveLength(2);
+    expect(screen.getByLabelText('Where it is*')).toHaveValue('Beirut');
+  });
+
+  it('keeps the English where it was when the French boxes appear', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
+
+    await showFrench(user);
+
+    expect(screen.getByLabelText('Where it is*')).toHaveValue('Beirut');
+    expect(captionBoxes()[0]).toHaveValue('At dusk');
+    expect(captionBoxes()[1]).toHaveValue('');
+    /* Showing the boxes is not editing anything, so it cannot be work. */
+    expect(screen.queryByText('Not saved yet')).toBeNull();
+  });
+
+  it('shows the English a French box stands in for, greyed, until it is written', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
+
+    await showFrench(user);
+
+    /* The placeholder is how "leaving it empty is fine" is said forty times
+       without saying it forty times: the box shows the words the French page
+       will print while it is empty. */
+    expect(screen.getByLabelText('Where it is, in French')).toHaveAttribute(
+      'placeholder',
+      'Beirut',
+    );
+    expect(frenchCaptionBoxes()[0]).toHaveAttribute('placeholder', 'At dusk');
+    expect(frenchCaptionBoxes()[1]).toHaveAttribute(
+      'placeholder',
+      'Nothing written in English yet',
+    );
   });
 });

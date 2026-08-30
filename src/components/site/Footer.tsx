@@ -3,6 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
+import { words } from '@/lib/dictionary';
+import { localePath, stripLocale, type Locale } from '@/lib/i18n';
+
 const MAIL_ICON =
   'M2 5.5A1.5 1.5 0 013.5 4h17A1.5 1.5 0 0122 5.5v13a1.5 1.5 0 01-1.5 1.5h-17A1.5 1.5 0 012 18.5v-13zm2.2.5L12 12l7.8-6H4.2zM20 8.2l-7.4 5.7a1 1 0 01-1.2 0L4 8.2V18h16V8.2z';
 const PHONE_ICON =
@@ -21,6 +24,7 @@ interface FooterProps {
   phone: string;
   /** The home page pairs About with Get in touch, so the footer would repeat it. */
   hideCta?: boolean;
+  locale?: Locale;
 }
 
 /**
@@ -39,16 +43,20 @@ export default function Footer({
   email,
   phone,
   hideCta,
+  locale = 'en',
 }: FooterProps) {
   const pathname = usePathname();
-  const hide = hideCta ?? pathname === '/';
+  const w = words(locale);
+  /* The French home page is /fr, so the path is reduced to the one both
+     languages share before it is recognised. */
+  const hide = hideCta ?? stripLocale(pathname) === '/';
 
   return (
     <footer className="foot">
       {!hide && (
         <div className="foot-cta">
-          <p className="foot-kicker">Interested in collaborating?</p>
-          <h2 className="foot-title">Get in touch</h2>
+          <p className="foot-kicker">{w.interestedInCollaborating}</p>
+          <h2 className="foot-title">{w.getInTouch}</h2>
           <p className="foot-links">
             <a className="inline" href={`mailto:${email}`}>
               {email}
@@ -56,28 +64,30 @@ export default function Footer({
             <a className="inline" href={telHref(phone)}>
               {phone}
             </a>
-            <Link className="inline" href="/contact">
-              Contact page
+            <Link className="inline" href={localePath(locale, '/contact')}>
+              {w.contactPage}
             </Link>
           </p>
         </div>
       )}
 
       <div className="foot-base">
-        <Link className="wordmark" href="/">
+        <Link className="wordmark" href={localePath(locale, '/')}>
           {name}
         </Link>
         <p className="foot-meta">{discipline} &nbsp;/&nbsp; {location}</p>
         <ul className="social">
           <li>
-            <a href={`mailto:${email}`} aria-label={`Email ${name}`}>
+            {/* The icons say nothing on their own, so each carries the word for
+                what it is followed by what it reaches. */}
+            <a href={`mailto:${email}`} aria-label={`${w.email} ${name}`}>
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d={MAIL_ICON}></path>
               </svg>
             </a>
           </li>
           <li>
-            <a href={telHref(phone)} aria-label={`Telephone ${phone}`}>
+            <a href={telHref(phone)} aria-label={`${w.phone} ${phone}`}>
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d={PHONE_ICON}></path>
               </svg>

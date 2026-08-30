@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import { HomeForm } from '@/components/admin/HomeForm';
+import { getProfileFrench } from '@/lib/admin-queries';
 import { SignedOut } from '@/components/admin/SignedOut';
 import { getIdentity } from '@/lib/access';
 import { getClosingFilm, getHeroFilm, getProfile } from '@/lib/queries';
@@ -30,10 +31,11 @@ export default async function AdminHomePage() {
      anonymous requests. */
   if (!(await getIdentity())) return <SignedOut />;
 
-  const [{ profile }, hero, closing] = await Promise.all([
+  const [{ profile }, hero, closing, french] = await Promise.all([
     getProfile(),
     getHeroFilm(),
     getClosingFilm(),
+    getProfileFrench(),
   ]);
 
   return (
@@ -47,7 +49,7 @@ export default async function AdminHomePage() {
         </p>
       </header>
 
-      <HomeForm profile={profile} hero={hero} closing={closing} />
+      <HomeForm profile={profile} hero={hero} closing={closing} french={french.profile} />
     </div>
   );
 }

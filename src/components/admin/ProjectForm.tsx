@@ -10,6 +10,7 @@ import {
   type EditorGroup,
   type EditorMedia,
 } from '@/components/admin/MediaPanel';
+import { FrenchBox, FrenchBoxes } from '@/components/admin/ProjectFrench';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
@@ -20,6 +21,12 @@ import { useToast } from '@/components/ui/toast';
 import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
 import { useSaveFlag } from '@/hooks/use-save-flag';
 import { runAction } from '@/lib/action-result';
+import type {
+  DrawingFrench,
+  FilmFrench,
+  ImageFrench,
+  ProjectFrench,
+} from '@/lib/editor-shape';
 import { saveWholeProject, type WholeProjectInput } from '@/lib/mutations';
 import {
   CATEGORIES,
@@ -57,6 +64,13 @@ import {
  *
  * If a fifth kind of content is added later, it belongs in this state and in
  * this payload. It does not get a button.
+ *
+ * The French is that fifth kind, and it obeys the rule. It is held here with
+ * everything else, it rides out in the same payload on the same press, and it
+ * has no button. The one difference is where it lands: French is not part of a
+ * project's row, it goes to the Translation table, so it travels in the payload
+ * under `french` and saveWholeProject writes it there. See ProjectPayload below
+ * for the exact shape.
  */
 
 /** How each tier reads. The words on the home page, not the words in the code. */
@@ -90,6 +104,57 @@ export interface EditorProject {
   leadImageId: string | null;
   leadImageAlt: string;
   leadImage: EditorMedia | null;
+  /**
+   * The French already written for this project, box by box.
+   *
+   * Read out of the Translation table by the page that renders this screen,
+   * never out of the project's own row: the row is the English, and English is
+   * never stored as a translation of itself.
+   */
+  french: ProjectFrench;
+}
+
+/**
+ * What this screen sends, which is WholeProjectInput plus the French.
+ *
+ * THE CONTRACT FOR saveWholeProject, which lives in mutations.ts and is not
+ * this file's to write. Everything below is extra: the fields already there are
+ * untouched and still mean what they meant.
+ *
+ *   payload.french                        the Project row's own French
+ *   payload.groups[g].images[i].french    each photograph's
+ *   payload.drawings[d].french            each sheet's
+ *   payload.film.french                   the walkthrough's
+ *
+ * Each one is a plain object of field name to French words, using the field
+ * names of the English row, and each carries every translatable field of its
+ * kind on every save, blank where nothing is written. Blank means not
+ * translated: saveTranslations deletes the row rather than storing emptiness,
+ * so the English shows through, which is exactly what is wanted.
+ *
+ * Two things the save has to get right, both of which follow from it deleting
+ * and recreating the pictures, the drawings and the film on every write:
+ *
+ *   The French cannot be keyed by the row id this screen was handed, because
+ *   that row will not exist by the time the French is written. It has to be
+ *   written against the id of the row the save has just created, which is why
+ *   it travels attached to the picture rather than in a map keyed by id.
+ *
+ *   The ids being replaced have to be handed to forgetTranslations, or every
+ *   save leaves the Translation table holding French for pictures that are
+ *   gone, and the table grows without bound.
+ *
+ * The Project row itself keeps its id, so payload.french goes straight to
+ * saveTranslations('fr', 'Project', id, payload.french).
+ */
+type GroupInput = WholeProjectInput['groups'][number];
+type ImageInput = GroupInput['images'][number];
+
+export interface ProjectPayload extends Omit<WholeProjectInput, 'groups' | 'drawings' | 'film'> {
+  french: ProjectFrench;
+  groups: (Omit<GroupInput, 'images'> & { images: (ImageInput & { french: ImageFrench })[] })[];
+  drawings: (WholeProjectInput['drawings'][number] & { french: DrawingFrench })[];
+  film: (NonNullable<WholeProjectInput['film']> & { french: FilmFrench }) | null;
 }
 
 export interface ProjectFormProps {
@@ -182,7 +247,7 @@ function toInput(values: FormValues): ProjectInput {
  * nothing in it, and it comes back marked, rather than being quietly dropped,
  * which is the exact failure this screen was rebuilt to end.
  */
-function toFilmInput(film: EditorFilm | null): WholeProjectInput['film'] {
+function toFilmInput(film: EditorFilm | null): ProjectPayload['film'] {
   if (!film) return null;
 
   const sources = film.sources.map((source) => ({
@@ -190,12 +255,22 @@ function toFilmInput(film: EditorFilm | null): WholeProjectInput['film'] {
     height: source.height,
   }));
 
-  if (sources.length === 0 && !film.youtubeId.trim() && !film.caption.trim()) return null;
+  /* A French caption counts for the same reason the English one does: it is
+     something Ahmad typed, and dropping it here would drop it silently. */
+  if (
+    sources.length === 0 &&
+    !film.youtubeId.trim() &&
+    !film.caption.trim() &&
+    !film.french.caption.trim()
+  ) {
+    return null;
+  }
 
   return {
     posterMediaId: film.posterMedia?.id ?? null,
     youtubeId: film.youtubeId,
     caption: film.caption,
+    french: film.french,
     sources,
   };
 }
@@ -203,14 +278,19 @@ function toFilmInput(film: EditorFilm | null): WholeProjectInput['film'] {
 /** Everything on the screen, in the one shape the one action takes. */
 function buildPayload(
   values: FormValues,
+  french: ProjectFrench,
   groups: EditorGroup[],
   drawings: EditorDrawing[],
   film: EditorFilm | null,
   published: boolean,
   baseUpdatedAt: string | null,
-): WholeProjectInput {
+): ProjectPayload {
   return {
     fields: toInput(values),
+    /* Sent whole every time, blanks included. A field left out would read to
+       the save as "leave what is stored alone", and there would then be no way
+       at all to clear a translation that is wrong. */
+    french,
     baseUpdatedAt,
     published,
     groups: groups.map((group) => ({
@@ -227,15 +307,56 @@ function buildPayload(
         mediaId: image.mediaId,
         alt: image.alt,
         caption: image.caption ?? null,
+        french: image.french,
       })),
     })),
     drawings: drawings.map((drawing) => ({
       mediaId: drawing.mediaId,
       alt: drawing.alt,
       drawingType: drawing.drawingType,
+      french: drawing.french,
     })),
     film: toFilmInput(film),
   };
+}
+
+/**
+ * How far the French has got, counted over the boxes that are on the screen.
+ *
+ * The point of counting is that the boxes can be hidden. Hidden work that
+ * nothing mentions is the failure this screen exists to have fixed, so the
+ * strip at the top says how much French there is whether it is showing or not.
+ */
+function countFrench(
+  french: ProjectFrench,
+  groups: EditorGroup[],
+  drawings: EditorDrawing[],
+  film: EditorFilm | null,
+  hasCover: boolean,
+): { written: number; total: number } {
+  const boxes: string[] = [
+    french.title,
+    french.location,
+    french.buildingType,
+    french.area,
+    french.role,
+    french.contribution,
+    french.summary,
+    french.body,
+    french.credit,
+    /* Only when there is a cover, because that is the only time the English box
+       it belongs to is on the screen at all. */
+    ...(hasCover ? [french.leadImageAlt] : []),
+    ...groups.flatMap((group) =>
+      group.images.flatMap((image) => [image.french.alt, image.french.caption]),
+    ),
+    ...drawings.flatMap((drawing) => [drawing.french.alt, drawing.french.drawingType]),
+    /* The walkthrough's caption box is on the screen whether or not the project
+       has a film, so it is always one of the boxes to count. */
+    film?.french.caption ?? '',
+  ];
+
+  return { written: boxes.filter((box) => box.trim()).length, total: boxes.length };
 }
 
 /**
@@ -333,6 +454,7 @@ export function ProjectForm({
   /* Every editable thing on the screen, held here and nowhere else. The panels
      below render it and hand changes back. */
   const [values, setValues] = useState<FormValues>(() => initialValues(project));
+  const [french, setFrench] = useState<ProjectFrench>(project.french);
   const [groups, setGroups] = useState<EditorGroup[]>(savedGroups);
   const [drawings, setDrawings] = useState<EditorDrawing[]>(savedDrawings);
   const [film, setFilm] = useState<EditorFilm | null>(filmOnSite);
@@ -351,6 +473,12 @@ export function ProjectForm({
      that lands nowhere is how this screen went wrong in the first place. */
   const [errors, setErrors] = useState<FieldErrors>({});
   const [warning, setWarning] = useState<string | null>(null);
+
+  /* Off to begin with, on every project, translated or not. Doubling the boxes
+     on a screen that is already two windows tall is a real cost to pay on an
+     ordinary edit, and starting hidden costs nothing, because the French is
+     saved by the same press either way and the strip says how much there is. */
+  const [showFrench, setShowFrench] = useState(false);
 
   const [published, setPublished] = useState(project.published);
 
@@ -381,6 +509,17 @@ export function ProjectForm({
     (changes: Partial<FormValues>) => {
       if (changes.slug !== undefined) slugOnScreen.current = changes.slug;
       setValues((current) => ({ ...current, ...changes }));
+      markDirty();
+    },
+    [markDirty],
+  );
+
+  /* The French half of the same thing. Kept apart from the English values
+     because it does not go to the same place: these words are written to the
+     Translation table, and the project's own row stays the English. */
+  const updateFrench = useCallback(
+    (changes: Partial<ProjectFrench>) => {
+      setFrench((current) => ({ ...current, ...changes }));
       markDirty();
     },
     [markDirty],
@@ -435,6 +574,13 @@ export function ProjectForm({
     [update],
   );
 
+  const changeFrenchLeadImageAlt = useCallback(
+    (alt: string) => {
+      updateFrench({ leadImageAlt: alt });
+    },
+    [updateFrench],
+  );
+
   const save = useCallback(() => {
     /* The payload and the snapshot are taken together, in that order, so the
        number stands for exactly what is being sent and nothing later. An upload
@@ -442,7 +588,15 @@ export function ProjectForm({
        handler appends to a list this payload does not contain. The count then
        moves past the snapshot, settle declines to clear, and the badge and the
        guard stay up over the work that never went. */
-    const payload = buildPayload(values, groups, drawings, film, published, baseUpdatedAt.current);
+    const payload = buildPayload(
+      values,
+      french,
+      groups,
+      drawings,
+      film,
+      published,
+      baseUpdatedAt.current,
+    );
     const at = snapshot();
 
     const found = collectErrors(payload);
@@ -497,7 +651,7 @@ export function ProjectForm({
 
       push('Saved.');
     });
-  }, [values, groups, drawings, film, published, project.id, push, snapshot, settle]);
+  }, [values, french, groups, drawings, film, published, project.id, push, snapshot, settle]);
 
   /* Putting a project on the site used to write immediately, on its own, which
      meant pressing it with an unsaved caption on screen published the caption
@@ -507,6 +661,14 @@ export function ProjectForm({
     setPublished((current) => !current);
     markDirty();
   }, [markDirty]);
+
+  const { written: frenchWritten, total: frenchTotal } = countFrench(
+    french,
+    groups,
+    drawings,
+    film,
+    values.leadImageId !== null,
+  );
 
   return (
     <div className="grid gap-6">
@@ -566,224 +728,358 @@ export function ProjectForm({
         </p>
       )}
 
-      <div className="grid items-start gap-10 lg:grid-cols-2">
-        {/* Still a form, for the labelling and for Enter, but with no submit
-            button of its own. The one button lives in the bar above, where it
-            can save the pictures and the film as well, which no button inside
-            this form could honestly claim to do. */}
-        <form
-          className="grid gap-5"
-          onSubmit={(event) => {
-            event.preventDefault();
-            save();
-          }}
+      {/* One switch for the whole screen, in one place, saying what there is and
+          what an empty box means. Every box cannot carry that sentence: it is
+          the same sentence thirty times over, and it is not about any one of
+          them. */}
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3">
+        <div className="min-w-[14rem] flex-1">
+          <p className="text-sm font-medium text-sky-950">This project in French</p>
+          <p className="mt-0.5 text-xs text-sky-900">
+            {frenchWritten} of {frenchTotal} boxes written. Anything you leave empty shows in
+            English on the French page, so you can translate as much or as little as you like. The
+            grey words in a French box are the English it would show.
+          </p>
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          aria-expanded={showFrench}
+          onClick={() => setShowFrench((current) => !current)}
         >
-          <Field label="Title" htmlFor="project-title" required error={errors.title}>
-            <Input
-              value={values.title}
-              onChange={(event) => update({ title: event.target.value })}
-            />
-          </Field>
+          {showFrench ? 'Hide the French boxes' : 'Show the French boxes'}
+        </Button>
+      </div>
 
-          <Field
-            label="Web address"
-            htmlFor="project-slug"
-            required
-            error={errors.slug}
-            hint="This is the end of the page's address on the internet. Changing it changes where the page lives, so any link to the old address, in an email you have sent or on somebody else's site, stops working."
+      <FrenchBoxes showing={showFrench}>
+        <div className="grid items-start gap-10 lg:grid-cols-2">
+          {/* Still a form, for the labelling and for Enter, but with no submit
+              button of its own. The one button lives in the bar above, where it
+              can save the pictures and the film as well, which no button inside
+              this form could honestly claim to do. */}
+          <form
+            className="grid gap-5"
+            onSubmit={(event) => {
+              event.preventDefault();
+              save();
+            }}
           >
-            <Input value={values.slug} onChange={(event) => update({ slug: event.target.value })} />
-          </Field>
+            <div>
+              <Field label="Title" htmlFor="project-title" required error={errors.title}>
+                <Input
+                  value={values.title}
+                  onChange={(event) => update({ title: event.target.value })}
+                />
+              </Field>
 
-          <Field
-            label="Summary"
-            htmlFor="project-summary"
-            required
-            error={errors.summary}
-            hint="One or two sentences. This is what shows under the title and on the card."
-          >
-            <Textarea
-              rows={3}
-              value={values.summary}
-              onChange={(event) => update({ summary: event.target.value })}
-            />
-          </Field>
+              <FrenchBox
+                label="Title"
+                htmlFor="project-title-fr"
+                english={values.title}
+                value={french.title}
+                onChange={(value) => updateFrench({ title: value })}
+              />
+            </div>
 
-          <Field
-            label="What you did on it"
-            htmlFor="project-contribution"
-            required
-            error={errors.contribution}
-            hint="Kept separate from the summary on purpose. On a team project this is the part that says which work was yours."
-          >
-            <Textarea
-              rows={3}
-              value={values.contribution}
-              onChange={(event) => update({ contribution: event.target.value })}
-            />
-          </Field>
+            {/* No French box on the web address, and none on the sheet number,
+                the year, the category or the status. An address is the same
+                string in both languages and translating it would break the link;
+                the rest are either numbers or fixed values the site translates
+                for itself, which is not work to hand to Ahmad. */}
+            <Field
+              label="Web address"
+              htmlFor="project-slug"
+              required
+              error={errors.slug}
+              hint="This is the end of the page's address on the internet. Changing it changes where the page lives, so any link to the old address, in an email you have sent or on somebody else's site, stops working."
+            >
+              <Input value={values.slug} onChange={(event) => update({ slug: event.target.value })} />
+            </Field>
 
-          <Field
-            label="Who did the work"
-            htmlFor="project-credit"
-            required
-            error={errors.credit}
-            hint="The short line on the card, for example: with Studio Name, or Solo academic project."
-          >
-            <Input
-              value={values.credit}
-              onChange={(event) => update({ credit: event.target.value })}
-            />
-          </Field>
-
-          <Field
-            label="The long description"
-            htmlFor="project-body"
-            error={errors.body}
-            hint="Markdown works here. A line starting with ## is a heading, and text wrapped in **two stars** comes out bold."
-          >
-            <Textarea
-              rows={10}
-              value={values.body}
-              onChange={(event) => update({ body: event.target.value })}
-            />
-          </Field>
-
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Category" htmlFor="project-category" required error={errors.category}>
-              <Select
-                value={values.category}
-                onChange={(event) => update({ category: event.target.value })}
+            <div>
+              <Field
+                label="Summary"
+                htmlFor="project-summary"
+                required
+                error={errors.summary}
+                hint="One or two sentences. This is what shows under the title and on the card."
               >
-                {CATEGORIES.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
+                <Textarea
+                  rows={3}
+                  value={values.summary}
+                  onChange={(event) => update({ summary: event.target.value })}
+                />
+              </Field>
+
+              <FrenchBox
+                label="Summary"
+                htmlFor="project-summary-fr"
+                english={values.summary}
+                value={french.summary}
+                onChange={(value) => updateFrench({ summary: value })}
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <Field
+                label="What you did on it"
+                htmlFor="project-contribution"
+                required
+                error={errors.contribution}
+                hint="Kept separate from the summary on purpose. On a team project this is the part that says which work was yours."
+              >
+                <Textarea
+                  rows={3}
+                  value={values.contribution}
+                  onChange={(event) => update({ contribution: event.target.value })}
+                />
+              </Field>
+
+              <FrenchBox
+                label="What you did on it"
+                htmlFor="project-contribution-fr"
+                english={values.contribution}
+                value={french.contribution}
+                onChange={(value) => updateFrench({ contribution: value })}
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <Field
+                label="Who did the work"
+                htmlFor="project-credit"
+                required
+                error={errors.credit}
+                hint="The short line on the card, for example: with Studio Name, or Solo academic project."
+              >
+                <Input
+                  value={values.credit}
+                  onChange={(event) => update({ credit: event.target.value })}
+                />
+              </Field>
+
+              <FrenchBox
+                label="Who did the work"
+                htmlFor="project-credit-fr"
+                english={values.credit}
+                value={french.credit}
+                onChange={(value) => updateFrench({ credit: value })}
+              />
+            </div>
+
+            <div>
+              <Field
+                label="The long description"
+                htmlFor="project-body"
+                error={errors.body}
+                hint="Markdown works here. A line starting with ## is a heading, and text wrapped in **two stars** comes out bold."
+              >
+                <Textarea
+                  rows={10}
+                  value={values.body}
+                  onChange={(event) => update({ body: event.target.value })}
+                />
+              </Field>
+
+              <FrenchBox
+                label="The long description"
+                htmlFor="project-body-fr"
+                english={values.body}
+                value={french.body}
+                onChange={(value) => updateFrench({ body: value })}
+                rows={10}
+              />
+            </div>
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Field label="Category" htmlFor="project-category" required error={errors.category}>
+                <Select
+                  value={values.category}
+                  onChange={(event) => update({ category: event.target.value })}
+                >
+                  {CATEGORIES.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+
+              <Field label="Status" htmlFor="project-status" required error={errors.status}>
+                <Select
+                  value={values.status}
+                  onChange={(event) => update({ status: event.target.value })}
+                >
+                  {STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {STATUS_LABELS[status]}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+
+              <Field label="Year" htmlFor="project-year" required error={errors.year}>
+                <Input
+                  inputMode="numeric"
+                  value={values.year}
+                  onChange={(event) => update({ year: event.target.value })}
+                />
+              </Field>
+
+              <Field
+                label="Sheet number"
+                htmlFor="project-sheet"
+                required
+                error={errors.sheet}
+                hint="Sheet numbers look like A-101."
+              >
+                <Input
+                  value={values.sheet}
+                  onChange={(event) => update({ sheet: event.target.value })}
+                />
+              </Field>
+
+              <div>
+                <Field
+                  label="Where it is"
+                  htmlFor="project-location"
+                  required
+                  error={errors.location}
+                >
+                  <Input
+                    value={values.location}
+                    onChange={(event) => update({ location: event.target.value })}
+                  />
+                </Field>
+
+                <FrenchBox
+                  label="Where it is"
+                  htmlFor="project-location-fr"
+                  english={values.location}
+                  value={french.location}
+                  onChange={(value) => updateFrench({ location: value })}
+                />
+              </div>
+
+              <div>
+                <Field
+                  label="Kind of building"
+                  htmlFor="project-buildingType"
+                  required
+                  error={errors.buildingType}
+                >
+                  <Input
+                    value={values.buildingType}
+                    onChange={(event) => update({ buildingType: event.target.value })}
+                  />
+                </Field>
+
+                <FrenchBox
+                  label="Kind of building"
+                  htmlFor="project-buildingType-fr"
+                  english={values.buildingType}
+                  value={french.buildingType}
+                  onChange={(value) => updateFrench({ buildingType: value })}
+                />
+              </div>
+
+              <div>
+                <Field
+                  label="Size"
+                  htmlFor="project-area"
+                  error={errors.area}
+                  hint="Optional, for example 2,400 m2."
+                >
+                  <Input
+                    value={values.area}
+                    onChange={(event) => update({ area: event.target.value })}
+                  />
+                </Field>
+
+                {/* A size is usually a number and a unit and needs nothing doing
+                    to it, but not always: several of these read "about 2,400 m2
+                    over three floors", and those are words. */}
+                <FrenchBox
+                  label="Size"
+                  htmlFor="project-area-fr"
+                  english={values.area}
+                  value={french.area}
+                  onChange={(value) => updateFrench({ area: value })}
+                />
+              </div>
+
+              <div>
+                <Field label="Your role" htmlFor="project-role" required error={errors.role}>
+                  <Input
+                    value={values.role}
+                    onChange={(event) => update({ role: event.target.value })}
+                  />
+                </Field>
+
+                <FrenchBox
+                  label="Your role"
+                  htmlFor="project-role-fr"
+                  english={values.role}
+                  value={french.role}
+                  onChange={(value) => updateFrench({ role: value })}
+                />
+              </div>
+            </div>
+
+            <Field
+              label="Where it sits on the home page"
+              htmlFor="project-tier"
+              required
+              error={errors.tier}
+              hint="Only three projects can be one of the large cards. A fourth moves into the strip instead, and you are told when that happens."
+            >
+              <Select value={values.tier} onChange={(event) => update({ tier: event.target.value })}>
+                {TIERS.map((tier) => (
+                  <option key={tier} value={tier}>
+                    {TIER_LABELS[tier]}
                   </option>
                 ))}
               </Select>
             </Field>
 
-            <Field label="Status" htmlFor="project-status" required error={errors.status}>
-              <Select
-                value={values.status}
-                onChange={(event) => update({ status: event.target.value })}
-              >
-                {STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {STATUS_LABELS[status]}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-
-            <Field label="Year" htmlFor="project-year" required error={errors.year}>
+            <Field
+              label="Position"
+              htmlFor="project-order"
+              error={errors.order}
+              hint="Lower numbers come first. You can also drag projects into order on the projects list."
+            >
               <Input
                 inputMode="numeric"
-                value={values.year}
-                onChange={(event) => update({ year: event.target.value })}
+                value={values.order}
+                onChange={(event) => update({ order: event.target.value })}
               />
             </Field>
+          </form>
 
-            <Field
-              label="Sheet number"
-              htmlFor="project-sheet"
-              required
-              error={errors.sheet}
-              hint="Sheet numbers look like A-101."
-            >
-              <Input
-                value={values.sheet}
-                onChange={(event) => update({ sheet: event.target.value })}
-              />
-            </Field>
-
-            <Field label="Where it is" htmlFor="project-location" required error={errors.location}>
-              <Input
-                value={values.location}
-                onChange={(event) => update({ location: event.target.value })}
-              />
-            </Field>
-
-            <Field
-              label="Kind of building"
-              htmlFor="project-buildingType"
-              required
-              error={errors.buildingType}
-            >
-              <Input
-                value={values.buildingType}
-                onChange={(event) => update({ buildingType: event.target.value })}
-              />
-            </Field>
-
-            <Field
-              label="Size"
-              htmlFor="project-area"
-              error={errors.area}
-              hint="Optional, for example 2,400 m2."
-            >
-              <Input
-                value={values.area}
-                onChange={(event) => update({ area: event.target.value })}
-              />
-            </Field>
-
-            <Field label="Your role" htmlFor="project-role" required error={errors.role}>
-              <Input
-                value={values.role}
-                onChange={(event) => update({ role: event.target.value })}
-              />
-            </Field>
-          </div>
-
-          <Field
-            label="Where it sits on the home page"
-            htmlFor="project-tier"
-            required
-            error={errors.tier}
-            hint="Only three projects can be one of the large cards. A fourth moves into the strip instead, and you are told when that happens."
-          >
-            <Select value={values.tier} onChange={(event) => update({ tier: event.target.value })}>
-              {TIERS.map((tier) => (
-                <option key={tier} value={tier}>
-                  {TIER_LABELS[tier]}
-                </option>
-              ))}
-            </Select>
-          </Field>
-
-          <Field
-            label="Position"
-            htmlFor="project-order"
-            error={errors.order}
-            hint="Lower numbers come first. You can also drag projects into order on the projects list."
-          >
-            <Input
-              inputMode="numeric"
-              value={values.order}
-              onChange={(event) => update({ order: event.target.value })}
+          <div className="grid gap-10">
+            <MediaPanel
+              slug={project.slug}
+              groups={groups}
+              drawings={drawings}
+              errors={errors}
+              onGroupsChange={changeGroups}
+              onDrawingsChange={changeDrawings}
+              leadImageId={values.leadImageId}
+              leadImageAlt={values.leadImageAlt}
+              leadImage={project.leadImage}
+              onLeadImageChange={chooseLeadImage}
+              onLeadImageAltChange={changeLeadImageAlt}
+              frenchLeadImageAlt={french.leadImageAlt}
+              onFrenchLeadImageAltChange={changeFrenchLeadImageAlt}
             />
-          </Field>
-        </form>
 
-        <div className="grid gap-10">
-          <MediaPanel
-            slug={project.slug}
-            groups={groups}
-            drawings={drawings}
-            errors={errors}
-            onGroupsChange={changeGroups}
-            onDrawingsChange={changeDrawings}
-            leadImageId={values.leadImageId}
-            leadImageAlt={values.leadImageAlt}
-            leadImage={project.leadImage}
-            onLeadImageChange={chooseLeadImage}
-            onLeadImageAltChange={changeLeadImageAlt}
-          />
-
-          <FilmEditor film={film} savedFilm={savedFilm} errors={errors} onChange={changeFilm} />
+            <FilmEditor film={film} savedFilm={savedFilm} errors={errors} onChange={changeFilm} />
+          </div>
         </div>
-      </div>
+      </FrenchBoxes>
     </div>
   );
 }

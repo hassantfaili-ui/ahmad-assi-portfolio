@@ -5,12 +5,14 @@ import { useCallback, useState } from 'react';
 import { Check } from 'lucide-react';
 
 import { Dropzone } from '@/components/admin/Dropzone';
+import { FrenchBox } from '@/components/admin/ProjectFrench';
 import { GroupEditor } from '@/components/admin/GroupEditor';
 import { SortableList } from '@/components/admin/SortableList';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import type { UploadedImage, UploadedItem } from '@/hooks/use-uploads';
+import type { DrawingFrench, ImageFrench } from '@/lib/editor-shape';
 import type { FieldErrors } from '@/lib/validation';
 
 /**
@@ -54,6 +56,15 @@ export interface EditorImage {
    * onto each of their pictures, so nothing was lost in the move.
    */
   caption?: string;
+  /**
+   * The same two things in French, for the /fr page.
+   *
+   * Not part of the picture's row in the database: it is written to the
+   * Translation table against this picture. Blank in either box means nothing
+   * has been translated yet and the English shows, which is the whole design
+   * and the reason a half translated project is still a usable French site.
+   */
+  french: ImageFrench;
   media: EditorMedia;
 }
 
@@ -82,6 +93,10 @@ export interface EditorDrawing {
    * it.
    */
   caption?: string;
+  /** What this sheet shows and what kind it is, in French. */
+  french: DrawingFrench;
+  /** The French caption, carried across a move and never saved, as above. */
+  frenchCaption?: string;
   media: EditorMedia;
 }
 
@@ -102,6 +117,7 @@ function imagesFromUpload(items: UploadedItem[]): EditorImage[] {
       mediaId: item.media.id,
       alt: '',
       caption: '',
+      french: { alt: '', caption: '' },
       media: {
         id: item.media.id,
         key: item.media.key,
@@ -181,6 +197,8 @@ function intoLastGroup(
 interface StrayCover {
   media: EditorMedia;
   alt: string;
+  /** Its French description, so putting it back does not lose the translation. */
+  frenchAlt: string;
   /** Set once it has a home, so the note says what happened rather than vanishing. */
   kept: boolean;
 }
@@ -209,6 +227,9 @@ export interface MediaPanelProps {
   leadImage: EditorMedia | null;
   onLeadImageChange: (mediaId: string | null) => void;
   onLeadImageAltChange: (alt: string) => void;
+  /** The cover's description in French. Held in ProjectForm with the rest. */
+  frenchLeadImageAlt: string;
+  onFrenchLeadImageAltChange: (alt: string) => void;
 }
 
 export function MediaPanel({
@@ -223,6 +244,8 @@ export function MediaPanel({
   leadImage,
   onLeadImageChange,
   onLeadImageAltChange,
+  frenchLeadImageAlt,
+  onFrenchLeadImageAltChange,
 }: MediaPanelProps) {
   const [strayCover, setStrayCover] = useState<StrayCover | null>(null);
 
@@ -278,6 +301,7 @@ export function MediaPanel({
         mediaId: image.mediaId,
         alt: '',
         drawingType: '',
+        french: { alt: '', drawingType: '' },
         media: image.media,
       }));
       if (added.length === 0) return;
@@ -320,6 +344,12 @@ export function MediaPanel({
           /* Something rather than nothing, since this is printed under the
              sheet on the page. Ahmad can say what it really is. */
           drawingType: 'Drawing',
+          /* The French travels with it for the same reason the English does.
+             The kind of drawing starts empty because Drawing above is the
+             site's word and not something he wrote, so there is nothing yet to
+             have translated. */
+          french: { alt: moving.french.alt, drawingType: '' },
+          frenchCaption: moving.french.caption,
           media: moving.media,
         },
       ]);
@@ -340,6 +370,7 @@ export function MediaPanel({
         mediaId: moving.mediaId,
         alt: moving.alt,
         caption: moving.caption ?? '',
+        french: { alt: moving.french.alt, caption: moving.frenchCaption ?? '' },
         media: moving.media,
       };
       const groupId = localId();
@@ -354,6 +385,21 @@ export function MediaPanel({
     (id: string, changes: Partial<EditorDrawing>) => {
       onDrawingsChange((current) =>
         current.map((drawing) => (drawing.id === id ? { ...drawing, ...changes } : drawing)),
+      );
+    },
+    [onDrawingsChange],
+  );
+
+  /* Its own updater rather than a changes object built out here, so the French
+     already on the drawing is read from the list as it is now. Merging into a
+     copy captured at render would drop whichever of the two French boxes was
+     not the one just typed in. */
+  const updateDrawingFrench = useCallback(
+    (id: string, changes: Partial<DrawingFrench>) => {
+      onDrawingsChange((current) =>
+        current.map((drawing) =>
+          drawing.id === id ? { ...drawing, french: { ...drawing.french, ...changes } } : drawing,
+        ),
       );
     },
     [onDrawingsChange],
@@ -398,10 +444,12 @@ export function MediaPanel({
 
       onLeadImageChange(mediaId);
       setStrayCover(
-        outgoing && !stillShown ? { media: outgoing, alt: leadImageAlt, kept: false } : null,
+        outgoing && !stillShown
+          ? { media: outgoing, alt: leadImageAlt, frenchAlt: frenchLeadImageAlt, kept: false }
+          : null,
       );
     },
-    [groups, leadImage, leadImageId, leadImageAlt, onLeadImageChange],
+    [groups, leadImage, leadImageId, leadImageAlt, frenchLeadImageAlt, onLeadImageChange],
   );
 
   const keepStrayCover = useCallback(() => {
@@ -414,6 +462,7 @@ export function MediaPanel({
       mediaId: strayCover.media.id,
       alt: strayCover.alt,
       caption: '',
+      french: { alt: strayCover.frenchAlt, caption: '' },
       media: strayCover.media,
     };
     const groupId = localId();
@@ -565,19 +614,29 @@ export function MediaPanel({
             </ul>
 
             {leadImageId && (
-              <Field
-                label="What the cover shows"
-                htmlFor="lead-image-alt"
-                required
-                error={errors.leadImageAlt}
-                hint="Saved with everything else, using the button at the top."
-              >
-                <Input
-                  value={leadImageAlt}
-                  onChange={(event) => onLeadImageAltChange(event.target.value)}
-                  placeholder="The east elevation at dusk, seen across the water"
+              <div>
+                <Field
+                  label="What the cover shows"
+                  htmlFor="lead-image-alt"
+                  required
+                  error={errors.leadImageAlt}
+                  hint="Saved with everything else, using the button at the top."
+                >
+                  <Input
+                    value={leadImageAlt}
+                    onChange={(event) => onLeadImageAltChange(event.target.value)}
+                    placeholder="The east elevation at dusk, seen across the water"
+                  />
+                </Field>
+
+                <FrenchBox
+                  label="What the cover shows"
+                  htmlFor="lead-image-alt-fr"
+                  english={leadImageAlt}
+                  value={frenchLeadImageAlt}
+                  onChange={onFrenchLeadImageAltChange}
                 />
-              </Field>
+              </div>
             )}
           </>
         )}
@@ -624,28 +683,48 @@ export function MediaPanel({
                 />
 
                 <div className="grid min-w-[12rem] flex-1 gap-2 sm:grid-cols-2">
-                  <Field
-                    label="What this drawing shows"
-                    htmlFor={`drawing-${drawing.id}-alt`}
-                    required
-                    error={errors[`drawings.${index}.alt`]}
-                  >
-                    <Input
-                      value={drawing.alt}
-                      onChange={(event) => updateDrawing(drawing.id, { alt: event.target.value })}
-                      placeholder="Ground floor plan, showing the courtyard and the north walk"
-                    />
-                  </Field>
+                  <div>
+                    <Field
+                      label="What this drawing shows"
+                      htmlFor={`drawing-${drawing.id}-alt`}
+                      required
+                      error={errors[`drawings.${index}.alt`]}
+                    >
+                      <Input
+                        value={drawing.alt}
+                        onChange={(event) => updateDrawing(drawing.id, { alt: event.target.value })}
+                        placeholder="Ground floor plan, showing the courtyard and the north walk"
+                      />
+                    </Field>
 
-                  <Field label="Kind of drawing" htmlFor={`drawing-${drawing.id}-type`}>
-                    <Input
-                      value={drawing.drawingType}
-                      onChange={(event) =>
-                        updateDrawing(drawing.id, { drawingType: event.target.value })
-                      }
-                      placeholder="Plan, section, elevation"
+                    <FrenchBox
+                      label="What this drawing shows"
+                      htmlFor={`drawing-${drawing.id}-alt-fr`}
+                      english={drawing.alt}
+                      value={drawing.french.alt}
+                      onChange={(value) => updateDrawingFrench(drawing.id, { alt: value })}
                     />
-                  </Field>
+                  </div>
+
+                  <div>
+                    <Field label="Kind of drawing" htmlFor={`drawing-${drawing.id}-type`}>
+                      <Input
+                        value={drawing.drawingType}
+                        onChange={(event) =>
+                          updateDrawing(drawing.id, { drawingType: event.target.value })
+                        }
+                        placeholder="Plan, section, elevation"
+                      />
+                    </Field>
+
+                    <FrenchBox
+                      label="Kind of drawing"
+                      htmlFor={`drawing-${drawing.id}-type-fr`}
+                      english={drawing.drawingType}
+                      value={drawing.french.drawingType}
+                      onChange={(value) => updateDrawingFrench(drawing.id, { drawingType: value })}
+                    />
+                  </div>
                 </div>
 
                 <div className="grid gap-1">

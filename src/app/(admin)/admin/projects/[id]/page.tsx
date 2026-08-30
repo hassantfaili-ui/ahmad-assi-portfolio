@@ -2,11 +2,18 @@ import { SignedOut } from '@/components/admin/SignedOut';
 import { getIdentity } from '@/lib/access';
 import { notFound } from 'next/navigation';
 
-import { toEditorDrawings, toEditorGroups } from '@/lib/editor-shape';
+import {
+  FILM_FRENCH_FIELDS,
+  PROJECT_FRENCH_FIELDS,
+  toEditorDrawings,
+  toEditorFrench,
+  toEditorGroups,
+} from '@/lib/editor-shape';
 
 import { ProjectForm } from '@/components/admin/ProjectForm';
 import type { EditorMedia } from '@/components/admin/MediaPanel';
 import { getProjectForEditing } from '@/lib/admin-queries';
+import { translationsFor } from '@/lib/translations';
 
 /**
  * One project, edited.
@@ -56,14 +63,35 @@ export default async function ProjectEditorPage({ params }: ProjectEditorPagePro
      way there is nothing to edit, and the 404 says so. */
   if (!project) notFound();
 
-  const groups = toEditorGroups(project.imageGroups);
-  const drawings = toEditorDrawings(project.drawings);
+  /* The French, fetched beside the English rather than instead of it. Four
+     queries because there are four kinds of row and each is keyed by its own
+     ids, and they run together because none of them needs the others. The
+     editing screen is the one place that wants both languages at once: every
+     public page asks for one. */
+  const [projectFrench, imageFrench, drawingFrench, filmFrench] = await Promise.all([
+    translationsFor('fr', 'Project', [project.id]),
+    translationsFor(
+      'fr',
+      'ProjectImage',
+      project.imageGroups.flatMap((group) => group.images.map((image) => image.id)),
+    ),
+    translationsFor(
+      'fr',
+      'Drawing',
+      project.drawings.map((drawing) => drawing.id),
+    ),
+    translationsFor('fr', 'Film', project.film ? [project.film.id] : []),
+  ]);
+
+  const groups = toEditorGroups(project.imageGroups, imageFrench);
+  const drawings = toEditorDrawings(project.drawings, drawingFrench);
 
   const film = project.film
     ? {
         posterMedia: project.film.posterMedia ? toMedia(project.film.posterMedia) : null,
         youtubeId: project.film.youtubeId ?? '',
         caption: project.film.caption ?? '',
+        french: toEditorFrench(FILM_FRENCH_FIELDS, filmFrench.get(project.film.id)),
         sources: project.film.sources.map((source) => ({
           height: source.height,
           media: toMedia(source.media),
@@ -96,6 +124,7 @@ export default async function ProjectEditorPage({ params }: ProjectEditorPagePro
         leadImageId: project.leadImageId,
         leadImageAlt: project.leadImageAlt,
         leadImage: project.leadImage ? toMedia(project.leadImage) : null,
+        french: toEditorFrench(PROJECT_FRENCH_FIELDS, projectFrench.get(project.id)),
       }}
       groups={groups}
       drawings={drawings}

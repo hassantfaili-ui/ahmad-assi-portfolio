@@ -3,6 +3,11 @@
 import { useState, useTransition } from 'react';
 
 import { SiteFilmEditor, type SiteFilmValue } from '@/components/admin/HeroFilmEditor';
+/* The project screen's French boxes, used here as they are, so the three
+   screens that carry French all behave the same way. */
+import { FrenchBox, FrenchBoxes } from '@/components/admin/ProjectFrench';
+/* Type only, so none of that screen lands in this page's bundle. */
+import type { ProfileFrench, ProfileSave } from '@/components/admin/ResumeForm';
 import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
 import { useSaveFlag } from '@/hooks/use-save-flag';
 import { runAction } from '@/lib/action-result';
-import { saveProfile, type ProfileInput } from '@/lib/mutations';
+import { saveProfile } from '@/lib/mutations';
 import { hasErrors, validateProfile, type FieldErrors } from '@/lib/validation';
 
 /**
@@ -30,6 +35,11 @@ import { hasErrors, validateProfile, type FieldErrors } from '@/lib/validation';
  * spelling of a name re-uploading nothing and a film upload rewriting the
  * profile. Each half also stays unsaved on its own, which is what the badges
  * beside each button are saying.
+ *
+ * The French of the words rides along in the same payload, under `french`, on
+ * the contract written into ResumeForm where that type is declared. It is per
+ * field, so this screen sends the French of its own three boxes and leaves
+ * every other field's translation alone.
  */
 
 /**
@@ -75,6 +85,19 @@ type TopFields = {
 };
 
 /**
+ * The French of three of those four.
+ *
+ * His name is not translated. It is his name in both languages, and a box
+ * inviting a second spelling of it would be a box that can only make the site
+ * wrong.
+ */
+type TopFrenchFields = {
+  welcome: string;
+  discipline: string;
+  location: string;
+};
+
+/**
  * A missing detail this screen has no box for.
  *
  * validateProfile checks the whole profile, so a save from here can be refused
@@ -93,10 +116,13 @@ export function HomeForm({
   profile,
   hero,
   closing,
+  french,
 }: {
   profile: HomeProfile | null;
   hero: SiteFilmValue | null;
   closing: SiteFilmValue | null;
+  /** What the Translation table holds for the profile row, or nothing yet. */
+  french?: ProfileFrench;
 }) {
   const { push } = useToast();
 
@@ -114,6 +140,17 @@ export function HomeForm({
     welcome: profile?.welcome ?? '',
   }));
 
+  const [frenchFields, setFrenchFields] = useState<TopFrenchFields>(() => ({
+    discipline: french?.discipline ?? '',
+    location: french?.location ?? '',
+    welcome: french?.welcome ?? '',
+  }));
+
+  /* Hidden until asked for, the same as the other screens that carry French.
+     Presentation only: the French is in state and goes out with the save
+     whether the boxes are showing or not. */
+  const [showFrench, setShowFrench] = useState(false);
+
   const [errors, setErrors] = useState<FieldErrors>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [saving, startSave] = useTransition();
@@ -121,6 +158,11 @@ export function HomeForm({
   const setField = (field: keyof TopFields, value: string) => {
     flag.markDirty();
     setFields((current) => ({ ...current, [field]: value }));
+  };
+
+  const setFrenchField = (field: keyof TopFrenchFields, value: string) => {
+    flag.markDirty();
+    setFrenchFields((current) => ({ ...current, [field]: value }));
   };
 
   function onSave() {
@@ -133,7 +175,7 @@ export function HomeForm({
     /* The whole profile goes, because saveProfile writes the whole row. The
        fields with no box on this screen are sent back exactly as they arrived,
        which is what stops editing a name from emptying the contact page. */
-    const input: ProfileInput = {
+    const input: ProfileSave = {
       name: fields.name,
       discipline: fields.discipline,
       location: fields.location,
@@ -155,6 +197,22 @@ export function HomeForm({
       contactStatus: profile?.contactStatus ?? '',
       contactHeading: profile?.contactHeading ?? '',
       contactBlurb: profile?.contactBlurb ?? '',
+
+      /* Only the French of the boxes on this screen, and that is not the whole
+         row rule failing. A translation is a row of its own per field, so a
+         field this payload does not name is left exactly as it was, and one it
+         names with nothing is one Ahmad emptied on purpose.
+
+         Left out entirely when this screen was handed no French: it has no
+         French boxes then, and blanks from a screen that never showed him a box
+         would delete translations he never saw. */
+      ...(french && {
+        french: {
+          discipline: frenchFields.discipline,
+          location: frenchFields.location,
+          welcome: frenchFields.welcome,
+        },
+      }),
     };
 
     // Checked here first so an empty name says so straight away rather than
@@ -185,7 +243,12 @@ export function HomeForm({
 
   const missingElsewhere = elsewhereErrors(errors);
 
+  /* The three French boxes on this screen, so the strip can say how far the
+     translation has got whether they are showing or not. */
+  const frenchBoxes = [frenchFields.discipline, frenchFields.location, frenchFields.welcome];
+
   return (
+    <FrenchBoxes showing={showFrench}>
     <div className="grid gap-12">
       <SiteFilmEditor film={hero} slot="hero" />
 
@@ -200,6 +263,19 @@ export function HomeForm({
             site.
           </p>
         </div>
+
+        {/* No strip and no boxes until the page hands over what the Translation
+            table holds, because a screen that cannot show him the French he has
+            already written is not a screen to write French on. */}
+        {french && (
+          <FrenchStrip
+            title="These lines in French"
+            written={frenchBoxes.filter((value) => value.trim()).length}
+            total={frenchBoxes.length}
+            showing={showFrench}
+            onToggle={() => setShowFrench((current) => !current)}
+          />
+        )}
 
         {notice && (
           <p
@@ -244,49 +320,77 @@ export function HomeForm({
           </Field>
 
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field
-              label="What you do"
-              htmlFor="home-discipline"
-              required
-              error={errors.discipline}
-              hint="The small line above your name, on the left of the slash."
-            >
-              <Input
-                value={fields.discipline}
-                placeholder="Architectural Designer"
-                onChange={(event) => setField('discipline', event.target.value)}
+            <div>
+              <Field
+                label="What you do"
+                htmlFor="home-discipline"
+                required
+                error={errors.discipline}
+                hint="The small line above your name, on the left of the slash."
+              >
+                <Input
+                  value={fields.discipline}
+                  placeholder="Architectural Designer"
+                  onChange={(event) => setField('discipline', event.target.value)}
+                />
+              </Field>
+              <FrenchBox
+                htmlFor="home-discipline-fr"
+                label="What you do"
+                english={fields.discipline}
+                value={frenchFields.discipline}
+                onChange={(value) => setFrenchField('discipline', value)}
               />
-            </Field>
+            </div>
 
-            <Field
-              label="Where you are"
-              htmlFor="home-location"
-              required
-              error={errors.location}
-              hint="The right of the slash, in that same small line."
-            >
-              <Input
-                value={fields.location}
-                placeholder="Ottawa, Ontario"
-                onChange={(event) => setField('location', event.target.value)}
+            <div>
+              <Field
+                label="Where you are"
+                htmlFor="home-location"
+                required
+                error={errors.location}
+                hint="The right of the slash, in that same small line."
+              >
+                <Input
+                  value={fields.location}
+                  placeholder="Ottawa, Ontario"
+                  onChange={(event) => setField('location', event.target.value)}
+                />
+              </Field>
+              <FrenchBox
+                htmlFor="home-location-fr"
+                label="Where you are"
+                english={fields.location}
+                value={frenchFields.location}
+                onChange={(value) => setFrenchField('location', value)}
               />
-            </Field>
+            </div>
           </div>
 
-          <Field
-            label="The sentences under your name"
-            htmlFor="home-welcome"
-            required
-            error={errors.welcome}
-            hint="The short paragraph directly under your name on the home page, saying what you studied and what you work on. Two or three sentences reads best."
-          >
-            <Textarea
+          <div>
+            <Field
+              label="The sentences under your name"
+              htmlFor="home-welcome"
+              required
+              error={errors.welcome}
+              hint="The short paragraph directly under your name on the home page, saying what you studied and what you work on. Two or three sentences reads best."
+            >
+              <Textarea
+                rows={4}
+                value={fields.welcome}
+                placeholder="A graduate of the Bachelor of Architectural Studies at Carleton University, majoring in urbanism."
+                onChange={(event) => setField('welcome', event.target.value)}
+              />
+            </Field>
+            <FrenchBox
+              htmlFor="home-welcome-fr"
+              label="The sentences under your name"
+              english={fields.welcome}
               rows={4}
-              value={fields.welcome}
-              placeholder="A graduate of the Bachelor of Architectural Studies at Carleton University, majoring in urbanism."
-              onChange={(event) => setField('welcome', event.target.value)}
+              value={frenchFields.welcome}
+              onChange={(value) => setFrenchField('welcome', value)}
             />
-          </Field>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -314,6 +418,45 @@ export function HomeForm({
           Resume screen.
         </p>
       </section>
+    </div>
+    </FrenchBoxes>
+  );
+}
+
+/**
+ * The one switch that reveals the French boxes, and the sentence that says what
+ * an empty one means.
+ *
+ * Written the same way on the resume and contact screens. It belongs beside
+ * FrenchBox once the screens that carry French are all in.
+ */
+function FrenchStrip({
+  title,
+  written,
+  total,
+  showing,
+  onToggle,
+}: {
+  title: string;
+  written: number;
+  total: number;
+  showing: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3">
+      <div className="min-w-[14rem] flex-1">
+        <p className="text-sm font-medium text-sky-950">{title}</p>
+        <p className="mt-0.5 text-xs text-sky-900">
+          {written} of {total} boxes written. Anything you leave empty shows in English on the
+          French page, so you can translate as much or as little as you like. The grey words in a
+          French box are the English it would show.
+        </p>
+      </div>
+
+      <Button type="button" variant="outline" aria-expanded={showing} onClick={onToggle}>
+        {showing ? 'Hide the French boxes' : 'Show the French boxes'}
+      </Button>
     </div>
   );
 }

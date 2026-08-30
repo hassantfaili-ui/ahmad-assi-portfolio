@@ -17,6 +17,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { words } from '@/lib/dictionary';
+import type { Locale } from '@/lib/i18n';
 import { extractYouTubeId } from '@/lib/youtube-id';
 
 import Reveal from './Reveal';
@@ -29,9 +31,16 @@ export interface FilmProps {
   youtubeId?: string | null;
   poster: string;
   caption?: string | null;
+  locale?: Locale;
 }
 
-export default function Film({ sources, youtubeId: youtube, poster, caption }: FilmProps) {
+export default function Film({
+  sources,
+  youtubeId: youtube,
+  poster,
+  caption,
+  locale = 'en',
+}: FilmProps) {
   /* The extractor returns null for a string no shape matches, so a junk id
      saved before validation refused them falls through to the uploaded
      sources, or to nothing, rather than to an iframe that can never play. */
@@ -55,7 +64,10 @@ export default function Film({ sources, youtubeId: youtube, poster, caption }: F
           <iframe
             ref={frameRef}
             src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
-            title="Project walkthrough"
+            /* The frame's name in a screen reader's list of frames. It is
+               the dictionary's word rather than the longer literal it used to
+               be, which also matches the heading of the section it sits in. */
+            title={words(locale).walkthrough}
             allow="accelerometer; autoplay; encrypted-media; picture-in-picture; fullscreen"
             allowFullScreen
             loading="lazy"
@@ -71,6 +83,8 @@ export default function Film({ sources, youtubeId: youtube, poster, caption }: F
             className={`film-facade ${styles['film-facade']}`}
             type="button"
             data-youtube={id}
+            /* The dictionary has no phrase for this yet, nor for the note
+               below, so both stay English on the French pages for now. */
             aria-label="Play the walkthrough film"
             onClick={() => setPlaying(true)}
           >

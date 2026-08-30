@@ -3,6 +3,7 @@ import { getIdentity } from '@/lib/access';
 import type { Metadata } from 'next';
 
 import { ResumeForm } from '@/components/admin/ResumeForm';
+import { getProfileFrench } from '@/lib/admin-queries';
 import { getProfile } from '@/lib/queries';
 
 /**
@@ -27,7 +28,7 @@ export default async function AdminResumePage() {
      anonymous requests. */
   if (!(await getIdentity())) return <SignedOut />;
 
-  const data = await getProfile();
+  const [data, french] = await Promise.all([getProfile(), getProfileFrench()]);
 
   return (
     <div className="grid gap-8">
@@ -40,7 +41,7 @@ export default async function AdminResumePage() {
         </p>
       </header>
 
-      <ResumeForm data={data} />
+      <ResumeForm data={data} french={french} />
     </div>
   );
 }

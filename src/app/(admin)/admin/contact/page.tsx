@@ -3,6 +3,7 @@ import { getIdentity } from '@/lib/access';
 import type { Metadata } from 'next';
 
 import { ContactForm } from '@/components/admin/ContactForm';
+import { getProfileFrench } from '@/lib/admin-queries';
 import { getProfile } from '@/lib/queries';
 
 /**
@@ -27,7 +28,7 @@ export default async function AdminContactPage() {
      anonymous requests. */
   if (!(await getIdentity())) return <SignedOut />;
 
-  const data = await getProfile();
+  const [data, french] = await Promise.all([getProfile(), getProfileFrench()]);
 
   return (
     <div className="grid gap-8">
@@ -41,7 +42,7 @@ export default async function AdminContactPage() {
         </p>
       </header>
 
-      <ContactForm data={data} />
+      <ContactForm data={data} french={french} />
     </div>
   );
 }

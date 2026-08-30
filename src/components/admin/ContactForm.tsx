@@ -10,7 +10,16 @@ import {
 } from 'react';
 
 import { Dropzone } from '@/components/admin/Dropzone';
-import type { FileRef, ProfileData } from '@/components/admin/ResumeForm';
+/* The project screen's French boxes, used here as they are, so the three
+   screens that carry French all behave the same way. */
+import { FrenchBox, FrenchBoxes } from '@/components/admin/ProjectFrench';
+import type {
+  FileRef,
+  FrenchData,
+  ProfileData,
+  ProfileSave,
+  ResumeListsSave,
+} from '@/components/admin/ResumeForm';
 import { SortableList } from '@/components/admin/SortableList';
 import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +33,7 @@ import type { UploadedItem } from '@/hooks/use-uploads';
 import { runAction } from '@/lib/action-result';
 import { CONTACT_DEFAULTS } from '@/lib/contact-defaults';
 import { mediaUrl } from '@/lib/media-url';
-import { saveProfile, saveResumeLists, type ProfileInput, type ResumeLists } from '@/lib/mutations';
+import { saveProfile, saveResumeLists, type ResumeLists } from '@/lib/mutations';
 import { formatBytes } from '@/lib/upload-policy';
 import { hasErrors, validateProfile, type FieldErrors } from '@/lib/validation';
 
@@ -54,6 +63,11 @@ import { hasErrors, validateProfile, type FieldErrors } from '@/lib/validation';
  * Nothing here is loaded into state by an effect. The values arrive as props
  * and are read once by the useState initialiser, which is what keeps a
  * background refresh from throwing away half typed work.
+ *
+ * The French rides along in both payloads, under `french`, on the contract
+ * written into ResumeForm where those types are declared. The profile half of
+ * it is per field and so is sent for these boxes alone; the links are one of
+ * the seven lists and follow the same pass through rule as the English.
  */
 
 // ------------------------------------------------------------------ types ---
@@ -69,10 +83,27 @@ interface ContactFields {
   availability: string;
 }
 
+/**
+ * The five of those that are sentences rather than details.
+ *
+ * An email address, a telephone number and a PDF are not translated: they are
+ * the same characters in both languages, and a box for them would be a box that
+ * can only ever be filled in wrongly.
+ */
+interface ContactFrenchFields {
+  contactStatus: string;
+  contactHeading: string;
+  contactBlurb: string;
+  location: string;
+  availability: string;
+}
+
+/** A link, with the French of what it says. The address itself is not writing. */
 interface SocialRow {
   uid: string;
   label: string;
   href: string;
+  french: { label: string };
 }
 
 // ---------------------------------------------------------------- helpers ---
@@ -182,8 +213,13 @@ function marking<T>(
 
 // ------------------------------------------------------------ the screen ---
 
-export function ContactForm({ data }: { data: ProfileData }) {
+export function ContactForm({ data, french }: { data: ProfileData; french?: FrenchData }) {
   const { push } = useToast();
+
+  /* Read once, like everything else here, and empty until the page that renders
+     it hands over what the Translation table holds. */
+  const frenchProfile = french?.profile ?? {};
+  const frenchLists = french?.lists ?? {};
 
   // One flag for each save button. Saving the words leaves the links exactly as
   // unsaved as they were, so a single flag would clear the badge over work that
@@ -204,13 +240,31 @@ export function ContactForm({ data }: { data: ProfileData }) {
     availability: data.profile?.availability ?? '',
   }));
 
+  const [frenchFields, setFrenchFieldsState] = useState<ContactFrenchFields>(() => ({
+    contactStatus: frenchProfile.contactStatus ?? '',
+    contactHeading: frenchProfile.contactHeading ?? '',
+    contactBlurb: frenchProfile.contactBlurb ?? '',
+    location: frenchProfile.location ?? '',
+    availability: frenchProfile.availability ?? '',
+  }));
+
   const [cv, setCvState] = useState<FileRef | null>(() => data.profile?.cvMedia ?? null);
   const [portfolio, setPortfolioState] = useState<FileRef | null>(
     () => data.profile?.portfolioMedia ?? null,
   );
   const [social, setSocialState] = useState<SocialRow[]>(() =>
-    data.social.map((link) => ({ uid: nextUid(), label: link.label, href: link.href })),
+    data.social.map((link, index) => ({
+      uid: nextUid(),
+      label: link.label,
+      href: link.href,
+      french: { label: frenchLists.social?.[index]?.label ?? '' },
+    })),
   );
+
+  /* Hidden until asked for, the same as the other screens that carry French.
+     Presentation only: the French is in state and goes out with whichever save
+     owns it, showing or not. */
+  const [showFrench, setShowFrench] = useState(false);
 
   const [errors, setErrors] = useState<FieldErrors>({});
   const [pageNotice, setPageNotice] = useState<string | null>(null);
@@ -221,12 +275,16 @@ export function ContactForm({ data }: { data: ProfileData }) {
   // Every savable value goes through one of these rather than its setter, so
   // marking the right half unsaved is not something a call site can forget.
   const setFields = marking(setFieldsState, pageFlag.markDirty);
+  const setFrenchFields = marking(setFrenchFieldsState, pageFlag.markDirty);
   const setCv = marking(setCvState, pageFlag.markDirty);
   const setPortfolio = marking(setPortfolioState, pageFlag.markDirty);
   const setSocial = marking(setSocialState, linksFlag.markDirty);
 
   const setField = (field: keyof ContactFields, value: string) =>
     setFields((current) => ({ ...current, [field]: value }));
+
+  const setFrenchField = (field: keyof ContactFrenchFields, value: string) =>
+    setFrenchFields((current) => ({ ...current, [field]: value }));
 
   function onSavePage() {
     // Taken before the payload is read out of state, and handed to settle when
@@ -236,7 +294,7 @@ export function ContactForm({ data }: { data: ProfileData }) {
     const at = pageFlag.snapshot();
     const profile = data.profile;
 
-    const input: ProfileInput = {
+    const input: ProfileSave = {
       /* Everything the resume screen owns, exactly as this page loaded it.
          saveProfile upserts the whole row, so a field left out of this object
          is not left alone, it is written back empty. */
@@ -256,6 +314,24 @@ export function ContactForm({ data }: { data: ProfileData }) {
       ...fields,
       cvMediaId: cv?.id ?? null,
       portfolioMediaId: portfolio?.id ?? null,
+
+      /* Only the French of the boxes on this screen, and that is not the whole
+         row rule failing. A translation is a row of its own per field, so a
+         field this payload does not name is left exactly as it was, and one it
+         names with nothing is one Ahmad emptied on purpose.
+
+         Left out entirely when this screen was handed no French: it has no
+         French boxes then, and blanks from a screen that never showed him a box
+         would delete translations he never saw. */
+      ...(french && {
+        french: {
+          contactStatus: frenchFields.contactStatus,
+          contactHeading: frenchFields.contactHeading,
+          contactBlurb: frenchFields.contactBlurb,
+          location: frenchFields.location,
+          availability: frenchFields.availability,
+        },
+      }),
     };
 
     // Checked here first so an empty telephone box says so straight away rather
@@ -305,7 +381,7 @@ export function ContactForm({ data }: { data: ProfileData }) {
       return;
     }
 
-    const lists: ResumeLists = {
+    const lists: ResumeListsSave = {
       social: social.map((link) => ({ label: link.label, href: link.href })),
 
       /* The five lists the resume screen owns, exactly as this page loaded
@@ -340,6 +416,26 @@ export function ContactForm({ data }: { data: ProfileData }) {
         detail: entry.detail,
         year: entry.year,
       })),
+
+      /* Left out entirely when this screen was handed no French, for the same
+         reason the contact page's own French is. */
+      ...(french && {
+        french: {
+          /* In step with the English links above, link for link, because the
+             save deletes every list and writes it again: no id this screen
+             could send would still exist afterwards. */
+          social: social.map((link) => ({ label: link.french.label })),
+
+          /* The French of the six lists the resume screen owns, exactly as this
+             page loaded it, for the same reason the English is passed through. */
+          facts: frenchLists.facts,
+          experience: frenchLists.experience,
+          education: frenchLists.education,
+          skillGroups: frenchLists.skillGroups,
+          languages: frenchLists.languages,
+          entries: frenchLists.entries,
+        },
+      }),
     };
 
     startLinksSave(async () => {
@@ -356,8 +452,33 @@ export function ContactForm({ data }: { data: ProfileData }) {
     });
   }
 
+  /* Every French box on the screen, so the strip at the top can say how far the
+     translation has got whether the boxes are showing or not. */
+  const frenchBoxes = [
+    frenchFields.contactStatus,
+    frenchFields.contactHeading,
+    frenchFields.contactBlurb,
+    frenchFields.location,
+    frenchFields.availability,
+    ...social.map((link) => link.french.label),
+  ];
+
   return (
+    <FrenchBoxes showing={showFrench}>
     <div className="grid gap-12">
+      {/* No strip and no boxes until the page hands over what the Translation
+          table holds, because a screen that cannot show him the French he has
+          already written is not a screen to write French on. */}
+      {french && (
+        <FrenchStrip
+          title="Your contact page in French"
+          written={frenchBoxes.filter((value) => value.trim()).length}
+          total={frenchBoxes.length}
+          showing={showFrench}
+          onToggle={() => setShowFrench((current) => !current)}
+        />
+      )}
+
       <section>
         <SaveBar
           title="Your contact page"
@@ -375,59 +496,96 @@ export function ContactForm({ data }: { data: ProfileData }) {
             title="The top of the page"
             description="The two small lines around the word Contact, at the very top."
           >
-            <Field
-              label="Line above the title"
-              htmlFor="contact-status"
-              hint="Sits beside where you are. Left blank it reads Available now."
-            >
-              <Input
-                value={fields.contactStatus}
-                placeholder={CONTACT_DEFAULTS.status}
-                onChange={(event) => setField('contactStatus', event.target.value)}
+            <div>
+              <Field
+                label="Line above the title"
+                htmlFor="contact-status"
+                hint="Sits beside where you are. Left blank it reads Available now."
+              >
+                <Input
+                  value={fields.contactStatus}
+                  placeholder={CONTACT_DEFAULTS.status}
+                  onChange={(event) => setField('contactStatus', event.target.value)}
+                />
+              </Field>
+              <FrenchBox
+                htmlFor="contact-status-fr"
+                label="Line above the title"
+                english={fields.contactStatus}
+                value={frenchFields.contactStatus}
+                onChange={(value) => setFrenchField('contactStatus', value)}
               />
-            </Field>
+            </div>
 
-            <Field
-              label="What you are looking for"
-              htmlFor="contact-availability"
-              hint="The sentence under the word Contact. It is also printed on the portfolio PDF the site makes."
-            >
-              <Input
-                value={fields.availability}
-                placeholder="Seeking a position with a professional firm"
-                onChange={(event) => setField('availability', event.target.value)}
+            <div>
+              <Field
+                label="What you are looking for"
+                htmlFor="contact-availability"
+                hint="The sentence under the word Contact. It is also printed on the portfolio PDF the site makes."
+              >
+                <Input
+                  value={fields.availability}
+                  placeholder="Seeking a position with a professional firm"
+                  onChange={(event) => setField('availability', event.target.value)}
+                />
+              </Field>
+              <FrenchBox
+                htmlFor="contact-availability-fr"
+                label="What you are looking for"
+                english={fields.availability}
+                value={frenchFields.availability}
+                onChange={(value) => setFrenchField('availability', value)}
               />
-            </Field>
+            </div>
           </Panel>
 
           <Panel
             title="The invitation"
             description="The block on the left of the page, above your email address."
           >
-            <Field
-              label="Heading"
-              htmlFor="contact-heading"
-              hint="Above the invitation to write. Left blank it reads Write to me."
-            >
-              <Input
-                value={fields.contactHeading}
-                placeholder={CONTACT_DEFAULTS.heading}
-                onChange={(event) => setField('contactHeading', event.target.value)}
+            <div>
+              <Field
+                label="Heading"
+                htmlFor="contact-heading"
+                hint="Above the invitation to write. Left blank it reads Write to me."
+              >
+                <Input
+                  value={fields.contactHeading}
+                  placeholder={CONTACT_DEFAULTS.heading}
+                  onChange={(event) => setField('contactHeading', event.target.value)}
+                />
+              </Field>
+              <FrenchBox
+                htmlFor="contact-heading-fr"
+                label="Heading"
+                english={fields.contactHeading}
+                value={frenchFields.contactHeading}
+                onChange={(value) => setFrenchField('contactHeading', value)}
               />
-            </Field>
+            </div>
 
-            <Field
-              label="The invitation itself"
-              htmlFor="contact-blurb"
-              hint="A short paragraph under the heading, saying what to send you and what you will send back. Left blank it falls back to the wording the site launched with."
-            >
-              <Textarea
+            <div>
+              <Field
+                label="The invitation itself"
+                htmlFor="contact-blurb"
+                hint="A short paragraph under the heading, saying what to send you and what you will send back. Left blank it falls back to the wording the site launched with."
+              >
+                <Textarea
+                  rows={4}
+                  value={fields.contactBlurb}
+                  placeholder={CONTACT_DEFAULTS.blurb}
+                  onChange={(event) => setField('contactBlurb', event.target.value)}
+                />
+              </Field>
+              <FrenchBox
+                htmlFor="contact-blurb-fr"
+                label="The invitation itself"
+                english={fields.contactBlurb}
                 rows={4}
-                value={fields.contactBlurb}
-                placeholder={CONTACT_DEFAULTS.blurb}
-                onChange={(event) => setField('contactBlurb', event.target.value)}
+                value={frenchFields.contactBlurb}
+                onChange={(value) => setFrenchField('contactBlurb', value)}
               />
-            </Field>
+            </div>
           </Panel>
 
           <Panel
@@ -453,19 +611,28 @@ export function ContactForm({ data }: { data: ProfileData }) {
                 />
               </Field>
 
-              <Field
-                label="Where you are"
-                htmlFor="contact-location"
-                required
-                error={errors.location}
-                hint="Shown beside the line above the title, and again under Based in."
-              >
-                <Input
-                  value={fields.location}
-                  placeholder="Ottawa, Ontario"
-                  onChange={(event) => setField('location', event.target.value)}
+              <div>
+                <Field
+                  label="Where you are"
+                  htmlFor="contact-location"
+                  required
+                  error={errors.location}
+                  hint="Shown beside the line above the title, and again under Based in."
+                >
+                  <Input
+                    value={fields.location}
+                    placeholder="Ottawa, Ontario"
+                    onChange={(event) => setField('location', event.target.value)}
+                  />
+                </Field>
+                <FrenchBox
+                  htmlFor="contact-location-fr"
+                  label="Where you are"
+                  english={fields.location}
+                  value={frenchFields.location}
+                  onChange={(value) => setFrenchField('location', value)}
                 />
-              </Field>
+              </div>
             </div>
           </Panel>
 
@@ -531,15 +698,26 @@ export function ContactForm({ data }: { data: ProfileData }) {
                   />
 
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label="What it says" htmlFor={`social-${link.uid}-label`}>
-                      <Input
-                        value={link.label}
-                        placeholder="LinkedIn"
-                        onChange={(event) =>
-                          setSocial(replace(social, index, { ...link, label: event.target.value }))
+                    <div>
+                      <Field label="What it says" htmlFor={`social-${link.uid}-label`}>
+                        <Input
+                          value={link.label}
+                          placeholder="LinkedIn"
+                          onChange={(event) =>
+                            setSocial(replace(social, index, { ...link, label: event.target.value }))
+                          }
+                        />
+                      </Field>
+                      <FrenchBox
+                        htmlFor={`social-${link.uid}-label-fr`}
+                        label="What it says"
+                        english={link.label}
+                        value={link.french.label}
+                        onChange={(value) =>
+                          setSocial(replace(social, index, { ...link, french: { label: value } }))
                         }
                       />
-                    </Field>
+                    </div>
 
                     <Field
                       label="Where it goes"
@@ -562,11 +740,17 @@ export function ContactForm({ data }: { data: ProfileData }) {
 
           <AddButton
             label="Add a link"
-            onClick={() => setSocial([...social, { uid: nextUid(), label: '', href: '' }])}
+            onClick={() =>
+              setSocial([
+                ...social,
+                { uid: nextUid(), label: '', href: '', french: { label: '' } },
+              ])
+            }
           />
         </Panel>
       </section>
     </div>
+    </FrenchBoxes>
   );
 }
 
@@ -620,6 +804,49 @@ function Panel({
       <p className="mt-1 max-w-3xl text-sm text-neutral-600">{description}</p>
       <div className="mt-5 grid gap-5">{children}</div>
     </section>
+  );
+}
+
+/**
+ * The one switch that reveals the French boxes, and the sentence that says what
+ * an empty one means.
+ *
+ * One for the screen rather than one for each half. The two halves are saved
+ * separately because they are two writes, but showing a box is not a write, and
+ * two switches beside two identical sentences would only ask Ahmad to work out
+ * whether they were the same switch.
+ *
+ * Written the same way on the resume and home screens. It belongs beside
+ * FrenchBox once the screens that carry French are all in.
+ */
+function FrenchStrip({
+  title,
+  written,
+  total,
+  showing,
+  onToggle,
+}: {
+  title: string;
+  written: number;
+  total: number;
+  showing: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3">
+      <div className="min-w-[14rem] flex-1">
+        <p className="text-sm font-medium text-sky-950">{title}</p>
+        <p className="mt-0.5 text-xs text-sky-900">
+          {written} of {total} boxes written. Anything you leave empty shows in English on the
+          French page, so you can translate as much or as little as you like. The grey words in a
+          French box are the English it would show.
+        </p>
+      </div>
+
+      <Button type="button" variant="outline" aria-expanded={showing} onClick={onToggle}>
+        {showing ? 'Hide the French boxes' : 'Show the French boxes'}
+      </Button>
+    </div>
   );
 }
 

@@ -19,6 +19,9 @@ const DICTIONARY = {
     resume: 'Resume',
     contact: 'Contact',
     selectedWork: 'Selected work',
+    fullSheet: 'Full sheet',
+    restOfTheSet: 'The rest of the set',
+    alsoInTheArchive: 'Also in the archive',
     about: 'About',
     getInTouch: 'Get in touch',
     interestedInCollaborating: 'Interested in collaborating?',
@@ -45,9 +48,12 @@ const DICTIONARY = {
     theme: 'Dark',
     languageName: 'English',
     switchLanguage: 'Voir en français',
-    notFoundTitle: 'That page is not here',
-    notFoundBody: 'The address may have changed, or it may never have existed.',
-    backHome: 'Back to the home page',
+    /* The wording the site has always used. French is a translation of it, not
+       an occasion to rewrite the English. */
+    errorLabel: 'Error',
+    notFoundTitle: 'Off the map',
+    notFoundBody: 'That page does not exist, or it has moved.',
+    viewPortfolio: 'View the portfolio',
   },
   fr: {
     skipToContent: 'Aller au contenu',
@@ -56,6 +62,9 @@ const DICTIONARY = {
     resume: 'Curriculum vitae',
     contact: 'Contact',
     selectedWork: 'Projets choisis',
+    fullSheet: 'Planche complète',
+    restOfTheSet: 'Le reste de la série',
+    alsoInTheArchive: 'Aussi dans les archives',
     about: 'À propos',
     getInTouch: 'Me joindre',
     interestedInCollaborating: 'Envie de collaborer?',
@@ -82,9 +91,12 @@ const DICTIONARY = {
     theme: 'Sombre',
     languageName: 'Français',
     switchLanguage: 'View in English',
-    notFoundTitle: 'Cette page est introuvable',
-    notFoundBody: "L'adresse a peut-être changé, ou elle n'a jamais existé.",
-    backHome: "Retour à l'accueil",
+    errorLabel: 'Erreur',
+    /* Hors plan, which an architect reads the way an English one reads off the
+       map: the thing is not on the drawing. */
+    notFoundTitle: 'Hors plan',
+    notFoundBody: "Cette page n'existe pas, ou elle a été déplacée.",
+    viewPortfolio: 'Voir le portfolio',
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 
