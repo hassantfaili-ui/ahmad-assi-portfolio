@@ -1047,10 +1047,10 @@ button {
   padding: 0 var(--gutter, 1.5rem);
 }
 
-/* The writing about a project sits closer to its cover than one band sits to
-   the next, because they are one thought rather than two sections. */
+/* The same air under the cover as above it. The photograph sits in its own
+   measure of space rather than being pushed against the writing on one side. */
 .cover-plate + .band {
-  padding-top: clamp(1.5rem, 3.5vw, 2.5rem);
+  padding-top: clamp(2.5rem, 6vw, 4.5rem);
 }
 
 .cover-plate img {
@@ -1072,8 +1072,9 @@ button {
 .stagger figure {
   margin: 0;
 }
-.stagger > *:nth-child(even) {
-  margin-top: clamp(2rem, 7vw, 6rem);
+/* Rows, not a staircase. Both pictures in a row start and finish together. */
+.stagger > * {
+  margin-top: 0;
 }
 .stagger img {
   width: 100%;
@@ -1082,6 +1083,25 @@ button {
 /* drawings are line work on white, so they get a hairline rather than bleeding */
 .stagger figure img {
   border: 1px solid var(--line);
+}
+
+/* Every picture fills the same shape, so a row reads as a row.
+
+   The offset that used to step every second picture down the page made a
+   deliberate rhythm out of what is really a set of comparable views, and with
+   pictures of different proportions no two rows ever lined up.
+
+   Contained rather than cropped, and that is not fussiness. Three quarters of
+   these are already three by two and fill the shape exactly, with no bars and
+   nothing lost. The rest are mostly drawings that happen to live among the
+   photographs, the whole of Building Systems among them, and a drawing loses
+   its meaning the moment a label or an edge is cut off. So the odd upright one
+   sits centred on white instead, and the row still lines up. */
+.stagger figure img {
+  aspect-ratio: 3 / 2;
+  object-fit: contain;
+  background: #fff;
+  display: block;
 }
 .stagger figcaption {
   margin-top: 0.9rem;
@@ -1118,16 +1138,31 @@ button {
    breathe rather than bleeding into the dark ground. */
 .sheets {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: clamp(2rem, 5vw, 3.5rem);
+  align-items: start;
   max-width: 70rem;
   margin: 0 auto;
+}
+
+@media (max-width: 700px) {
+  .sheets {
+    grid-template-columns: 1fr;
+  }
 }
 .sheets figure {
   margin: 0;
 }
 .sheets img {
   width: 100%;
+  /* Contained, not cropped. A drawing is measured line work: cutting an edge
+     off removes information, which a photograph survives and a section does
+     not. The sheet stays a constant shape so the rows line up, and a drawing
+     of any proportion sits centred on white inside it. */
+  aspect-ratio: 4 / 3;
   height: auto;
+  object-fit: contain;
+  display: block;
   border: 1px solid var(--line);
   background: #fff;
 }
