@@ -1040,8 +1040,17 @@ button {
    width to be looked at rather than the width left over beside a paragraph. */
 .cover-plate {
   max-width: 62rem;
-  margin: clamp(2.5rem, 6vw, 4.5rem) auto;
+  /* No bottom margin: the band underneath brings its own top padding, and the
+     two together left a hand's width of nothing between the photograph and the
+     writing it belongs to. */
+  margin: clamp(2.5rem, 6vw, 4.5rem) auto 0;
   padding: 0 var(--gutter, 1.5rem);
+}
+
+/* The writing about a project sits closer to its cover than one band sits to
+   the next, because they are one thought rather than two sections. */
+.cover-plate + .band {
+  padding-top: clamp(1.5rem, 3.5vw, 2.5rem);
 }
 
 .cover-plate img {

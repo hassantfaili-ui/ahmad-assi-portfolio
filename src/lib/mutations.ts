@@ -344,6 +344,21 @@ export async function deleteFilm(projectId: string | null): Promise<SaveResult> 
 
 
 export interface WholeProjectInput {
+  /**
+   * When the screen that is saving last read this project.
+   *
+   * A whole project save replaces the arrangement wholesale, so a screen that
+   * has been open since before somebody else saved will write what it read
+   * over what they wrote, and nothing about that looks like a failure. It has
+   * happened twice: a caption written and saved, then a second tab holding the
+   * older text saved over it, leaving the site showing one thing and the
+   * editor another.
+   *
+   * So a save carries the version it is answering. If the project has moved on
+   * since, the save is refused and the screen says to reload, which is the only
+   * honest thing to do with two versions of the truth and no way to merge them.
+   */
+  baseUpdatedAt: string | null;
   fields: ProjectInput;
   /** Whether the project is on the site, saved with everything else. */
   published: boolean;
@@ -376,7 +391,7 @@ export interface WholeProjectInput {
 export async function saveWholeProject(
   id: string,
   input: WholeProjectInput,
-): Promise<SaveResult<{ slug: string }>> {
+): Promise<SaveResult<{ slug: string; updatedAt: string | null }>> {
   if (!(await authorised())) return DENIED;
 
   const errors: FieldErrors = { ...validateProject(input.fields) };
@@ -410,8 +425,29 @@ export async function saveWholeProject(
 
   if (hasErrors(errors)) return { ok: false, errors };
 
-  const existing = await db.project.findUnique({ where: { id }, select: { slug: true } });
+  const existing = await db.project.findUnique({
+    where: { id },
+    select: { slug: true, updatedAt: true },
+  });
   if (!existing) return { ok: false, message: 'That project no longer exists.' };
+
+  /* Compared to the second, because that is the resolution Postgres stores and
+     anything finer would refuse saves over rounding. A screen that sent no
+     version at all is an older build of the editor, and is let through rather
+     than locked out by an upgrade. */
+  if (input.baseUpdatedAt) {
+    const opened = Math.floor(new Date(input.baseUpdatedAt).getTime() / 1000);
+    const current = Math.floor(existing.updatedAt.getTime() / 1000);
+    if (Number.isFinite(opened) && current > opened) {
+      return {
+        ok: false,
+        message:
+          'This project changed somewhere else after you opened it, so nothing was saved. ' +
+          'Your work is still on this page. Open it again in a new tab to see what is there ' +
+          'now, then put your changes back.',
+      };
+    }
+  }
 
   /* The slug is only recomputed when Ahmad actually edited it. A published URL
      is a promise, and renaming one because a title changed would break every
@@ -506,7 +542,15 @@ export async function saveWholeProject(
 
   const leadCount = await db.project.count({ where: { tier: 'lead', published: true } });
 
-  return { ok: true, data: { slug }, warning: leadOverflowWarning(leadCount) ?? undefined };
+  /* The saved version goes back so the screen can answer the next save with it,
+     rather than still holding the version it first opened and refusing itself. */
+  const saved = await db.project.findUnique({ where: { id }, select: { updatedAt: true } });
+
+  return {
+    ok: true,
+    data: { slug, updatedAt: saved?.updatedAt.toISOString() ?? null },
+    warning: leadOverflowWarning(leadCount) ?? undefined,
+  };
 }
 
 // ---------------------------------------------------------------- resume ---

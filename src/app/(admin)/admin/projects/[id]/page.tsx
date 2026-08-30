@@ -91,6 +91,7 @@ export default async function ProjectEditorPage({ params }: ProjectEditorPagePro
         credit: project.credit,
         tier: project.tier,
         order: project.order,
+        updatedAt: project.updatedAt.toISOString(),
         published: project.published,
         leadImageId: project.leadImageId,
         leadImageAlt: project.leadImageAlt,

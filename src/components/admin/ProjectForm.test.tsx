@@ -55,6 +55,7 @@ const loose = {
 
 const project = {
   id: 'p1',
+  updatedAt: '2026-08-30T03:00:00.000Z',
   slug: 'garden-heights',
   title: 'Garden Heights',
   sheet: 'A-101',

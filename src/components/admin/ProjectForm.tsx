@@ -85,6 +85,8 @@ export interface EditorProject {
   tier: string;
   order: number;
   published: boolean;
+  /** When this screen last read the project, sent back with every save. */
+  updatedAt: string;
   leadImageId: string | null;
   leadImageAlt: string;
   leadImage: EditorMedia | null;
@@ -205,9 +207,11 @@ function buildPayload(
   drawings: EditorDrawing[],
   film: EditorFilm | null,
   published: boolean,
+  baseUpdatedAt: string | null,
 ): WholeProjectInput {
   return {
     fields: toInput(values),
+    baseUpdatedAt,
     published,
     groups: groups.map((group) => ({
       layout: group.layout,
@@ -363,6 +367,10 @@ export function ProjectForm({
      anything that has to reason about the box afterwards asks this. */
   const slugOnScreen = useRef(project.slug);
 
+  /* The version this screen is answering. It moves forward on every save, or a
+     second save from the same tab would be refused as stale by its own first. */
+  const baseUpdatedAt = useRef(project.updatedAt);
+
   /* One claim for the whole screen, because there is one button. It covers
      closing the tab, reloading, and leaving the site. Clicking a link inside
      the admin is a client side route change the browser cannot see, so that
@@ -434,7 +442,7 @@ export function ProjectForm({
        handler appends to a list this payload does not contain. The count then
        moves past the snapshot, settle declines to clear, and the badge and the
        guard stay up over the work that never went. */
-    const payload = buildPayload(values, groups, drawings, film, published);
+    const payload = buildPayload(values, groups, drawings, film, published, baseUpdatedAt.current);
     const at = snapshot();
 
     const found = collectErrors(payload);
@@ -460,6 +468,8 @@ export function ProjectForm({
          on screen by the time it answers. */
       setSavedFilm(payload.film === null ? null : film);
       setLiveOnSite(payload.published);
+      /* Answer the next save with the version this one produced. */
+      if (result.data?.updatedAt) baseUpdatedAt.current = result.data.updatedAt;
       settle(at);
 
       /* The web address that came back can differ from the one that was sent,

@@ -115,7 +115,7 @@ describe('what a whole project save writes for each picture', () => {
   it('carries the caption and the description onto the row it creates', async () => {
     const { saveWholeProject } = await import('./mutations');
 
-    db.project.findUnique.mockResolvedValue({ slug: 'a-project' });
+    db.project.findUnique.mockResolvedValue({ slug: 'a-project', updatedAt: new Date('2026-08-30T03:00:00Z') });
     db.project.findMany.mockResolvedValue([]);
     db.project.count.mockResolvedValue(0);
 
@@ -134,6 +134,7 @@ describe('what a whole project save writes for each picture', () => {
     });
 
     await saveWholeProject('p1', {
+      baseUpdatedAt: null,
       fields: {
         title: 'A project', slug: 'a-project', sheet: 'A-101', category: 'Residential',
         year: 2024, location: 'Ottawa', buildingType: 'House', area: '', status: 'Built',
@@ -162,5 +163,89 @@ describe('what a whole project save writes for each picture', () => {
     /* Absent stays absent rather than becoming an empty string, so the page
        prints no caption at all instead of an empty line under the picture. */
     expect(images[1]).toMatchObject({ alt: 'The lookout', caption: null });
+  });
+})
+
+/**
+ * Two screens open on one project, which is how a caption was lost twice.
+ *
+ * A whole project save replaces the arrangement wholesale, so a tab that has
+ * been open since before another save will write what it read over what was
+ * written, and nothing about it looks like a failure: the screen says Saved,
+ * and only the site disagrees. Refusing is the only honest answer, since there
+ * are two versions of the truth and no way to tell which sentence was meant.
+ */
+describe('a save from a screen that has fallen behind', () => {
+  const fields = {
+    title: 'A project', slug: 'a-project', sheet: 'A-101', category: 'Residential',
+    year: 2024, location: 'Ottawa', buildingType: 'House', area: '', status: 'Built',
+    role: 'Designer', contribution: 'All of it', summary: 'A summary of the project.',
+    body: '', credit: 'Sole author', tier: 'index', order: 1,
+    leadImageId: null, leadImageAlt: '',
+  };
+
+  beforeEach(() => {
+    db.project.count.mockResolvedValue(0);
+    db.project.findMany.mockResolvedValue([]);
+    db.$transaction.mockImplementation(async (...args: unknown[]) => {
+      const run = args[0];
+      if (typeof run !== 'function') return [];
+      await (run as (tx: unknown) => Promise<unknown>)({
+        project: { update: vi.fn() },
+        imageGroup: { deleteMany: vi.fn(), create: vi.fn() },
+        drawing: { deleteMany: vi.fn(), createMany: vi.fn() },
+        film: { deleteMany: vi.fn(), create: vi.fn() },
+      });
+      return [];
+    });
+  });
+
+  it('is refused when the project moved on after the screen opened it', async () => {
+    const { saveWholeProject } = await import('./mutations');
+    db.project.findUnique.mockResolvedValue({
+      slug: 'a-project',
+      updatedAt: new Date('2026-08-30T03:45:00Z'),
+    });
+
+    const result = await saveWholeProject('p1', {
+      baseUpdatedAt: '2026-08-30T03:00:00.000Z',
+      fields, published: false, groups: [], drawings: [], film: null,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toMatch(/changed somewhere else/i);
+    /* Nothing written: a refusal that had already replaced the groups would be
+       the very loss this exists to prevent. */
+    expect(db.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('goes through when the screen is answering the version that is there', async () => {
+    const { saveWholeProject } = await import('./mutations');
+    db.project.findUnique.mockResolvedValue({
+      slug: 'a-project',
+      updatedAt: new Date('2026-08-30T03:00:00Z'),
+    });
+
+    const result = await saveWholeProject('p1', {
+      baseUpdatedAt: '2026-08-30T03:00:00.000Z',
+      fields, published: false, groups: [], drawings: [], film: null,
+    });
+
+    expect(result.ok).toBe(true);
+  });
+
+  it('lets an older screen that sends no version through, so an upgrade locks nobody out', async () => {
+    const { saveWholeProject } = await import('./mutations');
+    db.project.findUnique.mockResolvedValue({
+      slug: 'a-project',
+      updatedAt: new Date('2026-08-30T03:45:00Z'),
+    });
+
+    const result = await saveWholeProject('p1', {
+      baseUpdatedAt: null,
+      fields, published: false, groups: [], drawings: [], film: null,
+    });
+
+    expect(result.ok).toBe(true);
   });
 })
