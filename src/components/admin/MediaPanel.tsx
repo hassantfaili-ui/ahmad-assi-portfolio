@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 
 import { Dropzone } from '@/components/admin/Dropzone';
@@ -201,6 +201,8 @@ interface StrayCover {
   frenchAlt: string;
   /** Set once it has a home, so the note says what happened rather than vanishing. */
   kept: boolean;
+  /** The row it was put into, so leaving it out again removes that one row. */
+  imageId?: string;
 }
 
 export interface MediaPanelProps {
@@ -248,6 +250,27 @@ export function MediaPanel({
   onFrenchLeadImageAltChange,
 }: MediaPanelProps) {
   const [strayCover, setStrayCover] = useState<StrayCover | null>(null);
+
+  /* Brought to him rather than left to be found.
+     The notice sits at the top of the cover section and the grid of pictures
+     under it is around fifteen hundred pixels tall, so choosing a cover from
+     the lower half of that grid put the notice the better part of two screens
+     above the press. The photograph dropped out of the grid, which is what he
+     saw, and the offer to keep it was somewhere he had no reason to look. */
+  const strayNotice = useRef<HTMLDivElement>(null);
+  const announced = useRef<string | null>(null);
+
+  useEffect(() => {
+    const media = strayCover?.kept === false ? strayCover.media.id : null;
+    /* Only when a photograph first becomes stray. Scrolling again as he presses
+       the button that rescues it would yank the page while he is reading. */
+    if (!media || announced.current === media) {
+      if (!media) announced.current = null;
+      return;
+    }
+    announced.current = media;
+    strayNotice.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [strayCover]);
 
   const startGroupFromUpload = useCallback(
     (items: UploadedItem[]) => {
@@ -443,14 +466,71 @@ export function MediaPanel({
         groups.some((group) => group.images.some((image) => image.media.id === outgoing?.id));
 
       onLeadImageChange(mediaId);
-      setStrayCover(
-        outgoing && !stillShown
-          ? { media: outgoing, alt: leadImageAlt, frenchAlt: frenchLeadImageAlt, kept: false }
-          : null,
-      );
+
+      if (!outgoing || stillShown) {
+        setStrayCover(null);
+        return;
+      }
+
+      /* Kept, not offered.
+
+         It used to ask, and asking was the bug. The notice sits at the top of
+         this section and the grid of pictures under it runs to fifteen hundred
+         pixels, so choosing a cover from the lower half put the question the
+         better part of two screens above the press. What Ahmad saw was the
+         photograph dropping out of the grid with no explanation, which is
+         exactly what he reported, twice.
+
+         So the safe answer is taken for him: a photograph that would otherwise
+         be shown nowhere goes back with the pictures, and the notice offers to
+         leave it out instead. Nothing on the site changes until he saves, and
+         an unwanted picture is a moment's work to remove, where a lost one is a
+         hunt through the library. */
+      const image: EditorImage = {
+        id: localId(),
+        mediaId: outgoing.id,
+        alt: leadImageAlt,
+        caption: '',
+        french: { alt: frenchLeadImageAlt, caption: '' },
+        media: outgoing,
+      };
+      const groupId = localId();
+
+      onGroupsChange((current) => intoLastGroup(current, image, groupId));
+      setStrayCover({
+        media: outgoing,
+        alt: leadImageAlt,
+        frenchAlt: frenchLeadImageAlt,
+        kept: true,
+        imageId: image.id,
+      });
     },
-    [groups, leadImage, leadImageId, leadImageAlt, frenchLeadImageAlt, onLeadImageChange],
+    [
+      groups,
+      leadImage,
+      leadImageId,
+      leadImageAlt,
+      frenchLeadImageAlt,
+      onLeadImageChange,
+      onGroupsChange,
+    ],
   );
+
+  /* The other way, for a photograph he did not want back. */
+  const dropStrayCover = useCallback(() => {
+    if (!strayCover?.imageId) {
+      setStrayCover(null);
+      return;
+    }
+    const id = strayCover.imageId;
+    onGroupsChange((current) =>
+      current.map((group) => ({
+        ...group,
+        images: group.images.filter((image) => image.id !== id),
+      })),
+    );
+    setStrayCover(null);
+  }, [strayCover, onGroupsChange]);
 
   const keepStrayCover = useCallback(() => {
     if (!strayCover || strayCover.kept) return;
@@ -518,6 +598,7 @@ export function MediaPanel({
 
         {strayCover && (
           <div
+            ref={strayNotice}
             role="status"
             className="flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
           >
@@ -533,9 +614,13 @@ export function MediaPanel({
             {strayCover.kept ? (
               <>
                 <p className="min-w-[12rem] flex-1">
-                  That photograph is back with the pictures above, at the end of the last group.
-                  Nothing changes on the site until you save.
+                  That photograph was the cover and nothing else showed it, so it is now with the
+                  pictures above, at the end of the last group. Nothing changes on the site until
+                  you save.
                 </p>
+                <Button type="button" variant="ghost" size="sm" onClick={dropStrayCover}>
+                  Leave it out
+                </Button>
                 <Button
                   type="button"
                   variant="ghost"

@@ -302,21 +302,19 @@ describe('taking the cover off', () => {
     leadImage: loose,
   };
 
-  it('offers the photograph a home rather than dropping it off the screen', async () => {
+  it('keeps the photograph rather than asking, because the asking was missed', async () => {
+    /* It used to offer, and the offer was the bug. The notice sits at the top
+       of the cover section and the grid under it runs to fifteen hundred
+       pixels, so a cover chosen from the lower half put the question two
+       screens above the press. Ahmad reported the photograph vanishing twice.
+       The safe answer is taken for him now. */
     const user = userEvent.setup({ delay: null });
     render(<ProjectForm project={withLooseCover} groups={groups} drawings={[]} film={null} />);
 
     await user.click(screen.getByRole('button', { name: 'This is the cover. Press to unset it.' }));
 
-    /* Said plainly, with something to do about it. Ahmad used to be left to
-       notice on his own that the photograph had gone, and to upload it again. */
-    expect(screen.getByText(/in none of the groups above/)).toBeTruthy();
-
-    await user.click(screen.getByRole('button', { name: 'Put it with the pictures' }));
-
-    expect(screen.getByText(/back with the pictures above/)).toBeTruthy();
-
-    /* On screen, in the arrangement, with a box of its own. */
+    /* Already done, and said. No press required for the photograph to survive. */
+    expect(screen.getByText(/now with the pictures above/)).toBeTruthy();
     expect(screen.getAllByLabelText('What this picture shows*')).toHaveLength(3);
     expect(screen.getByText('3 in 1 group')).toBeTruthy();
 
@@ -331,14 +329,34 @@ describe('taking the cover off', () => {
     expect(sent().fields.leadImageId).toBeNull();
   });
 
+  it('lets him leave it out again, for a photograph he did not want back', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<ProjectForm project={withLooseCover} groups={groups} drawings={[]} film={null} />);
+
+    await user.click(screen.getByRole('button', { name: 'This is the cover. Press to unset it.' }));
+    expect(screen.getAllByLabelText('What this picture shows*')).toHaveLength(3);
+
+    await user.click(screen.getByRole('button', { name: 'Leave it out' }));
+
+    /* Back to two, and only the one row it added is gone. */
+    expect(screen.getAllByLabelText('What this picture shows*')).toHaveLength(2);
+
+    await user.click(screen.getByRole('button', { name: 'Save everything' }));
+
+    await waitFor(() => expect(saveWholeProject).toHaveBeenCalledTimes(1));
+    const [group] = sent().groups;
+    expect(group.images.map((image) => image.mediaId)).toEqual(['m1', 'm2']);
+  });
+
   it('says nothing when the outgoing cover is one of the pictures anyway', async () => {
     const user = userEvent.setup({ delay: null });
     render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
 
     await user.click(screen.getByRole('button', { name: 'This is the cover. Press to unset it.' }));
 
-    /* That photograph is still in group one, three inches up the screen. */
-    expect(screen.queryByRole('button', { name: 'Put it with the pictures' })).toBeNull();
+    /* That photograph is still in group one, three inches up the screen, so
+       there is nothing to rescue and nothing to say. */
+    expect(screen.queryByText(/now with the pictures above/)).toBeNull();
     expect(screen.getByText('2 in 1 group')).toBeTruthy();
   });
 });
