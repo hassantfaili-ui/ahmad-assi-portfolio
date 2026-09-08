@@ -1071,14 +1071,14 @@ button {
   border: 1px solid var(--line);
 }
 
-/* Set exactly as a caption in the gallery, because it is one: the cover is a
-   picture that has been lifted out of the gallery, and its caption came with
-   it. Drawn any other way, the same words would read differently depending on
-   which picture Ahmad happened to choose as the cover. */
+/* The same type as a gallery caption, but centred under the plate and without
+   the rule down its left side. The rule belongs to captions that sit in a
+   column and need an edge to hang from; under a photograph that has the whole
+   page to itself it read as a stray line beside the words, and Ahmad asked for
+   it to go. */
 .cover-plate figcaption {
   margin-top: 0.9rem;
-  padding-left: 0.9rem;
-  border-left: 1px solid var(--mark);
+  text-align: center;
   color: var(--ink-3);
   font-size: 0.9375rem;
   line-height: 1.6;
