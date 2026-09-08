@@ -8,6 +8,7 @@ import Film from '@/components/site/Film';
 import Reveal from '@/components/site/Reveal';
 import { pageWords } from '@/components/site/pages/copy';
 import { alternatesFor, openGraphFor } from '@/components/site/pages/metadata';
+import { coverCaption, galleryWithoutCover } from '@/lib/cover-plate';
 import { CATEGORY_WORDS, STATUS_WORDS, words } from '@/lib/dictionary';
 import { localePath, type Locale } from '@/lib/i18n';
 import { renderMarkdown } from '@/lib/markdown';
@@ -119,12 +120,12 @@ export default async function WorkPage({ locale, slug }: { locale: Locale; slug:
      every picture under it, so a set of four no longer has to share a sentence
      Ahmad can only write once.
 
-     The cover is left out. It sits beside the description above now, and a
-     cover nobody chose is the first picture of the first group, which is
-     exactly the one that would otherwise appear twice. */
-  const gallery = project.imageGroups
-    .flatMap((group) => group.images)
-    .filter((image) => image.media.id !== cover?.id);
+     The cover is left out. It sits across the page above now, and a cover
+     nobody chose is the first picture of the first group, which is exactly the
+     one that would otherwise appear twice. Its caption goes with it, under the
+     cover plate, rather than being dropped along with the picture. */
+  const gallery = galleryWithoutCover(cover, project.imageGroups);
+  const captionUnderCover = coverCaption(cover, project.imageGroups);
 
   return (
     <>
@@ -166,6 +167,7 @@ export default async function WorkPage({ locale, slug }: { locale: Locale; slug:
             sizes={COVER_SIZES}
             priority
           />
+          {captionUnderCover && <figcaption>{captionUnderCover}</figcaption>}
         </Reveal>
       )}
 

@@ -1071,6 +1071,19 @@ button {
   border: 1px solid var(--line);
 }
 
+/* Set exactly as a caption in the gallery, because it is one: the cover is a
+   picture that has been lifted out of the gallery, and its caption came with
+   it. Drawn any other way, the same words would read differently depending on
+   which picture Ahmad happened to choose as the cover. */
+.cover-plate figcaption {
+  margin-top: 0.9rem;
+  padding-left: 0.9rem;
+  border-left: 1px solid var(--mark);
+  color: var(--ink-3);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
 .stagger {
   display: grid;
   grid-template-columns: 1fr 1fr;

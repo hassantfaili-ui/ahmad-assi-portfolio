@@ -705,7 +705,7 @@ export function MediaPanel({
                   htmlFor="lead-image-alt"
                   required
                   error={errors.leadImageAlt}
-                  hint="Saved with everything else, using the button at the top."
+                  hint="What a screen reader announces; it is not printed. The words printed under the cover are the caption of the same picture, in Pictures above. Saved with everything else, using the button at the top."
                 >
                   <Input
                     value={leadImageAlt}
