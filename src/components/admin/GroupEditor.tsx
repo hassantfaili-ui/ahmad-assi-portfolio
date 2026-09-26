@@ -471,10 +471,10 @@ export function GroupEditor({
                 <Dropzone
                   destination="project"
                   slug={slug}
-                  accept="image"
+                  accept="image-or-pdf"
                   onUploaded={(items) => onAddImages(group.id, items)}
                   label={`Drop pictures here to add them to group ${groupIndex + 1}`}
-                  hint="Or paste them, or choose them below. As many at once as you like."
+                  hint="Or paste them, or choose them below, or drop a PDF and pick from it. As many at once as you like."
                 />
               </div>
             )}

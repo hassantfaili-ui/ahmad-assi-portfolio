@@ -5,10 +5,11 @@ import { AlertCircle, CheckCircle2, RotateCcw, Upload, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { PdfPicker } from '@/components/admin/PdfPicker';
 import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
 import { useUploads, type UploadedItem, type UploadRow } from '@/hooks/use-uploads';
 import { canTranscode } from '@/lib/transcode';
-import { formatBytes } from '@/lib/upload-policy';
+import { formatBytes, validateUpload } from '@/lib/upload-policy';
 import type { UploadDestination } from '@/lib/upload-client';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +27,12 @@ import { cn } from '@/lib/utils';
  * A file that fails does not take the batch with it. Ahmad drops thirty renders
  * and one is a .heic; being told which one while the other twenty nine upload
  * is a better answer than being told to start again.
+ *
+ * A PDF dropped where pictures go is not uploaded. It is opened here, in the
+ * browser, and its pages and the photographs inside it are offered as
+ * pictures to choose from; the chosen ones join the queue as JPEGs. See
+ * PdfPicker. Where a PDF is wanted as a document, the CV say, accept is
+ * 'document' and it uploads whole as before.
  */
 
 /**
@@ -49,15 +56,20 @@ const ON_THE_SERVER = () => true;
 export interface DropzoneProps {
   destination: UploadDestination;
   slug?: string;
-  accept: 'image' | 'video' | 'document' | 'any';
+  /** 'image-or-pdf' takes images as they are and opens a PDF to pick pictures from. */
+  accept: 'image' | 'image-or-pdf' | 'video' | 'document' | 'any';
   filmProfile?: 'hero' | 'walkthrough';
   onUploaded: (items: UploadedItem[]) => void;
   label?: string;
   hint?: string;
 }
 
+const IMAGE_TYPES =
+  'image/jpeg,image/png,image/webp,image/avif,image/gif,image/tiff,.jpg,.jpeg,.png,.webp,.avif,.gif,.tif,.tiff';
+
 const ACCEPT_ATTRIBUTE: Record<DropzoneProps['accept'], string> = {
-  image: 'image/jpeg,image/png,image/webp,image/avif,image/gif,image/tiff,.jpg,.jpeg,.png,.webp,.avif,.gif,.tif,.tiff',
+  image: IMAGE_TYPES,
+  'image-or-pdf': `${IMAGE_TYPES},application/pdf,.pdf`,
   video: 'video/mp4,video/quicktime,video/webm,.mp4,.mov,.m4v,.webm',
   document: 'application/pdf,.pdf',
   any: '',
@@ -72,12 +84,18 @@ export function Dropzone({
   label,
   hint,
 }: DropzoneProps) {
-  const { rows, add, retry, cancel, dismiss, clearFinished, busy } = useUploads({
+  const { rows, add, noteFailure, retry, cancel, dismiss, clearFinished, busy } = useUploads({
     destination,
     slug,
     filmProfile,
     onUploaded,
   });
+
+  /* PDFs waiting for their pictures to be chosen, one dialog at a time in the
+     order they were dropped. Only when this dropzone takes pictures: a PDF
+     dropped where a document goes is the document. */
+  const [pendingPdfs, setPendingPdfs] = useState<File[]>([]);
+  const picksPictures = accept === 'image-or-pdf';
 
   /* An upload in flight is unsaved work, and the most expensive kind here.
      A four minute browser transcode of a full quality export is not a change to
@@ -94,10 +112,24 @@ export function Dropzone({
   const take = useCallback(
     (list: FileList | null) => {
       const files = Array.from(list ?? []);
-      if (files.length) void add(files);
+      if (!picksPictures) {
+        if (files.length) void add(files);
+        return;
+      }
+      const pdfs: File[] = [];
+      const rest: File[] = [];
+      for (const file of files) {
+        const verdict = validateUpload({ name: file.name, size: file.size, type: file.type });
+        if (verdict.ok && verdict.kind === 'document') pdfs.push(file);
+        else rest.push(file);
+      }
+      if (rest.length) void add(rest);
+      if (pdfs.length) setPendingPdfs((current) => [...current, ...pdfs]);
     },
-    [add],
+    [add, picksPictures],
   );
+
+  const finishPdf = useCallback(() => setPendingPdfs((current) => current.slice(1)), []);
 
   const encoderAvailable = useSyncExternalStore(
     NOTHING_TO_SUBSCRIBE_TO,
@@ -106,8 +138,27 @@ export function Dropzone({
   );
   const videoUnsupported = (accept === 'video' || accept === 'any') && !encoderAvailable;
 
+  /* Busy while a PDF is open too. Its pictures are not in the queue yet, but
+     closing the tab now throws away a choice half made. */
+  useRegisterUnsaved(`pdf:${instanceId}`, pendingPdfs.length > 0);
+
   return (
     <div className="grid gap-3">
+      {pendingPdfs.length > 0 && (
+        <PdfPicker
+          key={`${pendingPdfs[0].name}-${pendingPdfs[0].size}-${pendingPdfs[0].lastModified}`}
+          file={pendingPdfs[0]}
+          onPicked={(files) => {
+            finishPdf();
+            void add(files);
+          }}
+          onCancel={finishPdf}
+          onError={(message) => {
+            noteFailure(pendingPdfs[0], message);
+            finishPdf();
+          }}
+        />
+      )}
       <div
         /* Focusable, because paste only fires on the element holding focus.
            Clicking the panel used to leave focus on the body, so Cmd+V went
@@ -225,7 +276,7 @@ function UploadProgressRow({
         <span className="min-w-0 flex-1 truncate font-medium text-neutral-800">{row.name}</span>
         <span className="shrink-0 text-xs text-neutral-500">{formatBytes(row.bytes)}</span>
 
-        {failed && (
+        {failed && row.canRetry !== false && (
           <Button type="button" variant="ghost" size="sm" onClick={onRetry}>
             <RotateCcw className="mr-1 h-3 w-3" aria-hidden="true" />
             Try again

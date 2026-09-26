@@ -569,10 +569,10 @@ export function MediaPanel({
         <Dropzone
           destination="project"
           slug={slug}
-          accept="image"
+          accept="image-or-pdf"
           onUploaded={startGroupFromUpload}
           label="Drop renders here to start a new group"
-          hint="Or paste them, or choose them below. A group is a set of pictures that sit together on the page, and each one has its own caption."
+          hint="Or paste them, or choose them below. A PDF works too: you choose which of its pages or pictures to use. A group is a set of pictures that sit together on the page, and each one has its own caption."
         />
 
         <GroupEditor
@@ -740,10 +740,10 @@ export function MediaPanel({
         <Dropzone
           destination="project"
           slug={slug}
-          accept="image"
+          accept="image-or-pdf"
           onUploaded={addDrawings}
           label="Drop plans, sections and elevations here"
-          hint="They go in their own row at the bottom of the project page, one across the page each."
+          hint="Images or a PDF drawing set: from a PDF you choose which pages to use. They go in their own row at the bottom of the project page, one across the page each."
         />
 
         {drawings.length === 0 ? (

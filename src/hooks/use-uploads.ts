@@ -56,6 +56,11 @@ export interface UploadRow {
   label: string;
   error?: string;
   result?: UploadedItem;
+  /**
+   * False for a failure noted from outside the queue, a PDF that could not be
+   * read say. There is no file held for it, so there is nothing to try again.
+   */
+  canRetry?: boolean;
 }
 
 let nextId = 0;
@@ -333,11 +338,35 @@ export function useUploads({ destination, slug, filmProfile = 'walkthrough', onU
     setRows((current) => current.filter((row) => row.id !== id));
   }, []);
 
+  /**
+   * A failure that happened before the queue, shown in the same list.
+   *
+   * The PDF picker reads a file entirely in the browser, and when the file
+   * cannot be read the natural place to say so is the row every other file
+   * gets, not a toast that is gone before it is read.
+   */
+  const noteFailure = useCallback((file: File, error: string) => {
+    const id = `upload-${nextId++}`;
+    setRows((current) => [
+      ...current,
+      {
+        id,
+        name: file.name,
+        bytes: file.size,
+        stage: 'failed' as const,
+        progress: 0,
+        label: 'Refused',
+        error,
+        canRetry: false,
+      },
+    ]);
+  }, []);
+
   const clearFinished = useCallback(() => {
     setRows((current) => current.filter((row) => row.stage !== 'done'));
   }, []);
 
   const busy = rows.some((row) => row.stage !== 'done' && row.stage !== 'failed');
 
-  return { rows, add, retry, cancel, dismiss, clearFinished, busy };
+  return { rows, add, noteFailure, retry, cancel, dismiss, clearFinished, busy };
 }
