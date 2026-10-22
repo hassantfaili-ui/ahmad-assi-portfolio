@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useCallback, useState } from 'react';
 
 import { Dropzone } from '@/components/admin/Dropzone';
+import { FramePicker } from '@/components/admin/FramePicker';
 import { FrenchBox } from '@/components/admin/ProjectFrench';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -112,6 +113,7 @@ export function FilmEditor({ film, savedFilm, errors, onChange }: FilmEditorProp
      saved, which is why they are still allowed to live here. */
   const [confirming, setConfirming] = useState(false);
   const [blocked, setBlocked] = useState(false);
+  const [pickingFrame, setPickingFrame] = useState(false);
 
   const change = useCallback(
     (changes: Partial<EditorFilm>) => {
@@ -249,18 +251,25 @@ export function FilmEditor({ film, savedFilm, errors, onChange }: FilmEditorProp
 
       {hasVideo ? (
         <div className="flex flex-wrap items-start gap-4 rounded-lg border border-neutral-200 bg-white p-3">
-          {film?.posterMedia ? (
-            <Image
-              src={film.posterMedia.key}
-              alt=""
-              width={240}
-              height={135}
-              sizes="240px"
-              className="h-24 w-40 shrink-0 rounded bg-neutral-200 object-cover"
-            />
-          ) : (
-            <p className="text-sm text-neutral-500">No still for this film yet.</p>
-          )}
+          <div className="grid shrink-0 gap-2">
+            {film?.posterMedia ? (
+              <Image
+                src={film.posterMedia.key}
+                alt=""
+                width={240}
+                height={135}
+                sizes="240px"
+                className="h-24 w-40 rounded bg-neutral-200 object-cover"
+              />
+            ) : (
+              <p className="w-40 text-sm text-neutral-500">No still for this film yet.</p>
+            )}
+            {/* Under the still it changes, so what the button does is plain
+                from where it sits. */}
+            <Button type="button" variant="outline" size="sm" onClick={() => setPickingFrame(true)}>
+              Choose a frame
+            </Button>
+          </div>
 
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-neutral-800">Two copies, one for each screen</p>
@@ -281,7 +290,8 @@ export function FilmEditor({ film, savedFilm, errors, onChange }: FilmEditorProp
             </ul>
             <p className="mt-2 text-xs text-neutral-500">
               A visitor on a phone gets the smaller one, a visitor on a large screen gets the other.
-              The still above is what shows before they press play.
+              The still is what shows before they press play. Choose a frame to use a different
+              moment from the film.
             </p>
           </div>
         </div>
@@ -326,6 +336,18 @@ export function FilmEditor({ film, savedFilm, errors, onChange }: FilmEditorProp
           placeholder="Usually empty"
         />
       </Field>
+
+      {hasVideo && (
+        <FramePicker
+          open={pickingFrame}
+          onOpenChange={setPickingFrame}
+          sources={sources}
+          onPicked={(media) => {
+            change({ posterMedia: toEditorMedia(media) });
+            push('New still chosen. It goes on the page when you save.');
+          }}
+        />
+      )}
 
       <ConfirmDialog
         open={confirming}
