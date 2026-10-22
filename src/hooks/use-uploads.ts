@@ -18,7 +18,7 @@ import {
  * The upload queue.
  *
  * One dropped file is one row in the interface, even when it becomes three
- * objects in the bucket. A film produces a 1440p encode, a 720p encode and a
+ * objects in the bucket. A film produces a full size copy, a 720p encode and a
  * poster frame, and Ahmad dropped one thing: showing him three progress bars
  * for it would be an accurate description of the implementation and a confusing
  * description of what he did.

@@ -22,8 +22,10 @@ import type { EditorMedia } from '@/components/admin/MediaPanel';
 /**
  * The walkthrough on a project page.
  *
- * One dropped video becomes three files: a 1440p copy, a 720p copy, and the
- * still that shows before it plays. All of that happens in this browser before
+ * One dropped video becomes three files: a copy at its own resolution, a 720p
+ * copy, and the still that shows before it plays. An H.264 export from D5 or
+ * Lumion is copied across untouched; anything else is re-encoded at its own
+ * size, up to 4K. All of that happens in this browser before
  * anything is sent, which is why there is one progress bar and not three.
  *
  * The YouTube box is the exception, not the normal route. Nothing is requested
@@ -215,7 +217,7 @@ export function FilmEditor({ film, savedFilm, errors, onChange }: FilmEditorProp
         filmProfile="walkthrough"
         onUploaded={takeUpload}
         label={dropLabel}
-        hint="It is made smaller in this browser before anything is sent, so a long film takes a few minutes and then uploads quickly."
+        hint="It keeps its full resolution. A 720p copy for phones is made in this browser first, so a long film takes a few minutes before it uploads."
       />
 
       {blocked && unsavedReplacement && (
