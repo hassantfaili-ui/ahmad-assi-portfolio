@@ -151,3 +151,35 @@ describe('imageLoader, against an origin that cannot transform', () => {
     vi.resetModules();
   });
 })
+
+/**
+ * A picture cut to a shape. The window travels on the src and comes out as a
+ * trim on the master, ahead of the resize, so the crop costs no resolution.
+ */
+describe('imageLoader with a crop on the src', () => {
+  it('trims the master before resizing it, edges in Cloudflare order', () => {
+    expect(imageLoader({ src: 'projects/a/b.jpg?trim=375,0,375,0', width: 1200 })).toBe(
+      'https://media.ahmadassi.ca/cdn-cgi/image/trim=375;0;375;0,width=1200,format=auto,quality=82/projects/a/b.jpg',
+    );
+  });
+
+  it('serves the whole original in development and leaves the window to CSS', async () => {
+    const { imageLoader: load } = await loadWithOrigin('');
+    expect(load({ src: 'projects/a/b.jpg?trim=375,0,375,0', width: 1200 })).toBe(
+      '/api/media-dev/projects/a/b.jpg',
+    );
+  });
+
+  it('never sends the query string on to an origin that cannot transform', async () => {
+    const { imageLoader: load } = await loadWithOrigin('https://pub-abc.r2.dev');
+    expect(load({ src: 'projects/a/b.jpg?trim=375,0,375,0', width: 1200 })).toBe(
+      'https://pub-abc.r2.dev/projects/a/b.jpg',
+    );
+  });
+
+  it('is unchanged for a src with no window on it', () => {
+    expect(imageLoader({ src: 'projects/a/b.jpg', width: 640 })).toBe(
+      'https://media.ahmadassi.ca/cdn-cgi/image/width=640,format=auto,quality=82/projects/a/b.jpg',
+    );
+  });
+});

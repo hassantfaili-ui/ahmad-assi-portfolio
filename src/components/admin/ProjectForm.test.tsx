@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 /* The save is a server action. Mocked so the test can read the payload it was
@@ -113,6 +113,8 @@ const groups: EditorGroup[] = [
            out of the payload exactly as they went in, or the next save writes
            over a translation nobody asked it to touch. */
         french: { alt: 'Une photo de la cour', caption: 'Au crepuscule' },
+        ratio: null,
+        focus: { x: 0.5, y: 0.5 },
         media,
       },
       {
@@ -121,6 +123,8 @@ const groups: EditorGroup[] = [
         alt: 'The stair from the landing',
         caption: '',
         french: { alt: '', caption: '' },
+        ratio: '16:9',
+        focus: { x: 0.25, y: 1 },
         media: second,
       },
     ],
@@ -151,6 +155,9 @@ interface SavedPayload {
       mediaId: string;
       alt: string;
       caption?: string | null;
+      ratio?: string | null;
+      focusX?: number;
+      focusY?: number;
       french: { alt: string; caption: string };
     }[];
   }[];
@@ -188,6 +195,29 @@ describe('the one save button', () => {
 
     await waitFor(() => expect(saveWholeProject).toHaveBeenCalledTimes(1));
     expect(sent().groups[0].images[0].caption).toBe('The new caption');
+  });
+
+  /* The shape is the third thing a picture carries besides its words, and it
+     has to make the same trip as the caption did not: pressed here, sent in the
+     payload, with the focus beside it. */
+  it('sends the shape pressed on a picture and where its window sits', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
+
+    const shapes = screen.getByRole('radiogroup', { name: 'Shape of A picture of the courtyard' });
+    await user.click(within(shapes).getByRole('radio', { name: '1:1' }));
+
+    await user.click(screen.getByRole('button', { name: 'Save everything' }));
+
+    await waitFor(() => expect(saveWholeProject).toHaveBeenCalledTimes(1));
+    const [first, second] = sent().groups[0].images;
+    expect(first.ratio).toBe('1:1');
+    expect(first.focusX).toBe(0.5);
+    expect(first.focusY).toBe(0.5);
+    /* The other picture's shape and focus go back exactly as they came in. */
+    expect(second.ratio).toBe('16:9');
+    expect(second.focusX).toBe(0.25);
+    expect(second.focusY).toBe(1);
   });
 
   it('sends the words on the left in the same press as the pictures on the right', async () => {

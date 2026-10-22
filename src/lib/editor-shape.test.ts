@@ -38,8 +38,8 @@ describe('filling the editing screen from the database', () => {
           layout: 'pair',
           caption: 'the old group caption',
           images: [
-            { id: 'i1', mediaId: 'm1', alt: 'The courtyard', caption: 'Phase two, from the street', media: media('m1') },
-            { id: 'i2', mediaId: 'm2', alt: 'The lookout', caption: null, media: media('m2') },
+            { id: 'i1', mediaId: 'm1', alt: 'The courtyard', caption: 'Phase two, from the street', ratio: null, focusX: 0.5, focusY: 0.5, media: media('m1') },
+            { id: 'i2', mediaId: 'm2', alt: 'The lookout', caption: null, ratio: null, focusX: 0.5, focusY: 0.5, media: media('m2') },
           ],
         },
       ],
@@ -60,8 +60,8 @@ describe('filling the editing screen from the database', () => {
           layout: 'full',
           caption: null,
           images: [
-            { id: 'i1', mediaId: 'm1', alt: 'First', caption: 'One', media: media('m1') },
-            { id: 'i2', mediaId: 'm2', alt: 'Second', caption: 'Two', media: media('m2') },
+            { id: 'i1', mediaId: 'm1', alt: 'First', caption: 'One', ratio: null, focusX: 0.5, focusY: 0.5, media: media('m1') },
+            { id: 'i2', mediaId: 'm2', alt: 'Second', caption: 'Two', ratio: null, focusX: 0.5, focusY: 0.5, media: media('m2') },
           ],
         },
       ],
@@ -84,7 +84,7 @@ describe('filling the editing screen from the database', () => {
           id: 'g1',
           layout: 'pair',
           caption: 'c',
-          images: [{ id: 'i1', mediaId: 'm1', alt: 'a', caption: 'cap', media: media('m1') }],
+          images: [{ id: 'i1', mediaId: 'm1', alt: 'a', caption: 'cap', ratio: null, focusX: 0.5, focusY: 0.5, media: media('m1') }],
         },
       ],
       untranslated,
@@ -93,10 +93,12 @@ describe('filling the editing screen from the database', () => {
     expect(Object.keys(group.images[0]).sort()).toEqual([
       'alt',
       'caption',
+      'focus',
       'french',
       'id',
       'media',
       'mediaId',
+      'ratio',
     ]);
     for (const [key, value] of Object.entries(group.images[0])) {
       expect(value, `${key} arrived empty from the database`).toBeDefined();
@@ -131,8 +133,8 @@ describe('filling the French boxes from the Translation table', () => {
       layout: 'pair' as const,
       caption: null,
       images: [
-        { id: 'i1', mediaId: 'm1', alt: 'The courtyard', caption: 'At dusk', media: media('m1') },
-        { id: 'i2', mediaId: 'm2', alt: 'The stair', caption: null, media: media('m2') },
+        { id: 'i1', mediaId: 'm1', alt: 'The courtyard', caption: 'At dusk', ratio: null, focusX: 0.5, focusY: 0.5, media: media('m1') },
+        { id: 'i2', mediaId: 'm2', alt: 'The stair', caption: null, ratio: null, focusX: 0.5, focusY: 0.5, media: media('m2') },
       ],
     },
   ];
@@ -201,5 +203,50 @@ describe('filling the French boxes from the Translation table', () => {
       'credit',
       'leadImageAlt',
     ]);
+  });
+});
+
+/**
+ * The shape a picture is cut to goes the same way: read here, sent back by the
+ * screen, written by the save. A shape the column holds that crop.ts does not
+ * know lands as "its own shape", never as a pressed button that is not there.
+ */
+describe('the shape and the focus of a picture', () => {
+  it('carries the stored shape and where the window sits', () => {
+    const [group] = toEditorGroups(
+      [
+        {
+          id: 'g1',
+          layout: 'pair',
+          caption: null,
+          images: [
+            { id: 'i1', mediaId: 'm1', alt: 'The courtyard', caption: null, ratio: '16:9', focusX: 0.2, focusY: 1, media: media('m1') },
+          ],
+        },
+      ],
+      untranslated,
+    );
+    expect(group.images[0].ratio).toBe('16:9');
+    expect(group.images[0].focus).toEqual({ x: 0.2, y: 1 });
+  });
+
+  it('reads an unknown shape as none and a stray focus as the edge', () => {
+    const [group] = toEditorGroups(
+      [
+        {
+          id: 'g1',
+          layout: 'pair',
+          caption: null,
+          images: [
+            { id: 'i1', mediaId: 'm1', alt: 'The courtyard', caption: null, ratio: '5:4', focusX: 3, focusY: -1, media: media('m1') },
+            { id: 'i2', mediaId: 'm2', alt: 'The lookout', caption: null, ratio: null, focusX: 0.5, focusY: 0.5, media: media('m2') },
+          ],
+        },
+      ],
+      untranslated,
+    );
+    expect(group.images[0].ratio).toBeNull();
+    expect(group.images[0].focus).toEqual({ x: 1, y: 0 });
+    expect(group.images[1].ratio).toBeNull();
   });
 });

@@ -7,6 +7,8 @@
  * of it, is then one variable rather than a migration over every row.
  */
 
+import { parseCroppedSrc } from './crop';
+
 /**
  * Where published media is served from.
  *
@@ -92,9 +94,13 @@ export interface ImageLoaderArgs {
  * distinguishable from the master at matched display size.
  */
 export function imageLoader({ src, width, quality }: ImageLoaderArgs): string {
-  const key = src.replace(/^\/+/, '');
+  /* A picture cut to a shape carries its window on the src, see crop.ts. The
+     window comes off here whatever origin is serving: a key with a query string
+     on it is not an object anybody has. */
+  const { key, trim } = parseCroppedSrc(src.replace(/^\/+/, ''));
 
-  /* The dev server serves the original off disk. */
+  /* The dev server serves the original off disk. The page shows the window
+     with CSS instead, so the picture still reads as cut. */
   if (LOCAL_MEDIA) return `/api/media-dev/${key}`;
 
   /* An origin that cannot resize serves the original too. Full size rather than
@@ -102,6 +108,11 @@ export function imageLoader({ src, width, quality }: ImageLoaderArgs): string {
      only happens on a preview origin. */
   if (!ORIGIN_CAN_TRANSFORM) return `${MEDIA_ORIGIN}/${key}`;
 
-  const params = `width=${width},format=auto,quality=${quality ?? 82}`;
+  /* trim takes the edges off the master, in the master's own pixels, before
+     the resize. That is what makes a crop cost no resolution: the window is
+     cut from the full size file and only then scaled to the width the layout
+     asked for, with the default scale-down fit, which never enlarges. */
+  const cut = trim ? `trim=${trim.top};${trim.right};${trim.bottom};${trim.left},` : '';
+  const params = `${cut}width=${width},format=auto,quality=${quality ?? 82}`;
   return `${MEDIA_ORIGIN}/cdn-cgi/image/${params}/${key}`;
 }

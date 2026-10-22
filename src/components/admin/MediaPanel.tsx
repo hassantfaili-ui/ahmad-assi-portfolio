@@ -13,6 +13,7 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import type { UploadedImage, UploadedItem } from '@/hooks/use-uploads';
 import type { DrawingFrench, ImageFrench } from '@/lib/editor-shape';
+import { CENTRE, type Focus, type Ratio } from '@/lib/crop';
 import type { FieldErrors } from '@/lib/validation';
 
 /**
@@ -56,6 +57,13 @@ export interface EditorImage {
    * onto each of their pictures, so nothing was lost in the move.
    */
   caption?: string;
+  /**
+   * The shape this picture is cut to on the page, or null for its own shape,
+   * and which part of it the window keeps. The file is never changed: the
+   * window is cut from the full size master as it is served. See crop.ts.
+   */
+  ratio: Ratio | null;
+  focus: Focus;
   /**
    * The same two things in French, for the /fr page.
    *
@@ -117,6 +125,8 @@ function imagesFromUpload(items: UploadedItem[]): EditorImage[] {
       mediaId: item.media.id,
       alt: '',
       caption: '',
+      ratio: null,
+      focus: CENTRE,
       french: { alt: '', caption: '' },
       media: {
         id: item.media.id,
@@ -393,6 +403,10 @@ export function MediaPanel({
         mediaId: moving.mediaId,
         alt: moving.alt,
         caption: moving.caption ?? '',
+        /* A drawing is always shown whole, so a picture coming back from the
+           drawings starts whole too. */
+        ratio: null,
+        focus: CENTRE,
         french: { alt: moving.french.alt, caption: moving.frenchCaption ?? '' },
         media: moving.media,
       };
@@ -491,6 +505,8 @@ export function MediaPanel({
         mediaId: outgoing.id,
         alt: leadImageAlt,
         caption: '',
+        ratio: null,
+        focus: CENTRE,
         french: { alt: frenchLeadImageAlt, caption: '' },
         media: outgoing,
       };
@@ -542,6 +558,8 @@ export function MediaPanel({
       mediaId: strayCover.media.id,
       alt: strayCover.alt,
       caption: '',
+      ratio: null,
+      focus: CENTRE,
       french: { alt: strayCover.frenchAlt, caption: '' },
       media: strayCover.media,
     };

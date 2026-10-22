@@ -1,4 +1,5 @@
 import type { EditorDrawing, EditorGroup } from '@/components/admin/MediaPanel';
+import { clampFocus, toRatio } from '@/lib/crop';
 import type { ModelTranslations, RowTranslations } from '@/lib/translate';
 
 /**
@@ -33,6 +34,9 @@ type ImageRow = {
   mediaId: string;
   alt: string;
   caption: string | null;
+  ratio: string | null;
+  focusX: number;
+  focusY: number;
   media: MediaRow;
 };
 
@@ -142,6 +146,11 @@ export function toEditorGroups(groups: GroupRow[], french: ModelTranslations): E
       mediaId: image.mediaId,
       alt: image.alt,
       caption: image.caption ?? '',
+      /* Read through crop.ts rather than trusted: the column is a string and
+         an unknown shape must land as "its own shape", not as a button the
+         control has no way to show pressed. */
+      ratio: toRatio(image.ratio),
+      focus: clampFocus({ x: image.focusX, y: image.focusY }),
       french: toEditorFrench(IMAGE_FRENCH_FIELDS, french.get(image.id)),
       media: toMedia(image.media),
     })),

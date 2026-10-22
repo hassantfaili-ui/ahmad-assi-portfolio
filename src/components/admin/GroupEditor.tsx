@@ -1,11 +1,12 @@
 'use client';
 
-import Image from 'next/image';
 import { useCallback, useState } from 'react';
 import { ImagePlus, Plus } from 'lucide-react';
 
+import { CropPreview } from '@/components/admin/CropPreview';
 import { Dropzone } from '@/components/admin/Dropzone';
 import { FrenchBox } from '@/components/admin/ProjectFrench';
+import { RatioPicker } from '@/components/admin/RatioPicker';
 import { SortableList } from '@/components/admin/SortableList';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -324,14 +325,31 @@ export function GroupEditor({
                   itemClassName="bg-neutral-50"
                   renderItem={(image, imageIndex) => (
                     <div className="flex flex-wrap items-start gap-3">
-                      <Image
-                        src={image.media.key}
-                        alt=""
-                        width={112}
-                        height={84}
-                        sizes="112px"
-                        className="h-16 w-24 shrink-0 rounded bg-neutral-200 object-cover"
-                      />
+                      {/* The picture as it will be cut, with the shape under
+                          it. Per picture, not per group: a group is only the
+                          order they sit in, and two renders side by side can
+                          want two different windows kept even when they share
+                          a shape. */}
+                      <div className="grid shrink-0 gap-2" onDragStart={cancelDrag}>
+                        <CropPreview
+                          media={image.media}
+                          ratio={image.ratio}
+                          focus={image.focus}
+                          onFocusChange={(focus) => updateImage(group.id, image.id, { focus })}
+                          describedAs={image.alt.trim() || 'this picture'}
+                        />
+                        <RatioPicker
+                          label={`Shape of ${image.alt.trim() || 'this picture'}`}
+                          value={image.ratio}
+                          onChange={(ratio) => updateImage(group.id, image.id, { ratio })}
+                        />
+                        {image.ratio && (
+                          <p className="max-w-[16rem] text-xs text-neutral-500">
+                            Cut from the full size file, so nothing is lost. Click the picture
+                            to choose which part stays.
+                          </p>
+                        )}
+                      </div>
 
                       {/* A minimum rather than nothing, so the controls beside
                           it wrap onto their own line instead of squeezing the

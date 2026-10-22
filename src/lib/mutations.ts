@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 
 import { getIdentity } from '@/lib/access';
+import { clampFocus, toRatio } from '@/lib/crop';
 import { PATHS, inBothLanguages, profilePaths, projectPaths } from '@/lib/cache-tags';
 import { CONTACT_DEFAULTS } from '@/lib/contact-defaults';
 import { pictureKey } from '@/lib/translate';
@@ -234,7 +235,16 @@ export interface GroupInput {
   layout: 'pair' | 'full' | 'triptych';
   /** @deprecated A caption belongs to a picture. Kept so an older payload still parses. */
   caption?: string | null;
-  images: { mediaId: string; alt: string; caption?: string | null; french?: FrenchFields }[];
+  images: {
+    mediaId: string;
+    alt: string;
+    caption?: string | null;
+    /** A shape from src/lib/crop.ts, or null for the picture's own. */
+    ratio?: string | null;
+    focusX?: number;
+    focusY?: number;
+    french?: FrenchFields;
+  }[];
 }
 
 export interface DrawingInput {
@@ -522,12 +532,21 @@ export async function saveWholeProject(
           caption: group.caption?.trim() || null,
           order: groupIndex,
           images: {
-            create: group.images.map((image, imageIndex) => ({
-              mediaId: image.mediaId,
-              alt: image.alt.trim(),
-              caption: image.caption?.trim() || null,
-              order: imageIndex,
-            })),
+            create: group.images.map((image, imageIndex) => {
+              /* An unknown shape is stored as none rather than refused: it
+                 can only come from a stale screen, and a save that fails over
+                 the shape of one picture loses the captions on all of them. */
+              const focus = clampFocus({ x: image.focusX, y: image.focusY });
+              return {
+                mediaId: image.mediaId,
+                alt: image.alt.trim(),
+                caption: image.caption?.trim() || null,
+                ratio: toRatio(image.ratio),
+                focusX: focus.x,
+                focusY: focus.y,
+                order: imageIndex,
+              };
+            }),
           },
         },
       });

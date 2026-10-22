@@ -150,7 +150,16 @@ export type ProjectDetail = ProjectSummary & {
     id: string;
     layout: 'pair' | 'full' | 'triptych';
     caption: string | null;
-    images: { id: string; alt: string; caption: string | null; media: MediaRef }[];
+    images: {
+      id: string;
+      alt: string;
+      caption: string | null;
+      /** The shape the picture is cut to, or null for its own. See src/lib/crop.ts. */
+      ratio: string | null;
+      focusX: number;
+      focusY: number;
+      media: MediaRef;
+    }[];
   }[];
   drawings: { id: string; alt: string; drawingType: string; media: MediaRef }[];
 };
@@ -382,7 +391,15 @@ export async function getProjectBySlug(
           layout: true,
           caption: true,
           images: {
-            select: { id: true, alt: true, caption: true, media: { select: mediaSelect } },
+            select: {
+              id: true,
+              alt: true,
+              caption: true,
+              ratio: true,
+              focusX: true,
+              focusY: true,
+              media: { select: mediaSelect },
+            },
             orderBy: { order: 'asc' },
           },
         },

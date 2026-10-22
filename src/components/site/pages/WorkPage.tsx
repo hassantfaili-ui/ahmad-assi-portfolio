@@ -9,6 +9,7 @@ import Reveal from '@/components/site/Reveal';
 import { pageWords } from '@/components/site/pages/copy';
 import { alternatesFor, openGraphFor } from '@/components/site/pages/metadata';
 import { coverCaption, galleryWithoutCover } from '@/lib/cover-plate';
+import { clampFocus, cropFrame, cropRect, croppedSrc, objectPosition, toRatio } from '@/lib/crop';
 import { CATEGORY_WORDS, STATUS_WORDS, words } from '@/lib/dictionary';
 import { localePath, type Locale } from '@/lib/i18n';
 import { renderMarkdown } from '@/lib/markdown';
@@ -205,18 +206,39 @@ export default async function WorkPage({ locale, slug }: { locale: Locale; slug:
           a run of padding with nothing in it. */}
       {gallery.length > 0 && (
         <div className="stagger">
-          {gallery.map((image) => (
-            <Reveal as="figure" key={image.id}>
-              <Image
-                src={image.media.key}
-                alt={image.alt}
-                width={image.media.width ?? 1600}
-                height={image.media.height ?? 1067}
-                sizes={STAGGER_SIZES}
-              />
-              {image.caption && <figcaption>{image.caption}</figcaption>}
-            </Reveal>
-          ))}
+          {gallery.map((image) => {
+            /* A picture cut to a shape is cut twice, to the same window. The
+               loader asks Cloudflare to trim the full size master before the
+               resize, which is what makes the crop cost no resolution; and the
+               box here has the window's shape with the picture fitted to cover
+               it, which shows the same window off the development server and
+               any origin that hands back the whole file. */
+            const ratio = toRatio(image.ratio);
+            const focus = clampFocus({ x: image.focusX, y: image.focusY });
+            const frame = cropFrame(image.media, ratio);
+            const rect = cropRect(image.media, ratio, focus);
+            return (
+              <Reveal as="figure" key={image.id}>
+                <Image
+                  src={croppedSrc(image.media.key, rect)}
+                  alt={image.alt}
+                  width={frame.width}
+                  height={frame.height}
+                  sizes={STAGGER_SIZES}
+                  style={
+                    rect
+                      ? {
+                          aspectRatio: `${frame.width} / ${frame.height}`,
+                          objectFit: 'cover',
+                          objectPosition: objectPosition(focus),
+                        }
+                      : undefined
+                  }
+                />
+                {image.caption && <figcaption>{image.caption}</figcaption>}
+              </Reveal>
+            );
+          })}
         </div>
       )}
 

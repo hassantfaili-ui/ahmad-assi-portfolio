@@ -180,6 +180,17 @@ model ProjectImage {
   /// could only be true of one of them.
   caption String?
 
+  /// The shape this picture is cut to on the page, '16:9' say, or null for its
+  /// own shape. One of the values in src/lib/crop.ts; anything else reads as
+  /// null. The file is never touched: the window is cut from the full size
+  /// master as it is served, so the crop costs no resolution.
+  ratio String?
+
+  /// Which part of the picture the window keeps, as fractions across and down.
+  /// 0.5 and 0.5 is the middle, 0 across keeps the left edge, 1 the right.
+  focusX Float @default(0.5)
+  focusY Float @default(0.5)
+
   order Int    @default(0)
 
   @@index([groupId, order])
