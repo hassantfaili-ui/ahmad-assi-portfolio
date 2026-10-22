@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import {
+  audioOptions,
   canCopy,
   canTranscode,
   planRungs,
@@ -169,5 +170,17 @@ describe('walkthroughBitrate', () => {
 
   it('never drops below 12 Mbps for a smaller frame', () => {
     expect(walkthroughBitrate(1920, 1080)).toBe(12_000_000);
+  });
+});
+
+describe('audioOptions', () => {
+  it('always names AAC, so a sound that cannot be copied is never made into Opus', () => {
+    expect(audioOptions(true, true)).toEqual({ codec: 'aac' });
+    expect(audioOptions(true, false)).toEqual({ codec: 'aac', bitrate: 128_000 });
+  });
+
+  it('drops the sound of the hero, which plays muted', () => {
+    expect(audioOptions(false, true)).toEqual({ discard: true });
+    expect(audioOptions(false, false)).toEqual({ discard: true });
   });
 });

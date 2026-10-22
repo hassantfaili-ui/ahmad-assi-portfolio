@@ -212,6 +212,30 @@ async function canvasToBlob(canvas: HTMLCanvasElement | OffscreenCanvas): Promis
   });
 }
 
+/**
+ * What to do with the sound of one encode.
+ *
+ * The codec is always named. Left out, Mediabunny copies the sound when it can
+ * and otherwise picks the container's first choice, which for MP4 is Opus, and
+ * Safari before 17 plays a film with Opus sound as silence or not at all. It
+ * cannot copy far more often than it looks: AAC out of nearly every encoder
+ * starts a few milliseconds before zero, to prime the decoder, and that alone
+ * rules the copy out. The 100MB test upload on 2026-10-22 came back with Opus
+ * sound for exactly that reason.
+ *
+ * A copy rung names no bitrate, so AAC that can be moved across still is, and
+ * AAC that cannot is encoded at Mediabunny's high quality, which keeps the
+ * full size copy as close to the master as it can be. The 720p asks for 128
+ * kbps, like every encode before it.
+ */
+export function audioOptions(
+  keepAudio: boolean,
+  copy: boolean,
+): { discard: true } | { codec: 'aac'; bitrate?: number } {
+  if (!keepAudio) return { discard: true };
+  return copy ? { codec: 'aac' } : { codec: 'aac', bitrate: 128_000 };
+}
+
 export async function transcodeVideo(
   file: File,
   options: {
@@ -248,7 +272,6 @@ export async function transcodeVideo(
     codecString: await videoTrack.getCodecParameterString(),
     bitrate: durationSeconds > 0 ? (file.size * 8) / durationSeconds : Number.NaN,
   });
-  const audioTrack = keepAudio ? await input.getPrimaryAudioTrack() : null;
 
   /* The poster is cheap next to the encodes, so the encodes get almost all of
      the progress bar. Splitting it evenly would make the bar sit still for
@@ -263,8 +286,7 @@ export async function transcodeVideo(
 
     /* A copy rung gives no video options at all, which is what tells
        Mediabunny to move the encoded frames across rather than decode and
-       encode them again. AAC sound is moved across the same way; anything
-       else is made into AAC, which every browser plays. */
+       encode them again. */
     const copy = rung.bitrate === undefined;
     const conversion = await Conversion.init({
       input,
@@ -280,11 +302,7 @@ export async function transcodeVideo(
                walkthrough is unusable without them, and the size cost is small. */
             keyFrameInterval: 2,
           },
-      audio: !keepAudio
-        ? { discard: true }
-        : copy && audioTrack?.codec === 'aac'
-          ? {}
-          : { codec: 'aac', bitrate: 128_000 },
+      audio: audioOptions(keepAudio, copy),
     });
 
     const base = index * encodeShare;
