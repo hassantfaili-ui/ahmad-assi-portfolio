@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
-import { completeUpload, putToR2, requestPresigned, type MediaRow } from '@/lib/upload-client';
+import { completeUpload, requestPresigned, sendUpload, type MediaRow } from '@/lib/upload-client';
 import { mediaUrl } from '@/lib/media-url';
 import { cn } from '@/lib/utils';
 
@@ -239,8 +239,8 @@ function Picker({ sources, saving, setSaving, onPicked, onClose }: PickerProps) 
       }
 
       const [upload] = uploads;
-      await putToR2(upload.url, blob, upload.contentType, () => {});
-      const media = await completeUpload({ key: upload.key, name, width, height });
+      const multipart = await sendUpload(upload, blob, () => {});
+      const media = await completeUpload({ key: upload.key, name, width, height, multipart });
 
       onPicked(media);
       onClose();

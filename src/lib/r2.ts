@@ -1,11 +1,15 @@
 import { randomUUID } from 'node:crypto';
 
 import {
+  CompleteMultipartUploadCommand,
+  CreateMultipartUploadCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  ListPartsCommand,
   PutObjectCommand,
   S3Client,
+  UploadPartCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
@@ -280,4 +284,120 @@ export async function deleteObject(key: string): Promise<void> {
 
 export async function objectExists(key: string): Promise<boolean> {
   return (await headObject(key)) !== null;
+}
+
+/**
+ * Above this a file is sent in parts rather than in one PUT.
+ *
+ * One PUT is one connection held open for the whole file, and a connection that
+ * drops part way loses all of it. On 2026-10-22 half the 40 to 100MB PUTs from
+ * Hassan's machine were cut off after 27 to 42MB, and a 100MB film failed four
+ * whole attempts in a row. Sent as 8MB parts, the same files went up first
+ * time, because a drop costs one part and only that part is sent again.
+ */
+export const MULTIPART_THRESHOLD_BYTES = 16 * 1024 * 1024;
+
+/** R2 wants every part but the last at least 5MiB and all of them the same size. */
+export const PART_SIZE_BYTES = 8 * 1024 * 1024;
+
+/** How many parts a file of this size is cut into. Never fewer than one. */
+export function partCount(bytes: number): number {
+  return Math.max(1, Math.ceil(bytes / PART_SIZE_BYTES));
+}
+
+/**
+ * Open a multipart upload and sign a PUT for each of its parts.
+ *
+ * The content type is fixed here, at the start, because the parts carry none:
+ * it is the one place the type can be bound to the object. An upload that is
+ * opened and never finished is not an object and is not served; R2 clears it
+ * away on its own after seven days.
+ */
+export async function startMultipartUpload(args: {
+  key: string;
+  contentType: string;
+  bytes: number;
+  expiresIn?: number;
+}): Promise<{ uploadId: string; partSize: number; urls: string[] }> {
+  const env = getR2Env();
+  const s3 = client();
+
+  const { UploadId } = await s3.send(
+    new CreateMultipartUploadCommand({
+      Bucket: env.bucket,
+      Key: args.key,
+      ContentType: args.contentType || 'application/octet-stream',
+    }),
+  );
+  if (!UploadId) throw new Error('R2 did not open a multipart upload.');
+
+  const urls = await Promise.all(
+    Array.from({ length: partCount(args.bytes) }, (_, index) =>
+      getSignedUrl(
+        s3,
+        new UploadPartCommand({
+          Bucket: env.bucket,
+          Key: args.key,
+          UploadId,
+          PartNumber: index + 1,
+        }),
+        { expiresIn: args.expiresIn ?? DEFAULT_EXPIRY_SECONDS },
+      ),
+    ),
+  );
+
+  return { uploadId: UploadId, partSize: PART_SIZE_BYTES, urls };
+}
+
+/**
+ * Join the parts of a multipart upload into the object.
+ *
+ * The browser does not send the parts' ETags, because reading a response
+ * header across origins needs the bucket's CORS rules to expose it. The bucket
+ * already has them, from ListParts. What it does need is the count it sent, so
+ * that a missing part is refused rather than joined into a shorter film with a
+ * hole where the part should be.
+ *
+ * Returns false when the parts are not all there, which the caller reports as
+ * an upload that did not finish.
+ */
+export async function finishMultipartUpload(args: {
+  key: string;
+  uploadId: string;
+  parts: number;
+}): Promise<boolean> {
+  const env = getR2Env();
+  const s3 = client();
+
+  const listed: { PartNumber: number; ETag: string }[] = [];
+  let marker: string | undefined;
+  do {
+    const page = await s3.send(
+      new ListPartsCommand({
+        Bucket: env.bucket,
+        Key: args.key,
+        UploadId: args.uploadId,
+        PartNumberMarker: marker,
+      }),
+    );
+    for (const part of page.Parts ?? []) {
+      if (part.PartNumber && part.ETag) listed.push({ PartNumber: part.PartNumber, ETag: part.ETag });
+    }
+    marker = page.IsTruncated ? page.NextPartNumberMarker : undefined;
+  } while (marker);
+
+  listed.sort((a, b) => a.PartNumber - b.PartNumber);
+  const complete =
+    listed.length === args.parts && listed.every((part, index) => part.PartNumber === index + 1);
+  if (!complete) return false;
+
+  await s3.send(
+    new CompleteMultipartUploadCommand({
+      Bucket: env.bucket,
+      Key: args.key,
+      UploadId: args.uploadId,
+      MultipartUpload: { Parts: listed },
+    }),
+  );
+  return true;
 }

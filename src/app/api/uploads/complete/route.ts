@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { requireIdentityOr401 } from '@/lib/api-auth';
 import { db } from '@/lib/db';
-import { deleteObject, headObject, keyExpectation, sizeVerdict } from '@/lib/r2';
+import { deleteObject, finishMultipartUpload, headObject, keyExpectation, sizeVerdict } from '@/lib/r2';
 import { formatBytes, validateUpload, type MediaKind } from '@/lib/upload-policy';
 
 /**
@@ -27,7 +27,12 @@ interface CompleteRequest {
   width?: number;
   height?: number;
   durationSeconds?: number;
+  /** Sent for a file that went up in parts, which are joined here first. */
+  multipart?: { uploadId?: string; parts?: number };
 }
+
+const NOT_FINISHED =
+  'That file did not finish uploading. Nothing was saved, so it is safe to drop it again.';
 
 function positiveInt(value: unknown): number | null {
   const n = Number(value);
@@ -52,15 +57,24 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   const originalName = typeof body.name === 'string' && body.name.trim() ? body.name.trim() : key.split('/').pop() || key;
 
+  /* A file sent in parts is not an object until its parts are joined, so the
+     HEAD below would find nothing. Join them first; every check after that is
+     made against the joined object exactly as it is for a single PUT. A part
+     that never arrived, or an upload id R2 does not know, is an upload that did
+     not finish. */
+  if (body.multipart) {
+    const uploadId = typeof body.multipart.uploadId === 'string' ? body.multipart.uploadId : '';
+    const parts = positiveInt(body.multipart.parts);
+    const joined =
+      uploadId && parts
+        ? await finishMultipartUpload({ key, uploadId, parts }).catch(() => false)
+        : false;
+    if (!joined) return NextResponse.json({ error: NOT_FINISHED }, { status: 409 });
+  }
+
   const head = await headObject(key);
   if (!head) {
-    return NextResponse.json(
-      {
-        error:
-          'That file did not finish uploading. Nothing was saved, so it is safe to drop it again.',
-      },
-      { status: 409 },
-    );
+    return NextResponse.json({ error: NOT_FINISHED }, { status: 409 });
   }
 
   /* What the key was signed for. The extension in the key decided the content
