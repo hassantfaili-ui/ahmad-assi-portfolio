@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 
 import { Dropzone } from '@/components/admin/Dropzone';
+import { FramePicker, type FramePickerProps } from '@/components/admin/FramePicker';
 import { FrenchBox } from '@/components/admin/ProjectFrench';
 import { GroupEditor } from '@/components/admin/GroupEditor';
 import { SortableList } from '@/components/admin/SortableList';
@@ -238,6 +239,8 @@ export interface MediaPanelProps {
   leadImageAlt: string;
   leadImage: EditorMedia | null;
   onLeadImageChange: (mediaId: string | null) => void;
+  onLeadImageMediaChange: (media: EditorMedia) => void;
+  filmSources: FramePickerProps['sources'];
   onLeadImageAltChange: (alt: string) => void;
   /** The cover's description in French. Held in ProjectForm with the rest. */
   frenchLeadImageAlt: string;
@@ -255,11 +258,14 @@ export function MediaPanel({
   leadImageAlt,
   leadImage,
   onLeadImageChange,
+  onLeadImageMediaChange,
+  filmSources,
   onLeadImageAltChange,
   frenchLeadImageAlt,
   onFrenchLeadImageAltChange,
 }: MediaPanelProps) {
   const [strayCover, setStrayCover] = useState<StrayCover | null>(null);
+  const [pickingCoverFrame, setPickingCoverFrame] = useState(false);
 
   /* Brought to him rather than left to be found.
      The notice sits at the top of the cover section and the grid of pictures
@@ -612,7 +618,27 @@ export function MediaPanel({
           <span className="text-sm text-neutral-500">
             This is the picture that shows on the home page.
           </span>
+          {filmSources.length > 0 && (
+            <Button type="button" variant="outline" size="sm" onClick={() => setPickingCoverFrame(true)}>
+              Choose frame as cover
+            </Button>
+          )}
         </div>
+
+        {filmSources.length > 0 && (
+          <FramePicker
+            open={pickingCoverFrame}
+            onOpenChange={setPickingCoverFrame}
+            sources={filmSources}
+            purpose="project-cover"
+            onPicked={(media) => {
+              chooseCover(media.id);
+              onLeadImageMediaChange(media);
+              onLeadImageAltChange('');
+              onFrenchLeadImageAltChange('');
+            }}
+          />
+        )}
 
         {strayCover && (
           <div

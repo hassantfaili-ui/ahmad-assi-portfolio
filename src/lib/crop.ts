@@ -17,7 +17,7 @@
  */
 
 /** The shapes on offer, widest first, as the control shows them. */
-export const RATIOS = ['21:9', '16:9', '4:3', '1:1', '3:4', '9:16'] as const;
+export const RATIOS = ['21:9', '16:9', '3:2', '4:3', '1:1', '3:4', '9:16'] as const;
 
 export type Ratio = (typeof RATIOS)[number];
 

@@ -6,7 +6,7 @@ import { RATIOS, ratioValue, type Ratio } from '@/lib/crop';
 import { cn } from '@/lib/utils';
 
 /**
- * The shape a picture is cut to: its own, or one of six.
+ * The shape a picture is cut to: its own, or one of the preset ratios.
  *
  * A row of small frames rather than a drop down, because the choice is a
  * visual one and a word like 21:9 means less than the shape it names. The

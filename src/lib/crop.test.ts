@@ -19,12 +19,14 @@ const portrait = { width: 3000, height: 4000 };
 describe('ratios', () => {
   it('reads a shape as width over height', () => {
     expect(ratioValue('16:9')).toBeCloseTo(16 / 9);
+    expect(ratioValue('3:2')).toBe(1.5);
     expect(ratioValue('1:1')).toBe(1);
     expect(ratioValue('9:16')).toBeCloseTo(9 / 16);
   });
 
   it('knows its own shapes and nothing else', () => {
     expect(isRatio('16:9')).toBe(true);
+    expect(toRatio('3:2')).toBe('3:2');
     expect(isRatio('16x9')).toBe(false);
     expect(isRatio(null)).toBe(false);
     expect(isRatio(1.78)).toBe(false);
@@ -34,6 +36,12 @@ describe('ratios', () => {
 });
 
 describe('cropFrame', () => {
+  it('keeps a 3:2 master whole and crops other shapes at full resolution', () => {
+    expect(cropRect(landscape, '3:2', CENTRE)).toBeNull();
+    expect(cropFrame(portrait, '3:2')).toEqual({ width: 3000, height: 2000 });
+    expect(cropFrame({ width: 6000, height: 3000 }, '3:2')).toEqual({ width: 4500, height: 3000 });
+  });
+
   it('keeps the full height of a picture wider than the shape', () => {
     expect(cropFrame(landscape, '1:1')).toEqual({ width: 4800, height: 4800 });
   });

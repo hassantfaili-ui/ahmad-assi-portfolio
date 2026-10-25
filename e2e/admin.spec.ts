@@ -107,6 +107,22 @@ async function deleteProject(page: Page, title: string) {
   await expect(page.getByRole('link', { name: title })).toHaveCount(0, { timeout: 10_000 });
 }
 
+test('3:2 and choosing a walkthrough frame as the main cover are available in the project editor', async ({ page }) => {
+  await page.goto('/admin');
+  await page.getByRole('link', { name: 'Lincoln Beach Center', exact: true }).click();
+
+  const shape = page.getByRole('radiogroup').first().getByRole('radio', { name: '3:2', exact: true });
+  await shape.click();
+  await expect(shape).toHaveAttribute('aria-checked', 'true');
+
+  await page.getByRole('button', { name: 'Choose frame as cover', exact: true }).click();
+  const picker = page.getByRole('dialog', { name: 'Choose frame as cover' });
+  await expect(picker).toBeVisible();
+  await expect(picker).toContainText('project’s main cover');
+  await picker.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(picker).not.toBeVisible();
+});
+
 test.describe('the projects list', () => {
   test('shows every project, published or not', async ({ page }) => {
     await page.goto('/admin');

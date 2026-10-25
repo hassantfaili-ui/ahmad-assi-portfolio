@@ -43,6 +43,7 @@ export interface FramePickerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   sources: { height: number; media: EditorMedia }[];
+  purpose?: 'poster' | 'project-cover';
   /** Called with the uploaded still. It is saved with the rest of the project. */
   onPicked: (media: MediaRow) => void;
 }
@@ -127,16 +128,25 @@ function formatTime(seconds: number): string {
   return `${minutes}:${rest}`;
 }
 
-export function FramePicker({ open, onOpenChange, sources, onPicked }: FramePickerProps) {
+export function FramePicker({
+  open,
+  onOpenChange,
+  sources,
+  onPicked,
+  purpose = 'poster',
+}: FramePickerProps) {
   const [saving, setSaving] = useState(false);
 
   return (
     <Dialog open={open} onOpenChange={(next) => (saving ? undefined : onOpenChange(next))}>
       <DialogContent className="max-h-[95vh] max-w-3xl overflow-y-auto">
-        <DialogTitle className="text-lg font-semibold">Choose the still from the film</DialogTitle>
+        <DialogTitle className="text-lg font-semibold">
+          {purpose === 'project-cover' ? 'Choose frame as cover' : 'Choose the still from the film'}
+        </DialogTitle>
         <DialogDescription className="text-sm text-neutral-600">
-          Move through the film and stop on the frame you want visitors to see before they press
-          play. It replaces the current still when you save the project.
+          {purpose === 'project-cover'
+            ? 'Move through the film and stop on the frame you want as the project’s main cover. It replaces the cover on the home page and project page when you save the project.'
+            : 'Move through the film and stop on the frame you want visitors to see before they press play. It replaces the current still when you save the project.'}
         </DialogDescription>
 
         {/* Only mounted while the dialog is open, so every opening starts at

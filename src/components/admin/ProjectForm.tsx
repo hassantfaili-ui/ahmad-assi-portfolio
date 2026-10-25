@@ -461,6 +461,7 @@ export function ProjectForm({
   const [groups, setGroups] = useState<EditorGroup[]>(savedGroups);
   const [drawings, setDrawings] = useState<EditorDrawing[]>(savedDrawings);
   const [film, setFilm] = useState<EditorFilm | null>(filmOnSite);
+  const [leadImage, setLeadImage] = useState<EditorMedia | null>(project.leadImage);
 
   /* The film the site is actually showing. FilmEditor compares it against the
      one on screen to tell a film that has only been uploaded from one that has
@@ -1072,8 +1073,10 @@ export function ProjectForm({
               onDrawingsChange={changeDrawings}
               leadImageId={values.leadImageId}
               leadImageAlt={values.leadImageAlt}
-              leadImage={project.leadImage}
+              leadImage={leadImage}
               onLeadImageChange={chooseLeadImage}
+              onLeadImageMediaChange={setLeadImage}
+              filmSources={film?.sources ?? []}
               onLeadImageAltChange={changeLeadImageAlt}
               frenchLeadImageAlt={french.leadImageAlt}
               onFrenchLeadImageAltChange={changeFrenchLeadImageAlt}

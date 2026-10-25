@@ -37,7 +37,25 @@ vi.mock('next/image', () => ({
   default: ({ alt }: { alt: string }) => <span data-testid="image">{alt}</span>,
 }));
 
+/* Keep the real editor/save flow; stand in for video decoding and R2 upload. */
+vi.mock('@/components/admin/FramePicker', () => ({
+  FramePicker: ({ open, onPicked, onOpenChange }: import('./FramePicker').FramePickerProps) => open ? (
+    <div role="dialog" aria-label="Frame picker">
+      <button type="button" onClick={() => {
+        onPicked({
+          id: 'frame', key: 'film/frame.jpg', bytes: 2000,
+          width: 1920, height: 1080, durationSeconds: null,
+          kind: 'image', contentType: 'image/jpeg',
+        });
+        onOpenChange(false);
+      }}>Use this frame</button>
+      <button type="button" onClick={() => onOpenChange(false)}>Cancel</button>
+    </div>
+  ) : null,
+}));
+
 import { ProjectForm } from './ProjectForm';
+import type { EditorFilm } from './FilmEditor';
 import type { EditorGroup } from './MediaPanel';
 
 const media = { id: 'm1', key: 'projects/garden-heights/a.jpg', bytes: 1000, width: 1600, height: 900 };
@@ -146,7 +164,8 @@ async function showFrench(user: ReturnType<typeof userEvent.setup>): Promise<voi
 }
 
 interface SavedPayload {
-  fields: { location: string; leadImageId: string | null };
+  fields: { location: string; leadImageId: string | null; leadImageAlt: string };
+  film: { posterMediaId: string | null; sources: { mediaId: string; height: number }[] } | null;
   french: { title: string; summary: string; leadImageAlt: string };
   published: boolean;
   groups: {
@@ -182,6 +201,63 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
+describe('choosing a film frame as the project cover', () => {
+  const film: EditorFilm = {
+    posterMedia: media,
+    youtubeId: '',
+    caption: 'Walkthrough',
+    french: { caption: '' },
+    sources: [{ height: 720, media: { ...media, id: 'video', key: 'film/video.mp4' } }],
+  };
+
+  it('saves the chosen frame as the main cover while preserving the video poster', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<ProjectForm project={project} groups={groups} drawings={[]} film={film} />);
+    await user.click(screen.getByRole('button', { name: 'Choose frame as cover' }));
+    await user.click(screen.getByRole('button', { name: 'Use this frame' }));
+
+    expect(saveWholeProject).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'This is the cover. Press to unset it.' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByLabelText('What the cover shows*')).toHaveValue('');
+    await user.type(screen.getByLabelText('What the cover shows*'), 'The courtyard seen from the entrance');
+    await user.click(screen.getByRole('button', { name: 'Save everything' }));
+
+    await waitFor(() => expect(saveWholeProject).toHaveBeenCalledTimes(1));
+    expect(sent().fields.leadImageId).toBe('frame');
+    expect(sent().fields.leadImageAlt).toBe('The courtyard seen from the entrance');
+    expect(sent().film?.posterMediaId).toBe('m1');
+    expect(sent().film?.sources).toEqual([{ mediaId: 'video', height: 720 }]);
+    expect(sent().groups[0].images.map((image) => image.mediaId)).toEqual(['m1', 'm2']);
+  });
+
+  it('keeps a standalone outgoing cover with the pictures', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<ProjectForm project={{ ...project, leadImageId: loose.id, leadImage: loose }} groups={groups} drawings={[]} film={film} />);
+    await user.click(screen.getByRole('button', { name: 'Choose frame as cover' }));
+    await user.click(screen.getByRole('button', { name: 'Use this frame' }));
+    await user.type(screen.getByLabelText('What the cover shows*'), 'The new view');
+    await user.click(screen.getByRole('button', { name: 'Save everything' }));
+    await waitFor(() => expect(saveWholeProject).toHaveBeenCalledTimes(1));
+    expect(sent().fields.leadImageId).toBe('frame');
+    expect(sent().groups[0].images.map((image) => image.mediaId)).toEqual(['m1', 'm2', 'm3']);
+  });
+
+  it('keeps the current project cover when the picker is cancelled', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<ProjectForm project={project} groups={groups} drawings={[]} film={film} />);
+    await user.click(screen.getByRole('button', { name: 'Choose frame as cover' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('button', { name: 'Save everything' }));
+    await waitFor(() => expect(saveWholeProject).toHaveBeenCalledTimes(1));
+    expect(sent().fields.leadImageId).toBe('m1');
+  });
+
+  it('offers no frame picker when there is no uploaded walkthrough', () => {
+    render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
+    expect(screen.queryByRole('button', { name: 'Choose frame as cover' })).not.toBeInTheDocument();
+  });
+});
+
 describe('the one save button', () => {
   it('sends a caption typed on a picture, which is what it did not do before', async () => {
     const user = userEvent.setup({ delay: null });
@@ -200,18 +276,18 @@ describe('the one save button', () => {
   /* The shape is the third thing a picture carries besides its words, and it
      has to make the same trip as the caption did not: pressed here, sent in the
      payload, with the focus beside it. */
-  it('sends the shape pressed on a picture and where its window sits', async () => {
+  it('sends the 3:2 shape pressed on a picture and where its window sits', async () => {
     const user = userEvent.setup({ delay: null });
     render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
 
     const shapes = screen.getByRole('radiogroup', { name: 'Shape of A picture of the courtyard' });
-    await user.click(within(shapes).getByRole('radio', { name: '1:1' }));
+    await user.click(within(shapes).getByRole('radio', { name: '3:2' }));
 
     await user.click(screen.getByRole('button', { name: 'Save everything' }));
 
     await waitFor(() => expect(saveWholeProject).toHaveBeenCalledTimes(1));
     const [first, second] = sent().groups[0].images;
-    expect(first.ratio).toBe('1:1');
+    expect(first.ratio).toBe('3:2');
     expect(first.focusX).toBe(0.5);
     expect(first.focusY).toBe(0.5);
     /* The other picture's shape and focus go back exactly as they came in. */
