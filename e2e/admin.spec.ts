@@ -107,7 +107,7 @@ async function deleteProject(page: Page, title: string) {
   await expect(page.getByRole('link', { name: title })).toHaveCount(0, { timeout: 10_000 });
 }
 
-test('3:2 and choosing a walkthrough frame as the main cover are available in the project editor', async ({ page }) => {
+test('3:2 and the separate project cover and walkthrough thumbnail pickers are available', async ({ page }) => {
   await page.goto('/admin');
   await page.getByRole('link', { name: 'Lincoln Beach Center', exact: true }).click();
 
@@ -121,6 +121,14 @@ test('3:2 and choosing a walkthrough frame as the main cover are available in th
   await expect(picker).toContainText('project’s main cover');
   await picker.getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(picker).not.toBeVisible();
+
+  const walkthrough = page.getByRole('region', { name: 'Walkthrough' });
+  await walkthrough.getByRole('button', { name: 'Choose a frame', exact: true }).click();
+  const thumbnailPicker = page.getByRole('dialog', { name: 'Choose the still from the film' });
+  await expect(thumbnailPicker).toBeVisible();
+  await expect(thumbnailPicker.getByRole('slider', { name: 'Moment in the film' })).toBeVisible();
+  await thumbnailPicker.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(thumbnailPicker).not.toBeVisible();
 });
 
 test.describe('the projects list', () => {

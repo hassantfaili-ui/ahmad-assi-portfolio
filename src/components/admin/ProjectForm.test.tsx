@@ -204,7 +204,7 @@ beforeEach(() => {
 
 afterEach(cleanup);
 
-describe('choosing a film frame as the project cover', () => {
+describe('choosing frames for project covers and walkthrough thumbnails', () => {
   const film: EditorFilm = {
     posterMedia: media,
     youtubeId: '',
@@ -212,6 +212,24 @@ describe('choosing a film frame as the project cover', () => {
     french: { caption: '' },
     sources: [{ height: 720, media: { ...media, id: 'video', key: 'film/video.mp4' } }],
   };
+
+  it.each([true, false])('chooses a walkthrough thumbnail independently of the project cover (existing thumbnail: %s)', async (hasPoster) => {
+    const user = userEvent.setup({ delay: null });
+    render(<ProjectForm project={project} groups={groups} drawings={[]} film={{
+      ...film, posterMedia: hasPoster ? media : null,
+    }} />);
+
+    const walkthrough = screen.getByRole('region', { name: 'Walkthrough' });
+    await user.click(within(walkthrough).getByRole('button', { name: 'Choose a frame' }));
+    await user.click(screen.getByRole('button', { name: 'Use this frame' }));
+    expect(saveWholeProject).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: 'Save everything' }));
+    await waitFor(() => expect(saveWholeProject).toHaveBeenCalledTimes(1));
+    expect(sent().film?.posterMediaId).toBe('frame');
+    expect(sent().film?.sources).toEqual([{ mediaId: 'video', height: 720 }]);
+    expect(sent().fields.leadImageId).toBe('m1');
+  });
 
   it('saves the chosen frame as the main cover while preserving the video poster', async () => {
     const user = userEvent.setup({ delay: null });
