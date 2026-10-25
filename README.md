@@ -72,6 +72,7 @@ deploying.
 | `npm run test` | Vitest |
 | `npm run cf:build` | The build that produces a deployable Worker |
 | `npm run cf:deploy` | Deploy to Cloudflare |
+| `npm run cf:publish` | Build from current live content through Hyperdrive, then deploy |
 | `npm run db:push` | Push the schema to the database |
 | `npm run migrate:content` | Import the original markdown and media |
 

@@ -161,6 +161,25 @@ it fails loudly, but do not rely on that: just do not set it.
 
 ## 7. Deploy
 
+For this configured Cloudflare account, run:
+
+```bash
+npm run cf:publish
+```
+
+This uses Wrangler's authenticated remote preview and the existing Hyperdrive
+binding. It does not require copying the production `DATABASE_URL` out of
+Cloudflare. Local Postgres must be running; `.env` supplies its connection.
+The command adds the drawing crop columns if needed, reads a consistent live
+snapshot, restores it into a disposable local database, and verifies every field
+before building. It checks live content again before deployment and refuses if
+an edit arrived while the build was running. It never imports the local test
+content into production. The preview and disposable database are removed at the
+end. Use `npm run cf:publish -- --build-only` to perform these checks and the
+schema preparation without deploying the Worker.
+
+The following direct-connection workflow is also supported:
+
 After a schema change, apply it to the production database before deploying the
 new code. Drawing crop controls add `ratio`, `focusX`, and `focusY` to `Drawing`;
 existing drawings keep their original shape until a ratio is chosen.
