@@ -161,7 +161,15 @@ export type ProjectDetail = ProjectSummary & {
       media: MediaRef;
     }[];
   }[];
-  drawings: { id: string; alt: string; drawingType: string; media: MediaRef }[];
+  drawings: {
+    id: string;
+    alt: string;
+    drawingType: string;
+    ratio: string | null;
+    focusX: number;
+    focusY: number;
+    media: MediaRef;
+  }[];
 };
 
 // ------------------------------------------------------------- paragraphs ---
@@ -406,7 +414,11 @@ export async function getProjectBySlug(
         orderBy: { order: 'asc' },
       },
       drawings: {
-        select: { id: true, alt: true, drawingType: true, media: { select: mediaSelect } },
+        select: {
+          id: true, alt: true, drawingType: true,
+          ratio: true, focusX: true, focusY: true,
+          media: { select: mediaSelect },
+        },
         orderBy: { order: 'asc' },
       },
     },

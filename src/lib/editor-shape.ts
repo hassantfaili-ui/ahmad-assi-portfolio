@@ -52,6 +52,9 @@ type DrawingRow = {
   mediaId: string;
   alt: string;
   drawingType: string;
+  ratio: string | null;
+  focusX: number;
+  focusY: number;
   media: MediaRow;
 };
 
@@ -166,6 +169,8 @@ export function toEditorDrawings(
     mediaId: drawing.mediaId,
     alt: drawing.alt,
     drawingType: drawing.drawingType,
+    ratio: toRatio(drawing.ratio),
+    focus: clampFocus({ x: drawing.focusX, y: drawing.focusY }),
     french: toEditorFrench(DRAWING_FRENCH_FIELDS, french.get(drawing.id)),
     media: toMedia(drawing.media),
   }));

@@ -204,6 +204,10 @@ model Drawing {
   media       Media   @relation(fields: [mediaId], references: [id], onDelete: Restrict)
   alt         String
   drawingType String
+  /// Optional crop, with the same shape and focus controls as a project picture.
+  ratio       String?
+  focusX      Float   @default(0.5)
+  focusY      Float   @default(0.5)
   order       Int     @default(0)
 
   @@index([projectId, order])

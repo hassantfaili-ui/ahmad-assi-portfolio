@@ -248,18 +248,29 @@ export default async function WorkPage({ locale, slug }: { locale: Locale; slug:
             {w.drawings}
           </h2>
           <div className="sheets">
-            {project.drawings.map((drawing) => (
-              <Reveal as="figure" key={drawing.id}>
-                <Image
-                  src={drawing.media.key}
-                  alt={drawing.alt}
-                  width={drawing.media.width ?? 1600}
-                  height={drawing.media.height ?? 1131}
-                  sizes={SHEET_SIZES}
-                />
-                <figcaption>{drawing.drawingType}</figcaption>
-              </Reveal>
-            ))}
+            {project.drawings.map((drawing) => {
+              const ratio = toRatio(drawing.ratio);
+              const focus = clampFocus({ x: drawing.focusX, y: drawing.focusY });
+              const frame = cropFrame(drawing.media, ratio);
+              const rect = cropRect(drawing.media, ratio, focus);
+              return (
+                <Reveal as="figure" key={drawing.id}>
+                  <Image
+                    src={croppedSrc(drawing.media.key, rect)}
+                    alt={drawing.alt}
+                    width={frame.width}
+                    height={frame.height}
+                    sizes={SHEET_SIZES}
+                    style={rect ? {
+                      aspectRatio: `${frame.width} / ${frame.height}`,
+                      objectFit: 'cover',
+                      objectPosition: objectPosition(focus),
+                    } : undefined}
+                  />
+                  <figcaption>{drawing.drawingType}</figcaption>
+                </Reveal>
+              );
+            })}
           </div>
         </section>
       )}

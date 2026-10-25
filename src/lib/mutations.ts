@@ -251,6 +251,9 @@ export interface DrawingInput {
   mediaId: string;
   alt: string;
   drawingType: string;
+  ratio?: string | null;
+  focusX?: number;
+  focusY?: number;
   french?: FrenchFields;
 }
 
@@ -555,13 +558,19 @@ export async function saveWholeProject(
     await tx.drawing.deleteMany({ where: { projectId: id } });
     if (input.drawings.length > 0) {
       await tx.drawing.createMany({
-        data: input.drawings.map((drawing, index) => ({
-          projectId: id,
-          mediaId: drawing.mediaId,
-          alt: drawing.alt.trim(),
-          drawingType: drawing.drawingType.trim() || 'Drawing',
-          order: index,
-        })),
+        data: input.drawings.map((drawing, index) => {
+          const focus = clampFocus({ x: drawing.focusX, y: drawing.focusY });
+          return {
+            projectId: id,
+            mediaId: drawing.mediaId,
+            alt: drawing.alt.trim(),
+            drawingType: drawing.drawingType.trim() || 'Drawing',
+            ratio: toRatio(drawing.ratio),
+            focusX: focus.x,
+            focusY: focus.y,
+            order: index,
+          };
+        }),
       });
     }
 

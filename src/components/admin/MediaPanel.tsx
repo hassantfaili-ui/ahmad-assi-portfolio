@@ -5,9 +5,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 
 import { Dropzone } from '@/components/admin/Dropzone';
+import { CropPreview } from '@/components/admin/CropPreview';
 import { FramePicker, type FramePickerProps } from '@/components/admin/FramePicker';
 import { FrenchBox } from '@/components/admin/ProjectFrench';
 import { GroupEditor } from '@/components/admin/GroupEditor';
+import { RatioPicker } from '@/components/admin/RatioPicker';
 import { SortableList } from '@/components/admin/SortableList';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
@@ -94,6 +96,8 @@ export interface EditorDrawing {
   mediaId: string;
   alt: string;
   drawingType: string;
+  ratio: Ratio | null;
+  focus: Focus;
   /**
    * Carried across a move, never saved. A drawing has nowhere on the page to
    * print a caption, so this only exists so that moving a picture into the
@@ -340,6 +344,8 @@ export function MediaPanel({
         mediaId: image.mediaId,
         alt: '',
         drawingType: '',
+        ratio: null,
+        focus: CENTRE,
         french: { alt: '', drawingType: '' },
         media: image.media,
       }));
@@ -383,6 +389,8 @@ export function MediaPanel({
           /* Something rather than nothing, since this is printed under the
              sheet on the page. Ahmad can say what it really is. */
           drawingType: 'Drawing',
+          ratio: moving.ratio,
+          focus: moving.focus,
           /* The French travels with it for the same reason the English does.
              The kind of drawing starts empty because Drawing above is the
              site's word and not something he wrote, so there is nothing yet to
@@ -409,10 +417,8 @@ export function MediaPanel({
         mediaId: moving.mediaId,
         alt: moving.alt,
         caption: moving.caption ?? '',
-        /* A drawing is always shown whole, so a picture coming back from the
-           drawings starts whole too. */
-        ratio: null,
-        focus: CENTRE,
+        ratio: moving.ratio,
+        focus: moving.focus,
         french: { alt: moving.french.alt, caption: moving.frenchCaption ?? '' },
         media: moving.media,
       };
@@ -802,14 +808,26 @@ export function MediaPanel({
             onReorder={reorderDrawings}
             renderItem={(drawing, index) => (
               <div className="flex flex-wrap items-start gap-3">
-                <Image
-                  src={drawing.media.key}
-                  alt=""
-                  width={112}
-                  height={84}
-                  sizes="112px"
-                  className="h-16 w-24 shrink-0 rounded bg-neutral-200 object-contain"
-                />
+                <div className="grid shrink-0 gap-2" onDragStart={(event) => event.preventDefault()}>
+                  <CropPreview
+                    media={drawing.media}
+                    ratio={drawing.ratio}
+                    focus={drawing.focus}
+                    onFocusChange={(focus) => updateDrawing(drawing.id, { focus })}
+                    describedAs={drawing.alt.trim() || 'this drawing'}
+                  />
+                  <RatioPicker
+                    label={`Shape of ${drawing.alt.trim() || 'this drawing'}`}
+                    value={drawing.ratio}
+                    onChange={(ratio) => updateDrawing(drawing.id, { ratio })}
+                  />
+                  {drawing.ratio && (
+                    <p className="max-w-[16rem] text-xs text-neutral-500">
+                      Click the drawing to choose which part stays, or use the arrow keys.
+                      Auto shows the whole drawing again. The original file is kept.
+                    </p>
+                  )}
+                </div>
 
                 <div className="grid min-w-[12rem] flex-1 gap-2 sm:grid-cols-2">
                   <div>

@@ -161,6 +161,15 @@ it fails loudly, but do not rely on that: just do not set it.
 
 ## 7. Deploy
 
+After a schema change, apply it to the production database before deploying the
+new code. Drawing crop controls add `ratio`, `focusX`, and `focusY` to `Drawing`;
+existing drawings keep their original shape until a ratio is chosen.
+
+```bash
+DATABASE_URL="postgresql://..." npm run db:push
+npm run db:generate
+```
+
 `NEXT_PUBLIC_MEDIA_ORIGIN` has to be set **in the environment the build runs
 in**, not as a Worker variable. Next inlines it into the browser bundle when the
 build runs, so one set on the Worker arrives too late.

@@ -138,7 +138,7 @@ describe('reorderProjects', () => {
  * This asserts the write itself: what saveWholeProject hands to the database.
  */
 describe('what a whole project save writes for each picture', () => {
-  it('carries the caption and the description onto the row it creates', async () => {
+  it('writes image captions and normalized drawing crops onto their rows', async () => {
     const { saveWholeProject } = await import('./mutations');
 
     db.project.findUnique.mockResolvedValue({ slug: 'a-project', updatedAt: new Date('2026-08-30T03:00:00Z') });
@@ -146,13 +146,14 @@ describe('what a whole project save writes for each picture', () => {
     db.project.count.mockResolvedValue(0);
 
     const created: unknown[] = [];
+    const createdDrawings: unknown[] = [];
     db.$transaction.mockImplementation(async (...args: unknown[]) => {
       const run = args[0];
       if (typeof run !== 'function') return [];
       const tx = {
         project: { update: vi.fn() },
         imageGroup: { deleteMany: vi.fn(), create: vi.fn((args: unknown) => created.push(args)) },
-        drawing: { deleteMany: vi.fn(), createMany: vi.fn() },
+        drawing: { deleteMany: vi.fn(), createMany: vi.fn((args: unknown) => createdDrawings.push(args)) },
         film: { deleteMany: vi.fn(), create: vi.fn() },
       };
       await (run as (tx: unknown) => Promise<unknown>)(tx);
@@ -178,7 +179,10 @@ describe('what a whole project save writes for each picture', () => {
           ],
         },
       ],
-      drawings: [],
+      drawings: [
+        { mediaId: 'm3', alt: 'Ground floor', drawingType: 'Plan', ratio: '3:2', focusX: 0.25, focusY: 1 },
+        { mediaId: 'm4', alt: 'Section', drawingType: 'Section', ratio: 'invalid', focusX: -2, focusY: Infinity },
+      ],
       film: null,
     });
 
@@ -189,6 +193,10 @@ describe('what a whole project save writes for each picture', () => {
     /* Absent stays absent rather than becoming an empty string, so the page
        prints no caption at all instead of an empty line under the picture. */
     expect(images[1]).toMatchObject({ alt: 'The lookout', caption: null });
+    expect(createdDrawings).toEqual([{ data: [
+      { projectId: 'p1', mediaId: 'm3', alt: 'Ground floor', drawingType: 'Plan', ratio: '3:2', focusX: 0.25, focusY: 1, order: 0 },
+      { projectId: 'p1', mediaId: 'm4', alt: 'Section', drawingType: 'Section', ratio: null, focusX: 0, focusY: 0.5, order: 1 },
+    ] }]);
   });
 })
 

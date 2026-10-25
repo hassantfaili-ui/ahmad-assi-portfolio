@@ -108,12 +108,15 @@ describe('filling the editing screen from the database', () => {
   it('carries a drawing across with its kind and description', () => {
     const [drawing] = toEditorDrawings(
       [
-        { id: 'd1', mediaId: 'm3', alt: 'Section through the court', drawingType: 'Section', media: media('m3') },
+        { id: 'd1', mediaId: 'm3', alt: 'Section through the court', drawingType: 'Section', ratio: '3:2', focusX: 0.25, focusY: 1, media: media('m3') },
       ],
       untranslated,
     );
 
-    expect(drawing).toMatchObject({ alt: 'Section through the court', drawingType: 'Section', mediaId: 'm3' });
+    expect(drawing).toMatchObject({
+      alt: 'Section through the court', drawingType: 'Section', mediaId: 'm3',
+      ratio: '3:2', focus: { x: 0.25, y: 1 },
+    });
   });
 });
 
@@ -166,7 +169,7 @@ describe('filling the French boxes from the Translation table', () => {
 
   it('puts each drawing the French stored against that drawing', () => {
     const [drawing] = toEditorDrawings(
-      [{ id: 'd1', mediaId: 'm3', alt: 'Section', drawingType: 'Section', media: media('m3') }],
+      [{ id: 'd1', mediaId: 'm3', alt: 'Section', drawingType: 'Section', ratio: null, focusX: 0.5, focusY: 0.5, media: media('m3') }],
       stored({ d1: { alt: 'Coupe transversale', drawingType: 'Coupe' } }),
     );
 

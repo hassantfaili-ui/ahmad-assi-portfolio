@@ -184,6 +184,9 @@ interface SavedPayload {
     mediaId: string;
     alt: string;
     drawingType: string;
+    ratio: string | null;
+    focusX: number;
+    focusY: number;
     french: { alt: string; drawingType: string };
   }[];
 }
@@ -472,6 +475,8 @@ describe('moving a picture between the pictures and the drawings', () => {
     const user = userEvent.setup({ delay: null });
     render(<ProjectForm project={project} groups={groups} drawings={[]} film={null} />);
 
+    const shapes = screen.getByRole('radiogroup', { name: 'Shape of A picture of the courtyard' });
+    await user.click(within(shapes).getByRole('radio', { name: '3:2' }));
     await user.click(screen.getAllByRole('button', { name: 'Move to the drawings' })[0]);
 
     expect(screen.getByText('1 in 1 group')).toBeTruthy();
@@ -488,6 +493,9 @@ describe('moving a picture between the pictures and the drawings', () => {
         mediaId: 'm1',
         alt: 'A picture of the courtyard',
         drawingType: 'Drawing',
+        ratio: '3:2',
+        focusX: 0.5,
+        focusY: 0.5,
         /* The French description comes with it. The kind of drawing is blank
            because Drawing above is the site's word, not one Ahmad wrote, so
            there is nothing yet to have translated. */
@@ -504,6 +512,8 @@ describe('moving a picture between the pictures and the drawings', () => {
         mediaId: 'm3',
         alt: 'Ground floor plan, showing the courtyard',
         drawingType: 'Plan',
+        ratio: '3:2' as const,
+        focus: { x: 0.2, y: 0.8 },
         french: { alt: 'Plan du rez de chaussee', drawingType: 'Plan' },
         media: loose,
       },
@@ -522,6 +532,26 @@ describe('moving a picture between the pictures and the drawings', () => {
     const [group] = sent().groups;
     expect(group.images.map((image) => image.mediaId)).toEqual(['m1', 'm2', 'm3']);
     expect(group.images[2].alt).toBe('Ground floor plan, showing the courtyard');
+    expect(group.images[2]).toMatchObject({ ratio: '3:2', focusX: 0.2, focusY: 0.8 });
+  });
+
+  it('sends the drawing’s selected shape and focus with the whole project', async () => {
+    const user = userEvent.setup({ delay: null });
+    render(<ProjectForm project={project} groups={groups} drawings={[{
+      id: 'd1', mediaId: 'm3', alt: 'Ground floor plan', drawingType: 'Plan',
+      ratio: null, focus: { x: 0.5, y: 0.5 },
+      french: { alt: '', drawingType: '' }, media: loose,
+    }]} film={null} />);
+
+    const shapes = screen.getByRole('radiogroup', { name: 'Shape of Ground floor plan' });
+    await user.click(within(shapes).getByRole('radio', { name: '3:2' }));
+    const preview = screen.getByRole('button', { name: /Which part of Ground floor plan stays/ });
+    preview.focus();
+    await user.keyboard('{ArrowRight}{ArrowDown}');
+    await user.click(screen.getByRole('button', { name: 'Save everything' }));
+
+    await waitFor(() => expect(saveWholeProject).toHaveBeenCalledTimes(1));
+    expect(sent().drawings[0]).toMatchObject({ ratio: '3:2', focusX: 0.55, focusY: 0.55 });
   });
 });
 
