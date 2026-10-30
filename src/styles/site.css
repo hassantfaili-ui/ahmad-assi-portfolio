@@ -1654,6 +1654,24 @@ button {
   border-bottom: 0;
 }
 
+/* The fourth summary block sits beneath Practice in the middle column. */
+@media (min-width: 60rem) {
+  .atglance {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .atglance-item:nth-child(4):last-child {
+    grid-column: 2;
+  }
+}
+
+.resume-files {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin: clamp(2.5rem, 6vw, 4rem) 0 0;
+}
+
 /* --------------------------------------------------------------- closing --- */
 /* About and the invitation share one row and are left aligned, so the page ends
    on a single gesture rather than two stacked centred blocks. */

@@ -83,18 +83,26 @@ export default async function ResumePage() {
           ))}
         </div>
 
-        {profile?.cvMedia && (
-          <p className="centre" style={{ marginTop: 'clamp(2.5rem,6vw,4rem)' }}>
-            {/* The file is served from the media domain, so a browser ignores
-                the download attribute and opens the PDF instead of saving it.
-                It stays because that is the intent, and because a same origin
-                media host would honour it. */}
-            <a className="btn" href={mediaUrl(profile.cvMedia.key)} download>
-              Full resume, PDF{' '}
-              <span className="i" aria-hidden="true">
-                &darr;
-              </span>
-            </a>
+        {(profile?.cvMedia || profile?.portfolioMedia) && (
+          <p className="resume-files">
+            {/* Files on the media domain open as PDFs; a same-origin media
+                host also honours the download attribute. */}
+            {profile?.cvMedia && (
+              <a className="btn" href={mediaUrl(profile.cvMedia.key)} download>
+                Full resume, PDF{' '}
+                <span className="i" aria-hidden="true">
+                  &darr;
+                </span>
+              </a>
+            )}
+            {profile?.portfolioMedia && (
+              <a className="btn" href={mediaUrl(profile.portfolioMedia.key)} download>
+                Portfolio PDF{' '}
+                <span className="i" aria-hidden="true">
+                  &darr;
+                </span>
+              </a>
+            )}
           </p>
         )}
       </section>

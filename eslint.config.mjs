@@ -17,6 +17,9 @@ const config = [
   {
     ignores: [
       '.next/**',
+      /* Generated output from the previous Astro site can remain locally. */
+      '.astro/**',
+      'dist/**',
       '.open-next/**',
       /* wrangler dev writes bundled worker copies here. They are build output,
          not source, and linting them buries real findings under thousands of

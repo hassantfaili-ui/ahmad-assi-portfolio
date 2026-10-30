@@ -538,6 +538,89 @@ export function ResumeForm({ data }: { data: ResumeData }) {
     });
   }
 
+  function renderEntrySection(section: (typeof SECTIONS)[number]) {
+    const rows = entries[section.id];
+
+    return (
+      <Panel key={section.id} title={section.title} description={section.description}>
+        {rows.length === 0 ? (
+          <Empty text="Nothing here yet." />
+        ) : (
+          <SortableList
+            items={rows}
+            getId={(entry) => entry.uid}
+            getLabel={(entry) => entry.title || 'an item with no title'}
+            onReorder={(ids) => setEntrySection(section.id, reorder(rows, ids))}
+            renderItem={(entry, index) => (
+              <div className="grid gap-4">
+                <RowHeader
+                  title={`Item ${index + 1}`}
+                  onRemove={() => setEntrySection(section.id, without(rows, index))}
+                  removeLabel={`item ${index + 1}, ${entry.title || 'no title'}`}
+                />
+
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <Field label="Title" htmlFor={`${section.id}-${entry.uid}-title`}>
+                    <Input
+                      value={entry.title}
+                      placeholder="Scouts Leader"
+                      onChange={(event) =>
+                        setEntrySection(
+                          section.id,
+                          replace(rows, index, { ...entry, title: event.target.value }),
+                        )
+                      }
+                    />
+                  </Field>
+
+                  <Field label="Detail" htmlFor={`${section.id}-${entry.uid}-detail`}>
+                    <Input
+                      value={entry.detail}
+                      placeholder="ABCCO Community Centre"
+                      onChange={(event) =>
+                        setEntrySection(
+                          section.id,
+                          replace(rows, index, { ...entry, detail: event.target.value }),
+                        )
+                      }
+                    />
+                  </Field>
+
+                  <Field
+                    label="When"
+                    htmlFor={`${section.id}-${entry.uid}-year`}
+                    hint="Left blank, the page reads Ongoing instead."
+                  >
+                    <Input
+                      value={entry.year}
+                      placeholder="2025 to present"
+                      onChange={(event) =>
+                        setEntrySection(
+                          section.id,
+                          replace(rows, index, { ...entry, year: event.target.value }),
+                        )
+                      }
+                    />
+                  </Field>
+                </div>
+              </div>
+            )}
+          />
+        )}
+
+        <AddButton
+          label="Add an item"
+          onClick={() =>
+            setEntrySection(section.id, [
+              ...rows,
+              { uid: nextUid(), title: '', detail: '', year: '' },
+            ])
+          }
+        />
+      </Panel>
+    );
+  }
+
   return (
     <div className="grid gap-12">
       <section>
@@ -775,7 +858,7 @@ export function ResumeForm({ data }: { data: ResumeData }) {
 
             <DocumentSlot
               title="Portfolio PDF"
-              hint="The other download button on the contact page."
+              hint="A download button on both the resume and contact pages."
               file={portfolio}
               onClear={() => setPortfolio(null)}
               onUploaded={(items) => {
@@ -891,7 +974,7 @@ export function ResumeForm({ data }: { data: ResumeData }) {
         <div className="grid gap-6">
           <Panel
             title="At a glance"
-            description="The short blocks near the top of the resume page. Four of them fit across the page. Each one is a heading with a few lines under it."
+            description="The short blocks near the top of the resume page. The first three sit across the page on wide screens, with the fourth centered below them. Each one is a heading with a few lines under it."
           >
             {facts.length === 0 ? (
               <Empty text="No blocks yet, so nothing appears at the top of the resume page." />
@@ -935,6 +1018,105 @@ export function ResumeForm({ data }: { data: ResumeData }) {
             <AddButton
               label="Add a block"
               onClick={() => setFacts([...facts, { uid: nextUid(), label: '', items: [] }])}
+            />
+          </Panel>
+
+          <Panel
+            title="Education"
+            description="Degrees and programs, newest first."
+          >
+            {education.length === 0 ? (
+              <Empty text="Nothing here yet, so the Education section of the resume page is empty." />
+            ) : (
+              <SortableList
+                items={education}
+                getId={(entry) => entry.uid}
+                getLabel={(entry) => entry.credential || 'a qualification with no name'}
+                onReorder={(ids) => setEducation(reorder(education, ids))}
+                renderItem={(entry, index) => (
+                  <div className="grid gap-4">
+                    <RowHeader
+                      title={`Qualification ${index + 1}`}
+                      onRemove={() => setEducation(without(education, index))}
+                      removeLabel={`qualification ${index + 1}, ${entry.credential || 'no name'}`}
+                    />
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field label="Qualification" htmlFor={`education-${entry.uid}-credential`}>
+                        <Input
+                          value={entry.credential}
+                          placeholder="Bachelor of Architectural Studies (Honours), Urbanism Major"
+                          onChange={(event) =>
+                            setEducation(
+                              replace(education, index, {
+                                ...entry,
+                                credential: event.target.value,
+                              }),
+                            )
+                          }
+                        />
+                      </Field>
+
+                      <Field label="School" htmlFor={`education-${entry.uid}-institution`}>
+                        <Input
+                          value={entry.institution}
+                          placeholder="Carleton University"
+                          onChange={(event) =>
+                            setEducation(
+                              replace(education, index, {
+                                ...entry,
+                                institution: event.target.value,
+                              }),
+                            )
+                          }
+                        />
+                      </Field>
+
+                      <Field
+                        label="Year"
+                        htmlFor={`education-${entry.uid}-year`}
+                        hint="Left blank, the resume page reads Completed instead."
+                      >
+                        <Input
+                          value={entry.year}
+                          placeholder="2025"
+                          onChange={(event) =>
+                            setEducation(
+                              replace(education, index, { ...entry, year: event.target.value }),
+                            )
+                          }
+                        />
+                      </Field>
+
+                      <Field
+                        label="Note"
+                        htmlFor={`education-${entry.uid}-note`}
+                        hint="Anything worth adding, an honour for example. Leave it blank and nothing shows."
+                      >
+                        <Input
+                          value={entry.note}
+                          placeholder="Dean's Honour List, Faculty of Engineering and Design."
+                          onChange={(event) =>
+                            setEducation(
+                              replace(education, index, { ...entry, note: event.target.value }),
+                            )
+                          }
+                        />
+                      </Field>
+                    </div>
+                  </div>
+                )}
+              />
+            )}
+
+            <AddButton
+              label="Add a qualification"
+              onClick={() =>
+                setEducation([
+                  ...education,
+                  { uid: nextUid(), credential: '', institution: '', year: '', note: '' },
+                ])
+              }
             />
           </Panel>
 
@@ -1047,104 +1229,7 @@ export function ResumeForm({ data }: { data: ResumeData }) {
             />
           </Panel>
 
-          <Panel
-            title="Education"
-            description="Degrees and programs, newest first."
-          >
-            {education.length === 0 ? (
-              <Empty text="Nothing here yet, so the Education section of the resume page is empty." />
-            ) : (
-              <SortableList
-                items={education}
-                getId={(entry) => entry.uid}
-                getLabel={(entry) => entry.credential || 'a qualification with no name'}
-                onReorder={(ids) => setEducation(reorder(education, ids))}
-                renderItem={(entry, index) => (
-                  <div className="grid gap-4">
-                    <RowHeader
-                      title={`Qualification ${index + 1}`}
-                      onRemove={() => setEducation(without(education, index))}
-                      removeLabel={`qualification ${index + 1}, ${entry.credential || 'no name'}`}
-                    />
-
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <Field label="Qualification" htmlFor={`education-${entry.uid}-credential`}>
-                        <Input
-                          value={entry.credential}
-                          placeholder="Bachelor of Architectural Studies (Honours), Urbanism Major"
-                          onChange={(event) =>
-                            setEducation(
-                              replace(education, index, {
-                                ...entry,
-                                credential: event.target.value,
-                              }),
-                            )
-                          }
-                        />
-                      </Field>
-
-                      <Field label="School" htmlFor={`education-${entry.uid}-institution`}>
-                        <Input
-                          value={entry.institution}
-                          placeholder="Carleton University"
-                          onChange={(event) =>
-                            setEducation(
-                              replace(education, index, {
-                                ...entry,
-                                institution: event.target.value,
-                              }),
-                            )
-                          }
-                        />
-                      </Field>
-
-                      <Field
-                        label="Year"
-                        htmlFor={`education-${entry.uid}-year`}
-                        hint="Left blank, the resume page reads Completed instead."
-                      >
-                        <Input
-                          value={entry.year}
-                          placeholder="2025"
-                          onChange={(event) =>
-                            setEducation(
-                              replace(education, index, { ...entry, year: event.target.value }),
-                            )
-                          }
-                        />
-                      </Field>
-
-                      <Field
-                        label="Note"
-                        htmlFor={`education-${entry.uid}-note`}
-                        hint="Anything worth adding, an honour for example. Leave it blank and nothing shows."
-                      >
-                        <Input
-                          value={entry.note}
-                          placeholder="Dean's Honour List, Faculty of Engineering and Design."
-                          onChange={(event) =>
-                            setEducation(
-                              replace(education, index, { ...entry, note: event.target.value }),
-                            )
-                          }
-                        />
-                      </Field>
-                    </div>
-                  </div>
-                )}
-              />
-            )}
-
-            <AddButton
-              label="Add a qualification"
-              onClick={() =>
-                setEducation([
-                  ...education,
-                  { uid: nextUid(), credential: '', institution: '', year: '', note: '' },
-                ])
-              }
-            />
-          </Panel>
+          {SECTIONS.filter((section) => section.id === 'volunteering').map(renderEntrySection)}
 
           <Panel
             title="Skills"
@@ -1287,88 +1372,7 @@ export function ResumeForm({ data }: { data: ResumeData }) {
             />
           </Panel>
 
-          {SECTIONS.map((section) => {
-            const rows = entries[section.id];
-
-            return (
-              <Panel key={section.id} title={section.title} description={section.description}>
-                {rows.length === 0 ? (
-                  <Empty text="Nothing here yet." />
-                ) : (
-                  <SortableList
-                    items={rows}
-                    getId={(entry) => entry.uid}
-                    getLabel={(entry) => entry.title || 'an item with no title'}
-                    onReorder={(ids) => setEntrySection(section.id, reorder(rows, ids))}
-                    renderItem={(entry, index) => (
-                      <div className="grid gap-4">
-                        <RowHeader
-                          title={`Item ${index + 1}`}
-                          onRemove={() => setEntrySection(section.id, without(rows, index))}
-                          removeLabel={`item ${index + 1}, ${entry.title || 'no title'}`}
-                        />
-
-                        <div className="grid gap-4 sm:grid-cols-3">
-                          <Field label="Title" htmlFor={`${section.id}-${entry.uid}-title`}>
-                            <Input
-                              value={entry.title}
-                              placeholder="Scouts Leader"
-                              onChange={(event) =>
-                                setEntrySection(
-                                  section.id,
-                                  replace(rows, index, { ...entry, title: event.target.value }),
-                                )
-                              }
-                            />
-                          </Field>
-
-                          <Field label="Detail" htmlFor={`${section.id}-${entry.uid}-detail`}>
-                            <Input
-                              value={entry.detail}
-                              placeholder="ABCCO Community Centre"
-                              onChange={(event) =>
-                                setEntrySection(
-                                  section.id,
-                                  replace(rows, index, { ...entry, detail: event.target.value }),
-                                )
-                              }
-                            />
-                          </Field>
-
-                          <Field
-                            label="When"
-                            htmlFor={`${section.id}-${entry.uid}-year`}
-                            hint="Left blank, the page reads Ongoing instead."
-                          >
-                            <Input
-                              value={entry.year}
-                              placeholder="2025 to present"
-                              onChange={(event) =>
-                                setEntrySection(
-                                  section.id,
-                                  replace(rows, index, { ...entry, year: event.target.value }),
-                                )
-                              }
-                            />
-                          </Field>
-                        </div>
-                      </div>
-                    )}
-                  />
-                )}
-
-                <AddButton
-                  label="Add an item"
-                  onClick={() =>
-                    setEntrySection(section.id, [
-                      ...rows,
-                      { uid: nextUid(), title: '', detail: '', year: '' },
-                    ])
-                  }
-                />
-              </Panel>
-            );
-          })}
+          {SECTIONS.filter((section) => section.id !== 'volunteering').map(renderEntrySection)}
         </div>
       </section>
     </div>
