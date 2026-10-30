@@ -149,69 +149,112 @@ export async function transcodeVideo(
 
   const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
 
-  const videoTrack = await input.getPrimaryVideoTrack();
-  if (!videoTrack) {
-    throw new Error('That file has no video in it.');
-  }
+  try {
+    const videoTrack = await input.getPrimaryVideoTrack();
+    if (!videoTrack) {
+      throw new Error('That file has no video in it.');
+    }
 
-  const durationSeconds = await input.computeDuration();
-  const sourceWidth = videoTrack.displayWidth;
-  const sourceHeight = videoTrack.displayHeight;
+    const durationSeconds = await input.computeDuration();
+    const sourceWidth = videoTrack.displayWidth;
+    const sourceHeight = videoTrack.displayHeight;
 
-  /* Never upscale. A 720p export asked for at 1440p would be bigger, slower and
-     no sharper, so a rung taller than the source is dropped. The shortest rung
-     is always kept, otherwise a small source would produce no encode at all. */
-  const applicable = rungs.filter((rung, index) => rung.height <= sourceHeight || index === rungs.length - 1);
-  const wanted = applicable.length > 0 ? applicable : [rungs[rungs.length - 1]];
+    /* Never upscale. A 720p export asked for at 1440p would be bigger, slower and
+       no sharper, so a rung taller than the source is dropped. The shortest rung
+       is always kept, otherwise a small source would produce no encode at all. */
+    const applicable = rungs.filter((rung, index) => rung.height <= sourceHeight || index === rungs.length - 1);
+    const wanted = applicable.length > 0 ? applicable : [rungs[rungs.length - 1]];
 
-  /* The poster is cheap next to the encodes, so the encodes get almost all of
-     the progress bar. Splitting it evenly would make the bar sit still for
-     minutes and then jump, which reads as a hang. */
-  const encodeShare = 0.92 / wanted.length;
-  const encodes: TranscodeEncode[] = [];
+    /* The poster is cheap next to the encodes, so the encodes get almost all of
+       the progress bar. Splitting it evenly would make the bar sit still for
+       minutes and then jump, which reads as a hang. */
+    const encodeShare = 0.92 / wanted.length;
+    const encodes: TranscodeEncode[] = [];
 
-  for (const [index, rung] of wanted.entries()) {
+    for (const [index, rung] of wanted.entries()) {
+      signal?.throwIfAborted();
+
+      const output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
+
+      const conversion = await Conversion.init({
+        input,
+        output,
+        tracks: 'primary',
+        showWarnings: false,
+        video: {
+          height: Math.min(rung.height, sourceHeight),
+          fit: 'contain',
+          codec: 'avc',
+          bitrate: rung.bitrate,
+          /* A keyframe every two seconds at 30fps. Seeking into a long
+             walkthrough is unusable without them, and the size cost is small. */
+          keyFrameInterval: 2,
+        },
+        audio: keepAudio ? { codec: 'aac', bitrate: 128_000 } : { discard: true },
+      });
+
+      // An audio-only MP4 is valid too. Require the actual video track so a
+      // failed video conversion cannot silently upload a film with no picture.
+      if (!conversion.isValid || !conversion.utilizedTracks.includes(videoTrack)) {
+        const discarded = conversion.discardedTracks.find(({ track }) => track === videoTrack);
+        await conversion.cancel();
+
+        // A phone may encode H.264 at 720p but not at 1440p. Keep going with
+        // the smaller rendition instead of executing the invalid conversion.
+        if (discarded?.reason === 'no_encodable_target_codec') continue;
+
+        if (discarded?.reason === 'undecodable_source_codec' || discarded?.reason === 'unknown_source_codec') {
+          const { transcodeNativeVideo } = await import('./transcode-native');
+          return await transcodeNativeVideo(file, {
+            keepAudio,
+            bitrate: rungs[rungs.length - 1].bitrate,
+            signal,
+            onProgress,
+          });
+        }
+
+        throw new Error('Could not prepare the video for upload. Try exporting it as an H.264 MP4.');
+      }
+
+      const base = index * encodeShare;
+      conversion.onProgress = (fraction) =>
+        report('encoding', base + fraction * encodeShare, `Compressing to ${rung.height}p`);
+
+      const cancel = () => { void conversion.cancel(); };
+      signal?.addEventListener('abort', cancel, { once: true });
+      try {
+        signal?.throwIfAborted();
+        await conversion.execute();
+        signal?.throwIfAborted();
+      } finally {
+        signal?.removeEventListener('abort', cancel);
+        if (conversion.state !== 'done') await conversion.cancel();
+      }
+
+      const buffer = (output.target as BufferTarget).buffer;
+      if (!buffer) throw new Error(`The ${rung.height}p encode produced no data.`);
+
+      encodes.push({ height: rung.height, blob: new Blob([buffer], { type: 'video/mp4' }) });
+    }
+
     signal?.throwIfAborted();
+    if (encodes.length === 0) {
+      throw new Error(
+        'This browser cannot compress this film, even at 720p. Try uploading it from a computer using Chrome or Safari.',
+      );
+    }
+    report('poster', 0.94, 'Taking the poster frame');
 
-    const output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
+    const sink = new CanvasSink(videoTrack, { width: 1920, fit: 'contain' });
+    const frame = await sink.getCanvas(posterTimestamp(durationSeconds));
+    if (!frame) throw new Error('Could not read a poster frame from that film.');
 
-    const conversion = await Conversion.init({
-      input,
-      output,
-      video: {
-        height: rung.height,
-        fit: 'contain',
-        codec: 'avc',
-        bitrate: rung.bitrate,
-        /* A keyframe every two seconds at 30fps. Seeking into a long
-           walkthrough is unusable without them, and the size cost is small. */
-        keyFrameInterval: 2,
-      },
-      audio: keepAudio ? { codec: 'aac', bitrate: 128_000 } : { discard: true },
-    });
+    const poster = await canvasToBlob(frame.canvas);
 
-    const base = index * encodeShare;
-    conversion.onProgress = (fraction) =>
-      report('encoding', base + fraction * encodeShare, `Compressing to ${rung.height}p`);
+    report('poster', 1, 'Done');
 
-    await conversion.execute();
-
-    const buffer = (output.target as BufferTarget).buffer;
-    if (!buffer) throw new Error(`The ${rung.height}p encode produced no data.`);
-
-    encodes.push({ height: rung.height, blob: new Blob([buffer], { type: 'video/mp4' }) });
+    return { encodes, poster, durationSeconds, sourceWidth, sourceHeight };
+  } finally {
+    input.dispose();
   }
-
-  signal?.throwIfAborted();
-  report('poster', 0.94, 'Taking the poster frame');
-
-  const sink = new CanvasSink(videoTrack, { width: 1920, fit: 'contain' });
-  const frame = await sink.getCanvas(posterTimestamp(durationSeconds));
-  if (!frame) throw new Error('Could not read a poster frame from that film.');
-
-  const poster = await canvasToBlob(frame.canvas);
-
-  report('poster', 1, 'Done');
-
-  return { encodes, poster, durationSeconds, sourceWidth, sourceHeight };
 }
