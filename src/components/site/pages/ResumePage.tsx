@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import type { CSSProperties } from 'react';
-import Image from 'next/image';
 
 import Reveal from '@/components/site/Reveal';
 import SkillIcon from '@/components/site/SkillIcon';
@@ -101,18 +100,7 @@ export default async function ResumePage({ locale }: { locale: Locale }) {
             </a>
           )}
         </p>
-        {profile?.portraitMedia && (
-          <Image
-            className="resume-portrait"
-            src={profile.portraitMedia.key}
-            alt={profile.portraitAlt || profile.name}
-            width={profile.portraitMedia.width ?? 800}
-            height={profile.portraitMedia.height ?? 1000}
-            sizes="(max-width: 480px) 45vw, 192px"
-            loading="eager"
-            style={{ '--i': 3 } as CSSProperties}
-          />
-        )}
+
       </section>
 
       {/* A reader scans before they read. Categories with a few lines each, and

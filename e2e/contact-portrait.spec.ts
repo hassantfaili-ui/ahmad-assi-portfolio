@@ -24,7 +24,7 @@ test('a portrait can be uploaded, published, removed, and reused from the librar
       height: 1080,
     },
   });
-  const alt = 'Portrait selected in the resume editor';
+  const alt = 'Portrait selected in the contact editor';
 
   try {
     await page.route(/\/api\/uploads\/presign\/?$/, async (route) => {
@@ -40,7 +40,7 @@ test('a portrait can be uploaded, published, removed, and reused from the librar
     await page.route(/\/api\/uploads\/complete\/?$/, route => route.fulfill({ json: { media } }));
     await page.route(`**/api/media-dev/${media.key}*`, route => route.fulfill({ contentType: 'image/jpeg', body: picture }));
 
-    await page.goto('/admin/resume/');
+    await page.goto('/admin/contact/');
     const panel = page.getByRole('heading', { name: 'Your portrait', exact: true }).locator('..');
     const save = panel.getByRole('button', { name: 'Save portrait and details' });
     await panel.locator('input[type=file]').setInputFiles({ name: media.originalName, mimeType: media.contentType, buffer: picture });
@@ -48,35 +48,45 @@ test('a portrait can be uploaded, published, removed, and reused from the librar
     await panel.getByLabel('What the portrait shows').fill(alt);
     await expect(panel.getByRole('img', { name: alt })).toBeVisible();
     await save.click();
-    await expect(panel.getByText('Your portrait is saved on the resume page.')).toBeVisible();
+    await expect(panel.getByText('Your portrait is saved on the contact page.')).toBeVisible();
 
     await page.reload();
     await expect(panel.getByLabel('Previously uploaded portraits')).toHaveValue(media.id);
-    await page.goto('/resume/');
-    const portrait = page.locator('img.resume-portrait');
+    await page.goto('/contact/');
+    const portrait = page.locator('img.contact-portrait');
     await expect(portrait).toHaveAttribute('alt', alt);
     await expect(portrait).toBeVisible();
     await expect(portrait).toHaveJSProperty('complete', true);
     expect(await portrait.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
 
+    expect((await portrait.boundingBox())!.width).toBeGreaterThanOrEqual(380);
+    await page.goto('/resume/');
+    await expect(page.locator('img.resume-portrait, img.contact-portrait')).toHaveCount(0);
+    await page.goto('/fr/resume/');
+    await expect(page.locator('img.resume-portrait, img.contact-portrait')).toHaveCount(0);
+    await page.goto('/fr/contact/');
+    await expect(portrait).toBeVisible();
+    await page.goto('/contact/');
     await page.setViewportSize({ width: 393, height: 851 });
     await expect(portrait).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    await expect(portrait).toHaveCSS('opacity', '1');
-    await page.screenshot({ path: '/tmp/ahmad-resume-portrait-mobile.png' });
+    await portrait.scrollIntoViewIfNeeded();
+    await expect(portrait.locator('..')).toHaveCSS('opacity', '1');
+    expect((await portrait.boundingBox())!.width).toBeGreaterThanOrEqual(300);
+    await page.screenshot({ path: '/tmp/ahmad-contact-portrait-mobile.png' });
 
-    await page.goto('/admin/resume/');
+    await page.goto('/admin/contact/');
     await panel.getByRole('button', { name: 'Take this portrait off' }).click();
     await save.click();
-    await expect(panel.getByText('No portrait is saved on the resume page.')).toBeVisible();
-    await page.goto('/resume/');
+    await expect(panel.getByText('No portrait is saved on the contact page.')).toBeVisible();
+    await page.goto('/contact/');
     await expect(portrait).toHaveCount(0);
 
-    await page.goto('/admin/resume/');
+    await page.goto('/admin/contact/');
     await panel.getByLabel('Previously uploaded portraits').selectOption(media.id);
     await save.click();
-    await expect(panel.getByText('Your portrait is saved on the resume page.')).toBeVisible();
-    await page.goto('/resume/');
+    await expect(panel.getByText('Your portrait is saved on the contact page.')).toBeVisible();
+    await page.goto('/contact/');
     await expect(portrait).toHaveAttribute('alt', alt);
     await expect(portrait).toBeVisible();
 

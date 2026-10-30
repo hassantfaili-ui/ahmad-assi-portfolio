@@ -34,6 +34,11 @@ vi.mock('@/components/admin/UnsavedWork', () => ({
    video encoder on mount. */
 vi.mock('@/components/admin/Dropzone', () => ({ Dropzone: () => <div /> }));
 
+/* The real custom image loader is exercised in the browser suite. */
+vi.mock('next/image', () => ({
+  default: ({ alt }: { alt: string }) => <span data-testid="image">{alt}</span>,
+}));
+
 import { ContactForm } from './ContactForm';
 import type { FrenchData, ProfileData } from './ResumeForm';
 
@@ -102,6 +107,7 @@ const data: ProfileData = {
  */
 const french: FrenchData = {
   profile: {
+    portraitAlt: 'Ahmad Assi, devant une table a dessin',
     contactStatus: 'Disponible maintenant',
     contactHeading: 'Ecrivez-moi',
     contactBlurb: 'Le courriel est le plus simple, et il me parvient directement.',
@@ -262,6 +268,7 @@ describe('the French boxes', () => {
     await user.click(screen.getByRole('button', { name: 'Show the French boxes' }));
 
     expect(screen.getByLabelText('Heading, in French')).toHaveValue('Ecrivez-moi');
+    expect(screen.getByLabelText('What the portrait shows, in French')).toHaveValue('Ahmad Assi, devant une table a dessin');
     expect(screen.getByLabelText('Where you are, in French')).toHaveValue('Ottawa (Ontario)');
     expect(screen.getByLabelText('What it says, in French')).toHaveValue('LinkedIn en francais');
   });
@@ -275,6 +282,9 @@ describe('the French boxes', () => {
     const heading = screen.getByLabelText('Heading, in French');
     await user.clear(heading);
     await user.type(heading, 'Ecrivez-moi donc');
+    const portraitAlt = screen.getByLabelText('What the portrait shows, in French');
+    await user.clear(portraitAlt);
+    await user.type(portraitAlt, 'Portrait de Ahmad Assi');
 
     await user.click(screen.getByRole('button', { name: 'Save the contact page' }));
 
@@ -282,6 +292,7 @@ describe('the French boxes', () => {
     const sent = saveProfile.mock.calls[0][0] as { french: Record<string, string> };
 
     expect(sent.french.contactHeading).toBe('Ecrivez-moi donc');
+    expect(sent.french.portraitAlt).toBe('Portrait de Ahmad Assi');
     expect(sent.french.location).toBe('Ottawa (Ontario)');
     expect(sent.french.availability).toBe('A la recherche d un poste en cabinet');
 
@@ -296,6 +307,7 @@ describe('the French boxes', () => {
       'contactHeading',
       'contactStatus',
       'location',
+      'portraitAlt',
     ]);
   });
 
@@ -369,6 +381,6 @@ describe('the French boxes', () => {
     render(<ContactForm data={data} french={french} />);
 
     // Five boxes on the contact page itself and one for the single link.
-    expect(screen.getByText(/6 of 6 boxes written/)).toBeInTheDocument();
+    expect(screen.getByText(/7 of 7 boxes written/)).toBeInTheDocument();
   });
 });

@@ -3,7 +3,7 @@ import { getIdentity } from '@/lib/access';
 import type { Metadata } from 'next';
 
 import { ContactForm } from '@/components/admin/ContactForm';
-import { getProfileFrench } from '@/lib/admin-queries';
+import { getProfileFrench, listProfileImages } from '@/lib/admin-queries';
 import { getProfile } from '@/lib/queries';
 
 /**
@@ -28,21 +28,21 @@ export default async function AdminContactPage() {
      anonymous requests. */
   if (!(await getIdentity())) return <SignedOut />;
 
-  const [data, french] = await Promise.all([getProfile(), getProfileFrench()]);
+  const [data, french, portraitImages] = await Promise.all([getProfile(), getProfileFrench(), listProfileImages()]);
 
   return (
     <div className="grid gap-8">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Contact</h1>
         <p className="mt-1 max-w-3xl text-sm text-neutral-600">
-          Everything your contact page says: the words at the top, how people reach you, the two
+          Everything your contact page says: the words at the top, how people reach you, your portrait, the two
           PDFs they can download, and the links to elsewhere. Your email address, telephone number
           and where you are also show on the home page, the resume page and the footer, so changing
           one here changes it everywhere.
         </p>
       </header>
 
-      <ContactForm data={data} french={french} />
+      <ContactForm data={data} french={french} portraitImages={portraitImages} />
     </div>
   );
 }

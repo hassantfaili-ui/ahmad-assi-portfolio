@@ -9,14 +9,15 @@ seconds of saving.
 
 ---
 
-## The four screens
+## The editing screens
 
 | Screen | What it is for |
 | --- | --- |
+| **Home** | The home page introduction and films |
 | **Projects** | Every project. Add, edit, reorder, publish, delete |
 | **Media** | Every photograph, drawing, film and PDF that has been uploaded |
-| **Resume** | Your biography, experience, education, skills and contact details |
-| **Settings** | The film behind your name on the home page |
+| **Resume** | Your biography, education, experience, community, skills and PDFs |
+| **Contact** | Your portrait, contact details, contact page writing, PDFs and links |
 
 ---
 

@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { Plus, X } from 'lucide-react';
 import {
   useState,
@@ -11,7 +10,6 @@ import {
 } from 'react';
 
 import { DocumentSlot } from '@/components/admin/ContactForm';
-import { Dropzone } from '@/components/admin/Dropzone';
 import { GuardedLink } from '@/components/admin/GuardedLink';
 /* The project screen's French boxes, used here as they are. Two screens that
    invented their own would be two answers to the same question in front of the
@@ -23,7 +21,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/toast';
 import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
@@ -36,7 +33,6 @@ import {
   type ProfileInput,
   type ResumeLists,
 } from '@/lib/mutations';
-import { formatBytes } from '@/lib/upload-policy';
 import { hasErrors, validateProfile, type FieldErrors } from '@/lib/validation';
 
 /**
@@ -323,9 +319,8 @@ interface EntryRow {
  *
  * Shorter than the profile row it belongs to. Where he is, his email address,
  * his telephone number, the line about what he is looking for, the words on the
- * contact page and the two PDFs are all edited on the Contact screen now, so
- * they are not fields here. The save still sends them, straight through from
- * what the page loaded with.
+ * contact page and the portrait are edited on the Contact screen, so they are
+ * passed through unchanged. PDFs can be edited on either screen.
  */
 type ProfileFields = {
   name: string;
@@ -336,7 +331,6 @@ type ProfileFields = {
   issued: string;
   welcome: string;
   positioning: string;
-  portraitAlt: string;
   references: string;
 };
 
@@ -353,7 +347,6 @@ type ProfileFrenchFields = {
   yearsExperience: string;
   issued: string;
   positioning: string;
-  portraitAlt: string;
   references: string;
 };
 
@@ -469,16 +462,6 @@ function firstFile(items: UploadedItem[]): FileRef | null {
   return null;
 }
 
-/** The name Ahmad gave the file, read back off the end of its object key. */
-function fileName(key: string): string {
-  const last = key.split('/').pop() ?? key;
-  try {
-    return decodeURIComponent(last);
-  } catch {
-    return last;
-  }
-}
-
 /**
  * The first blank heading in a list, said as a sentence.
  *
@@ -545,10 +528,9 @@ function marking<T>(
 
 // ------------------------------------------------------------ the screen ---
 
-export function ResumeForm({ data, french, portraitImages = [] }: {
+export function ResumeForm({ data, french }: {
   data: ProfileData;
   french?: FrenchData;
-  portraitImages?: (FileRef & { originalName: string })[];
 }) {
   const { push } = useToast();
 
@@ -582,7 +564,6 @@ export function ResumeForm({ data, french, portraitImages = [] }: {
     issued: data.profile?.issued ?? '',
     welcome: data.profile?.welcome ?? '',
     positioning: data.profile?.positioning ?? '',
-    portraitAlt: data.profile?.portraitAlt ?? '',
     references: data.profile?.references ?? '',
   }));
 
@@ -592,7 +573,6 @@ export function ResumeForm({ data, french, portraitImages = [] }: {
     yearsExperience: frenchProfile.yearsExperience ?? '',
     issued: frenchProfile.issued ?? '',
     positioning: frenchProfile.positioning ?? '',
-    portraitAlt: frenchProfile.portraitAlt ?? '',
     references: frenchProfile.references ?? '',
   }));
 
@@ -600,14 +580,6 @@ export function ResumeForm({ data, french, portraitImages = [] }: {
     const paragraphs = data.profile?.longBio ?? [];
     return toTextRows(paragraphs, longBioFrench(frenchProfile, paragraphs.length));
   });
-  const [portrait, setPortraitState] = useState<FileRef | null>(
-    () => data.profile?.portraitMedia ?? null,
-  );
-
-  const portraitChoices =
-    portrait && !portraitImages.some((image) => image.id === portrait.id)
-      ? [{ ...portrait, originalName: fileName(portrait.key) }, ...portraitImages]
-      : portraitImages;
   const [cv, setCvState] = useState<FileRef | null>(() => data.profile?.cvMedia ?? null);
   const [portfolio, setPortfolioState] = useState<FileRef | null>(() => data.profile?.portfolioMedia ?? null);
 
@@ -696,7 +668,6 @@ export function ResumeForm({ data, french, portraitImages = [] }: {
   const setFields = marking(setFieldsState, profileFlag.markDirty);
   const setFrenchFields = marking(setFrenchFieldsState, profileFlag.markDirty);
   const setLongBio = marking(setLongBioState, profileFlag.markDirty);
-  const setPortrait = marking(setPortraitState, profileFlag.markDirty);
   const setCv = marking(setCvState, profileFlag.markDirty);
   const setPortfolio = marking(setPortfolioState, profileFlag.markDirty);
 
@@ -727,7 +698,8 @@ export function ResumeForm({ data, french, portraitImages = [] }: {
     const input: ProfileSave = {
       ...fields,
       longBio: longBio.map((row) => row.text),
-      portraitMediaId: portrait?.id ?? null,
+      portraitMediaId: profile?.portraitMedia?.id ?? null,
+      portraitAlt: profile?.portraitAlt ?? '',
 
       /* Everything the contact screen owns, exactly as this page loaded it.
          saveProfile upserts the whole row, so a field left out of this object
@@ -757,7 +729,6 @@ export function ResumeForm({ data, french, portraitImages = [] }: {
           yearsExperience: frenchFields.yearsExperience,
           issued: frenchFields.issued,
           positioning: frenchFields.positioning,
-          portraitAlt: frenchFields.portraitAlt,
           references: frenchFields.references,
           ...longBioFields(longBio),
         },
@@ -929,7 +900,6 @@ export function ResumeForm({ data, french, portraitImages = [] }: {
     frenchFields.yearsExperience,
     frenchFields.issued,
     frenchFields.positioning,
-    frenchFields.portraitAlt,
     frenchFields.references,
     ...frenchOf(longBio),
     ...facts.flatMap((fact) => [fact.french.label, ...frenchOf(fact.items)]),
@@ -1093,7 +1063,7 @@ export function ResumeForm({ data, french, portraitImages = [] }: {
       <section>
         <SaveBar
           title="Your details"
-          description="Your name, how you describe yourself, your portrait, your PDFs and the writing about you. This button saves everything in this half. The lists below have their own button."
+          description="Your name, how you describe yourself, your PDFs and the writing about you. This button saves everything in this half. The lists below have their own button."
           label="Save your details"
           busy={savingProfile}
           dirty={profileFlag.dirty}
@@ -1101,7 +1071,7 @@ export function ResumeForm({ data, french, portraitImages = [] }: {
         />
 
         <Moved>
-          Your email address, telephone number, where you are and the words on the
+          Your portrait, email address, telephone number, where you are and the words on the
           contact page are edited on the{' '}
           <GuardedLink href="/admin/contact" className="underline underline-offset-4">
             Contact
@@ -1279,105 +1249,6 @@ export function ResumeForm({ data, french, portraitImages = [] }: {
               emptyText="No paragraphs yet, so the About block on the home page is empty."
               multiline
             />
-          </Panel>
-
-          <Panel
-            title="Your portrait"
-            description="Shown at the top of your resume page. Upload a photo or choose one already in your library, then save your details below."
-          >
-            {portraitChoices.length > 0 && (
-              <Field
-                label="Previously uploaded portraits"
-                htmlFor="profile-portrait-media"
-                hint="Use the photo you already uploaded without uploading it again."
-              >
-                <Select
-                  value={portrait?.id ?? ''}
-                  onChange={(event) =>
-                    setPortrait(portraitChoices.find((image) => image.id === event.target.value) ?? null)
-                  }
-                >
-                  <option value="">Choose a photo</option>
-                  {portraitChoices.map((image) => (
-                    <option key={image.id} value={image.id}>
-                      {image.originalName}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            )}
-            {portrait && (
-              <div className="flex flex-wrap items-start gap-4">
-                <Image
-                  src={portrait.key}
-                  alt={fields.portraitAlt}
-                  width={portrait.width ?? 800}
-                  height={portrait.height ?? 600}
-                  className="h-40 w-auto rounded-lg border border-neutral-200 object-cover"
-                />
-                <div className="grid gap-2">
-                  <p className="text-xs text-neutral-500">
-                    {`${fileName(portrait.key)}, ${formatBytes(portrait.bytes)}`}
-                  </p>
-                  <div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPortrait(null)}
-                    >
-                      Take this portrait off
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div>
-              <Field
-                label="What the portrait shows"
-                htmlFor="profile-portrait-alt"
-                error={profileErrors.portraitAlt}
-                hint="One sentence describing the picture, for a reader who cannot see it."
-              >
-                <Input
-                  value={fields.portraitAlt}
-                  placeholder="Ahmad Assi, standing in front of a drawing board"
-                  onChange={(event) => setField('portraitAlt', event.target.value)}
-                />
-              </Field>
-              <FrenchBox
-                htmlFor="profile-portrait-alt-fr"
-                label="What the portrait shows"
-                english={fields.portraitAlt}
-                value={frenchFields.portraitAlt}
-                onChange={(value) => setFrenchField('portraitAlt', value)}
-              />
-            </div>
-
-            <Dropzone
-              destination="profile"
-              accept="image"
-              onUploaded={(items) => {
-                const file = firstFile(items);
-                if (file) setPortrait(file);
-              }}
-              label="Drop your portrait here"
-              hint="One picture. JPG, PNG, WebP, AVIF, GIF or TIFF, up to 64 MB."
-            />
-
-            <div className="flex flex-wrap items-center gap-3">
-              <Button type="button" onClick={onSaveProfile} disabled={savingProfile}>
-                {savingProfile ? 'Saving' : 'Save portrait and details'}
-              </Button>
-              <p role="status" className="text-sm text-neutral-600">
-                {profileFlag.dirty
-                  ? 'Your changes are not on the site yet. Save to publish them.'
-                  : portrait
-                    ? 'Your portrait is saved on the resume page.'
-                    : 'No portrait is saved on the resume page.'}
-              </p>
-            </div>
           </Panel>
 
           <Panel

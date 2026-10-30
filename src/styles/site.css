@@ -1745,13 +1745,6 @@ button {
 
 /* ------------------------------------------------------------ at a glance --- */
 
-.resume-portrait {
-  display: block;
-  width: min(12rem, 45vw);
-  height: auto;
-  margin: 2rem auto 0;
-}
-
 .atglance {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
@@ -1829,6 +1822,12 @@ button {
 .contact-grid > div {
   border-top: 2px solid var(--ink);
   padding-top: 1.5rem;
+}
+.contact-portrait {
+  display: block;
+  width: min(100%, 28rem);
+  height: auto;
+  margin: 0 0 2.25rem;
 }
 .contact-facts {
   display: grid;

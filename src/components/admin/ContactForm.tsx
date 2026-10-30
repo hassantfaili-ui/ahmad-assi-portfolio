@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 import { Plus, X } from 'lucide-react';
 import {
   useState,
@@ -26,6 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/toast';
 import { useSaveFlag } from '@/hooks/use-save-flag';
@@ -72,8 +75,9 @@ import { hasErrors, validateProfile, type FieldErrors } from '@/lib/validation';
 
 // ------------------------------------------------------------------ types ---
 
-/** The seven boxes on this screen that belong to the profile row. */
+/** The eight boxes on this screen that belong to the profile row. */
 interface ContactFields {
+  portraitAlt: string;
   contactStatus: string;
   contactHeading: string;
   contactBlurb: string;
@@ -84,13 +88,14 @@ interface ContactFields {
 }
 
 /**
- * The five of those that are sentences rather than details.
+ * The six of those that are sentences rather than details.
  *
  * An email address, a telephone number and a PDF are not translated: they are
  * the same characters in both languages, and a box for them would be a box that
  * can only ever be filled in wrongly.
  */
 interface ContactFrenchFields {
+  portraitAlt: string;
   contactStatus: string;
   contactHeading: string;
   contactBlurb: string;
@@ -213,7 +218,11 @@ function marking<T>(
 
 // ------------------------------------------------------------ the screen ---
 
-export function ContactForm({ data, french }: { data: ProfileData; french?: FrenchData }) {
+export function ContactForm({ data, french, portraitImages = [] }: {
+  data: ProfileData;
+  french?: FrenchData;
+  portraitImages?: (FileRef & { originalName: string })[];
+}) {
   const { push } = useToast();
 
   /* Read once, like everything else here, and empty until the page that renders
@@ -231,6 +240,7 @@ export function ContactForm({ data, french }: { data: ProfileData; french?: Fren
   useRegisterUnsaved('contact:links', linksFlag.dirty);
 
   const [fields, setFieldsState] = useState<ContactFields>(() => ({
+    portraitAlt: data.profile?.portraitAlt ?? '',
     contactStatus: data.profile?.contactStatus ?? '',
     contactHeading: data.profile?.contactHeading ?? '',
     contactBlurb: data.profile?.contactBlurb ?? '',
@@ -241,6 +251,7 @@ export function ContactForm({ data, french }: { data: ProfileData; french?: Fren
   }));
 
   const [frenchFields, setFrenchFieldsState] = useState<ContactFrenchFields>(() => ({
+    portraitAlt: frenchProfile.portraitAlt ?? '',
     contactStatus: frenchProfile.contactStatus ?? '',
     contactHeading: frenchProfile.contactHeading ?? '',
     contactBlurb: frenchProfile.contactBlurb ?? '',
@@ -248,6 +259,14 @@ export function ContactForm({ data, french }: { data: ProfileData; french?: Fren
     availability: frenchProfile.availability ?? '',
   }));
 
+  const [portrait, setPortraitState] = useState<FileRef | null>(
+    () => data.profile?.portraitMedia ?? null,
+  );
+
+  const portraitChoices =
+    portrait && !portraitImages.some((image) => image.id === portrait.id)
+      ? [{ ...portrait, originalName: fileName(portrait.key) }, ...portraitImages]
+      : portraitImages;
   const [cv, setCvState] = useState<FileRef | null>(() => data.profile?.cvMedia ?? null);
   const [portfolio, setPortfolioState] = useState<FileRef | null>(
     () => data.profile?.portfolioMedia ?? null,
@@ -276,6 +295,7 @@ export function ContactForm({ data, french }: { data: ProfileData; french?: Fren
   // marking the right half unsaved is not something a call site can forget.
   const setFields = marking(setFieldsState, pageFlag.markDirty);
   const setFrenchFields = marking(setFrenchFieldsState, pageFlag.markDirty);
+  const setPortrait = marking(setPortraitState, pageFlag.markDirty);
   const setCv = marking(setCvState, pageFlag.markDirty);
   const setPortfolio = marking(setPortfolioState, pageFlag.markDirty);
   const setSocial = marking(setSocialState, linksFlag.markDirty);
@@ -307,8 +327,7 @@ export function ContactForm({ data, french }: { data: ProfileData; french?: Fren
       welcome: profile?.welcome ?? '',
       positioning: profile?.positioning ?? '',
       longBio: profile?.longBio ?? [],
-      portraitMediaId: profile?.portraitMedia?.id ?? null,
-      portraitAlt: profile?.portraitAlt ?? '',
+      portraitMediaId: portrait?.id ?? null,
       references: profile?.references ?? '',
 
       ...fields,
@@ -325,6 +344,7 @@ export function ContactForm({ data, french }: { data: ProfileData; french?: Fren
          would delete translations he never saw. */
       ...(french && {
         french: {
+          portraitAlt: frenchFields.portraitAlt,
           contactStatus: frenchFields.contactStatus,
           contactHeading: frenchFields.contactHeading,
           contactBlurb: frenchFields.contactBlurb,
@@ -455,6 +475,7 @@ export function ContactForm({ data, french }: { data: ProfileData; french?: Fren
   /* Every French box on the screen, so the strip at the top can say how far the
      translation has got whether the boxes are showing or not. */
   const frenchBoxes = [
+    frenchFields.portraitAlt,
     frenchFields.contactStatus,
     frenchFields.contactHeading,
     frenchFields.contactBlurb,
@@ -482,7 +503,7 @@ export function ContactForm({ data, french }: { data: ProfileData; french?: Fren
       <section>
         <SaveBar
           title="Your contact page"
-          description="The words at the top, how people reach you, and the two files they can download. This button saves everything in this half. The links below have their own button."
+          description="The words at the top, your portrait, how people reach you, and the two files they can download. This button saves everything in this half. The links below have their own button."
           label="Save the contact page"
           busy={savingPage}
           dirty={pageFlag.dirty}
@@ -633,6 +654,105 @@ export function ContactForm({ data, french }: { data: ProfileData; french?: Fren
                   onChange={(value) => setFrenchField('location', value)}
                 />
               </div>
+            </div>
+          </Panel>
+
+          <Panel
+            title="Your portrait"
+            description="Shown beside your contact details on the contact page. Upload a photo or choose one already in your library, then save your details below."
+          >
+            {portraitChoices.length > 0 && (
+              <Field
+                label="Previously uploaded portraits"
+                htmlFor="profile-portrait-media"
+                hint="Use the photo you already uploaded without uploading it again."
+              >
+                <Select
+                  value={portrait?.id ?? ''}
+                  onChange={(event) =>
+                    setPortrait(portraitChoices.find((image) => image.id === event.target.value) ?? null)
+                  }
+                >
+                  <option value="">Choose a photo</option>
+                  {portraitChoices.map((image) => (
+                    <option key={image.id} value={image.id}>
+                      {image.originalName}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            )}
+            {portrait && (
+              <div className="flex flex-wrap items-start gap-4">
+                <Image
+                  src={portrait.key}
+                  alt={fields.portraitAlt}
+                  width={portrait.width ?? 800}
+                  height={portrait.height ?? 600}
+                  className="h-40 w-auto rounded-lg border border-neutral-200 object-cover"
+                />
+                <div className="grid gap-2">
+                  <p className="text-xs text-neutral-500">
+                    {`${fileName(portrait.key)}, ${formatBytes(portrait.bytes)}`}
+                  </p>
+                  <div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPortrait(null)}
+                    >
+                      Take this portrait off
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <Field
+                label="What the portrait shows"
+                htmlFor="profile-portrait-alt"
+                error={errors.portraitAlt}
+                hint="One sentence describing the picture, for a reader who cannot see it."
+              >
+                <Input
+                  value={fields.portraitAlt}
+                  placeholder="Ahmad Assi, standing in front of a drawing board"
+                  onChange={(event) => setField('portraitAlt', event.target.value)}
+                />
+              </Field>
+              <FrenchBox
+                htmlFor="profile-portrait-alt-fr"
+                label="What the portrait shows"
+                english={fields.portraitAlt}
+                value={frenchFields.portraitAlt}
+                onChange={(value) => setFrenchField('portraitAlt', value)}
+              />
+            </div>
+
+            <Dropzone
+              destination="profile"
+              accept="image"
+              onUploaded={(items) => {
+                const file = firstFile(items);
+                if (file) setPortrait(file);
+              }}
+              label="Drop your portrait here"
+              hint="One picture. JPG, PNG, WebP, AVIF, GIF or TIFF, up to 64 MB."
+            />
+
+            <div className="flex flex-wrap items-center gap-3">
+              <Button type="button" onClick={onSavePage} disabled={savingPage}>
+                {savingPage ? 'Saving' : 'Save portrait and details'}
+              </Button>
+              <p role="status" className="text-sm text-neutral-600">
+                {pageFlag.dirty
+                  ? 'Your changes are not on the site yet. Save to publish them.'
+                  : portrait
+                    ? 'Your portrait is saved on the contact page.'
+                    : 'No portrait is saved on the contact page.'}
+              </p>
             </div>
           </Panel>
 

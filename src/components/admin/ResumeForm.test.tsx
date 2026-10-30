@@ -183,6 +183,9 @@ describe('saving your details', () => {
     expect(sent.contactStatus).toBe('Available now');
     expect(sent.contactHeading).toBe('Write to me');
     expect(sent.contactBlurb).toBe('Email is best, and it reaches me directly.');
+    expect(sent.portraitMediaId).toBe('portrait-1');
+    expect(sent.portraitAlt).toBe(data.profile!.portraitAlt);
+    expect(screen.queryByRole('heading', { name: 'Your portrait' })).not.toBeInTheDocument();
     expect(sent.cvMediaId).toBe('cv-1');
     expect(sent.portfolioMediaId).toBe('portfolio-1');
   });
@@ -263,7 +266,6 @@ describe('the French boxes', () => {
       'credential',
       'issued',
       'longBio.0',
-      'portraitAlt',
       'positioning',
       'references',
       'registration',

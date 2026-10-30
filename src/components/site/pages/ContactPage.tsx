@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { CSSProperties } from 'react';
+import Image from 'next/image';
 
 import Reveal from '@/components/site/Reveal';
 import { contactDescription, pageWords } from '@/components/site/pages/copy';
@@ -103,6 +104,17 @@ export default async function ContactPage({ locale }: { locale: Locale }) {
           </Reveal>
 
           <Reveal>
+            {profile?.portraitMedia && (
+              <Image
+                className="contact-portrait"
+                src={profile.portraitMedia.key}
+                alt={profile.portraitAlt || profile.name}
+                width={profile.portraitMedia.width ?? 800}
+                height={profile.portraitMedia.height ?? 1000}
+                sizes="(max-width: 760px) 90vw, (max-width: 1100px) 42vw, 448px"
+                loading="eager"
+              />
+            )}
             <dl className="contact-facts">
               {email && (
                 <div>
