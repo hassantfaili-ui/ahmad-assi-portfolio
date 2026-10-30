@@ -1,6 +1,12 @@
 # Deploying
 
-Everything below is one time setup. After it, deploying is `npm run cf:deploy`.
+Pushing to GitHub runs verification; it does not publish the website. Publish
+website changes from the current `main` checkout with `npm run cf:publish` after
+the checks pass. That command builds from verified production content and deploys
+it. Confirm the result on the live English and French pages and the affected admin screen.
+
+The infrastructure steps below are one time setup. See the publishing section
+for the production-content snapshot workflow.
 
 Nothing here can be done from this repository: it all needs the Cloudflare and
 Neon accounts. The steps are in dependency order, so following them top to
@@ -160,6 +166,34 @@ it fails loudly, but do not rely on that: just do not set it.
 ---
 
 ## 7. Deploy
+
+For this configured Cloudflare account, run:
+
+```bash
+npm run cf:publish
+```
+
+This uses Wrangler's authenticated remote preview and the existing Hyperdrive
+binding. It does not require copying the production `DATABASE_URL` out of
+Cloudflare. Local Postgres must be running; `.env` supplies its connection.
+The command adds the drawing crop columns if needed, reads a consistent live
+snapshot, restores it into a disposable local database, and verifies every field
+before building. It checks live content again before deployment and refuses if
+an edit arrived while the build was running. It never imports the local test
+content into production. The preview and disposable database are removed at the
+end. Use `npm run cf:publish -- --build-only` to perform these checks and the
+schema preparation without deploying the Worker.
+
+The following direct-connection workflow is also supported:
+
+After a schema change, apply it to the production database before deploying the
+new code. Drawing crop controls add `ratio`, `focusX`, and `focusY` to `Drawing`;
+existing drawings keep their original shape until a ratio is chosen.
+
+```bash
+DATABASE_URL="postgresql://..." npm run db:push
+npm run db:generate
+```
 
 `NEXT_PUBLIC_MEDIA_ORIGIN` has to be set **in the environment the build runs
 in**, not as a Worker variable. Next inlines it into the browser bundle when the

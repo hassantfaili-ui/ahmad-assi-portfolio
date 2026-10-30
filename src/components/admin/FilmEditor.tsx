@@ -4,6 +4,8 @@ import Image from 'next/image';
 import { useCallback, useState } from 'react';
 
 import { Dropzone } from '@/components/admin/Dropzone';
+import { FramePicker } from '@/components/admin/FramePicker';
+import { FrenchBox } from '@/components/admin/ProjectFrench';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -11,6 +13,7 @@ import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/toast';
 import type { UploadedFilm, UploadedItem } from '@/hooks/use-uploads';
+import type { FilmFrench } from '@/lib/editor-shape';
 import { mediaUrl } from '@/lib/media-url';
 import { formatBytes } from '@/lib/upload-policy';
 import type { FieldErrors } from '@/lib/validation';
@@ -20,8 +23,10 @@ import type { EditorMedia } from '@/components/admin/MediaPanel';
 /**
  * The walkthrough on a project page.
  *
- * One dropped video becomes three files: a 1440p copy, a 720p copy, and the
- * still that shows before it plays. All of that happens in this browser before
+ * One dropped video becomes three files: a copy at its own resolution, a 720p
+ * copy, and the still that shows before it plays. An H.264 export from D5 or
+ * Lumion is copied across untouched; anything else is re-encoded at its own
+ * size, up to 4K. All of that happens in this browser before
  * anything is sent, which is why there is one progress bar and not three.
  *
  * The YouTube box is the exception, not the normal route. Nothing is requested
@@ -40,10 +45,21 @@ export interface EditorFilm {
   posterMedia: EditorMedia | null;
   youtubeId: string;
   caption: string;
+  /**
+   * The caption in French, for the /fr page. Not part of the film's row: it is
+   * written to the Translation table against it. Blank means the English shows.
+   */
+  french: FilmFrench;
   sources: { height: number; media: EditorMedia }[];
 }
 
-const EMPTY_FILM: EditorFilm = { posterMedia: null, youtubeId: '', caption: '', sources: [] };
+const EMPTY_FILM: EditorFilm = {
+  posterMedia: null,
+  youtubeId: '',
+  caption: '',
+  french: { caption: '' },
+  sources: [],
+};
 
 function toEditorMedia(media: { id: string; key: string; bytes: number; width: number | null; height: number | null }): EditorMedia {
   return {
@@ -97,12 +113,25 @@ export function FilmEditor({ film, savedFilm, errors, onChange }: FilmEditorProp
      saved, which is why they are still allowed to live here. */
   const [confirming, setConfirming] = useState(false);
   const [blocked, setBlocked] = useState(false);
+  const [pickingFrame, setPickingFrame] = useState(false);
 
   const change = useCallback(
     (changes: Partial<EditorFilm>) => {
       /* An edit on a project with no film starts one. A YouTube id typed into
          an empty section is a perfectly ordinary way to add a walkthrough. */
       onChange((current) => ({ ...(current ?? EMPTY_FILM), ...changes }));
+    },
+    [onChange],
+  );
+
+  /* Merged into the film as it is now, for the same reason as above: an upload
+     landing mid sentence must not put back an older French caption. */
+  const changeFrench = useCallback(
+    (changes: Partial<FilmFrench>) => {
+      onChange((current) => {
+        const film = current ?? EMPTY_FILM;
+        return { ...film, french: { ...film.french, ...changes } };
+      });
     },
     [onChange],
   );
@@ -190,7 +219,7 @@ export function FilmEditor({ film, savedFilm, errors, onChange }: FilmEditorProp
         filmProfile="walkthrough"
         onUploaded={takeUpload}
         label={dropLabel}
-        hint="It is made smaller in this browser before anything is sent, so a long film takes a few minutes and then uploads quickly."
+        hint="It keeps its full resolution. A 720p copy for phones is made in this browser first, so a long film takes a few minutes before it uploads."
       />
 
       {blocked && unsavedReplacement && (
@@ -222,18 +251,25 @@ export function FilmEditor({ film, savedFilm, errors, onChange }: FilmEditorProp
 
       {hasVideo ? (
         <div className="flex flex-wrap items-start gap-4 rounded-lg border border-neutral-200 bg-white p-3">
-          {film?.posterMedia ? (
-            <Image
-              src={film.posterMedia.key}
-              alt=""
-              width={240}
-              height={135}
-              sizes="240px"
-              className="h-24 w-40 shrink-0 rounded bg-neutral-200 object-cover"
-            />
-          ) : (
-            <p className="text-sm text-neutral-500">No still for this film yet.</p>
-          )}
+          <div className="grid shrink-0 gap-2">
+            {film?.posterMedia ? (
+              <Image
+                src={film.posterMedia.key}
+                alt=""
+                width={240}
+                height={135}
+                sizes="240px"
+                className="h-24 w-40 rounded bg-neutral-200 object-cover"
+              />
+            ) : (
+              <p className="w-40 text-sm text-neutral-500">No still for this film yet.</p>
+            )}
+            {/* Under the still it changes, so what the button does is plain
+                from where it sits. */}
+            <Button type="button" variant="outline" size="sm" onClick={() => setPickingFrame(true)}>
+              Choose a frame
+            </Button>
+          </div>
 
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-neutral-800">Two copies, one for each screen</p>
@@ -254,7 +290,8 @@ export function FilmEditor({ film, savedFilm, errors, onChange }: FilmEditorProp
             </ul>
             <p className="mt-2 text-xs text-neutral-500">
               A visitor on a phone gets the smaller one, a visitor on a large screen gets the other.
-              The still above is what shows before they press play.
+              The still is what shows before they press play. Choose a frame to use a different
+              moment from the film.
             </p>
           </div>
         </div>
@@ -266,17 +303,27 @@ export function FilmEditor({ film, savedFilm, errors, onChange }: FilmEditorProp
         </p>
       )}
 
-      <Field
-        label="Caption"
-        htmlFor="film-caption"
-        hint="A line under the film. Leave it empty for none."
-      >
-        <Input
-          value={film?.caption ?? ''}
-          onChange={(event) => change({ caption: event.target.value })}
-          placeholder="A walk from the entrance court through to the roof terrace"
+      <div>
+        <Field
+          label="Caption"
+          htmlFor="film-caption"
+          hint="A line under the film. Leave it empty for none."
+        >
+          <Input
+            value={film?.caption ?? ''}
+            onChange={(event) => change({ caption: event.target.value })}
+            placeholder="A walk from the entrance court through to the roof terrace"
+          />
+        </Field>
+
+        <FrenchBox
+          label="Caption"
+          htmlFor="film-caption-fr"
+          english={film?.caption ?? ''}
+          value={film?.french.caption ?? ''}
+          onChange={(value) => changeFrench({ caption: value })}
         />
-      </Field>
+      </div>
 
       <Field
         label="YouTube id"
@@ -289,6 +336,18 @@ export function FilmEditor({ film, savedFilm, errors, onChange }: FilmEditorProp
           placeholder="Usually empty"
         />
       </Field>
+
+      {hasVideo && (
+        <FramePicker
+          open={pickingFrame}
+          onOpenChange={setPickingFrame}
+          sources={sources}
+          onPicked={(media) => {
+            change({ posterMedia: toEditorMedia(media) });
+            push('New still chosen. It goes on the page when you save.');
+          }}
+        />
+      )}
 
       <ConfirmDialog
         open={confirming}

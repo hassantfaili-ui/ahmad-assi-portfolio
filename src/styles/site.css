@@ -1024,6 +1024,66 @@ button {
   color: var(--ink);
 }
 
+/* --- the description and its cover ----------------------------------------
+   The cover used to be the first picture of the gallery, which made it just
+   another picture and left the writing alone in the middle of an empty band.
+   They share a row now, the photograph held against the middle of the text
+   rather than breaking into it.
+
+   Words on the left. The two stack with the photograph after the text on a
+   narrow screen, so the text comes first in the markup, and leading with it on
+   the page as well keeps what is read and what is seen in the same order at
+   every width. */
+
+/* The cover, across the middle of the page between the facts and the writing.
+   It is the one photograph that stands for the project, so it is given the
+   width to be looked at rather than the width left over beside a paragraph. */
+/* The sheet of facts already ends with its own measure of space. Where a cover
+   follows it, that space and the cover's own were adding up to twice the gap
+   anyone asked for, on every project page. The facts give theirs up and the
+   cover keeps its own, so the space above the photograph matches the space
+   below it. */
+.meta:has(+ .cover-plate) {
+  padding-bottom: 0;
+}
+
+.cover-plate {
+  max-width: 62rem;
+  /* No bottom margin: the band underneath brings its own top padding, and the
+     two together left a hand's width of nothing between the photograph and the
+     writing it belongs to. */
+  margin: clamp(2.5rem, 6vw, 4.5rem) auto 0;
+  padding: 0 var(--gutter, 1.5rem);
+}
+
+/* The same air under the cover as above it. The photograph sits in its own
+   measure of space rather than being pushed against the writing on one side. */
+.cover-plate + .band {
+  padding-top: clamp(2.5rem, 6vw, 4.5rem);
+}
+
+.cover-plate img {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* The hairline the gallery gives a photograph. The cover has only moved, so
+     it should not have changed how it is drawn. */
+  border: 1px solid var(--line);
+}
+
+/* The same type as a gallery caption, but centred under the plate and without
+   the rule down its left side. The rule belongs to captions that sit in a
+   column and need an edge to hang from; under a photograph that has the whole
+   page to itself it read as a stray line beside the words, and Ahmad asked for
+   it to go. */
+.cover-plate figcaption {
+  margin-top: 0.9rem;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
 .stagger {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1034,8 +1094,9 @@ button {
 .stagger figure {
   margin: 0;
 }
-.stagger > *:nth-child(even) {
-  margin-top: clamp(2rem, 7vw, 6rem);
+/* Rows, not a staircase. Both pictures in a row start and finish together. */
+.stagger > * {
+  margin-top: 0;
 }
 .stagger img {
   width: 100%;
@@ -1044,6 +1105,20 @@ button {
 /* drawings are line work on white, so they get a hairline rather than bleeding */
 .stagger figure img {
   border: 1px solid var(--line);
+}
+
+/* Each picture keeps its own proportions and is shown whole.
+
+   Forcing them all into one shape was tried both ways and neither was right:
+   cropping to fill cut the top and bottom off the upright ones, and containing
+   them left white bars down the sides. A drawing or a render is a considered
+   image, and the way it was framed is part of it.
+
+   The rows still start level, which is the part that was actually wrong before:
+   every second picture used to carry a top margin and step down the page. They
+   begin together and end where their own shapes end. */
+.stagger figure img {
+  display: block;
 }
 .stagger figcaption {
   margin-top: 0.9rem;
@@ -1515,6 +1590,53 @@ button {
   border-color: var(--ink);
 }
 
+/* The two switches sit together in the header's last column. They are grouped
+   rather than dropped in side by side because .top is a three column grid, and
+   a fourth child would push the pages onto a row of their own. */
+.switches {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* The language switch: cut from the same cloth as .theme, and deliberately not
+   sharing its rule. That one dresses a button, this one dresses a link, so it
+   starts from the anchor reset rather than the button reset and the two stay
+   free to differ where a link has to. */
+.lang {
+  font-family: var(--data);
+  font-size: var(--t-data);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--rule);
+  transition: color 0.2s var(--ease), border-color 0.2s var(--ease),
+    background 0.2s var(--ease);
+}
+.lang:hover {
+  color: var(--invert-ink);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+/* A small phone now carries the name and two switches on one row, and Français
+   is a long word for 320px. The pair gives up padding and some of its tracking
+   rather than pushing the name off the side of the screen: the wordmark is set
+   to nowrap, so anything that does not fit overflows the page rather than
+   wrapping. Measured on the widest label the switch can hold. */
+@media (max-width: 400px) {
+  .switches {
+    gap: 0.3rem;
+  }
+  .switches > .lang,
+  .switches > .theme {
+    padding: 0.45rem 0.5rem;
+    letter-spacing: 0.08em;
+  }
+}
+
 /* ---------------------------------------------------------------- footer --- */
 /* Ends on an invitation rather than stopping. */
 
@@ -1593,8 +1715,9 @@ button {
 }
 
 @media (max-width: 880px) {
-  /* Two rows, not three: name and switch share the first, the pages take the
-     second. Without explicit placement the switch is pushed to a third row. */
+  /* Two rows, not three: the name and the switches share the first, the pages
+     take the second. Without explicit placement the switches are pushed to a
+     third row. */
   .top {
     grid-template-columns: 1fr auto;
     row-gap: 0.9rem;
@@ -1603,7 +1726,7 @@ button {
     grid-column: 1;
     grid-row: 1;
   }
-  .top > .theme {
+  .top > .switches {
     grid-column: 2;
     grid-row: 1;
   }
@@ -1782,6 +1905,106 @@ button {
 }
 .closing-links li:last-child {
   border-bottom: 0;
+}
+
+/* --- the closing film ------------------------------------------------------ */
+/* A second walkthrough behind this band, so the page ends on moving footage the
+   way it opens on it.
+
+   Everything here is scoped to .has-film, which the page only adds once there
+   is footage or a poster to show. With nothing uploaded, which is the state
+   today, not one declaration below applies and the band is exactly the band it
+   has always been. That is the default and it stays the default.
+
+   With footage behind it the band turns dark in both themes rather than
+   following the theme, which is the same decision the hero makes: white type on
+   a scrimmed film reads at the top of a white page, and a band that inverted in
+   light but not in dark would be two designs to keep legible instead of one.
+   The local tokens are what carry it. Every rule in the closing block above
+   already reads --ink, --ink-2, --ink-3, --rule-2 and --mark, so redefining
+   those here re-colours the headings, the rules above each column, the prose,
+   the buttons and the links at once, and nothing above needs to know a film
+   exists. color is set outright as well, because the type inherits its colour
+   from body and an inherited colour was resolved long before this element. */
+
+.band.closing.has-film {
+  /* The film layer sits at z-index -1, which without a stacking context here
+     would put it behind the page background rather than behind the type: the
+     band has no background of its own for it to sit against. */
+  isolation: isolate;
+  color: #fff;
+
+  --ink: #ffffff;
+  --ink-2: rgba(255, 255, 255, 0.88);
+  --ink-3: rgba(255, 255, 255, 0.78);
+  --rule: rgba(255, 255, 255, 0.44);
+  --rule-2: rgba(255, 255, 255, 0.34);
+  --mark: #ffffff;
+  --mark-ink: #0b0b0b;
+}
+
+/* Every one of those is well above the value it takes on paper, and the numbers
+   are the reason rather than taste. Measured against the worst frame this
+   footage can produce, a white wall filling the band, with the scrim below:
+
+     headings and links   6.2:1    prose   5.3:1    kicker and button border 4.5:1
+
+   The paper values would have put the prose at 0.66 and the kicker at 0.42,
+   both under 4.5:1 the moment a bright frame arrived. The two hairlines land at
+   about 2:1 and stay there: they divide the contact links and rule off the top
+   of each column, they carry nothing a reader needs, and taking them to 3:1
+   would draw two bright lines across the footage for no one's benefit. */
+
+.closing-film {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  /* Dark from the first paint, before a poster or a frame has arrived. Without
+     it the white type above sits on bare paper for as long as the poster takes
+     to load, which in the light theme is white on white. */
+  background: #0b0b0b;
+}
+
+.closing-film-media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* The scrim is even rather than weighted to one side, unlike the hero's. The
+   type there is one display headline in the left third, so most of the frame
+   could be left undimmed; here it is two columns of body prose across the full
+   width and there is no quiet half to give back.
+
+   0.62 is set against the worst frame this footage can produce, a white wall
+   filling the viewport: white type holds about 6:1 over that and the prose
+   about 5:1, so the band stays readable at the moment the film is brightest
+   rather than on average. Heavier at the two edges, where the band meets the
+   projects above it and the footer below. */
+.closing-film::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.74) 0%,
+    rgba(0, 0, 0, 0.62) 26%,
+    rgba(0, 0, 0, 0.62) 74%,
+    rgba(0, 0, 0, 0.78) 100%
+  );
+}
+
+/* Contrast on the glyph edge as well as the veil, the same reasoning the hero
+   settled on: a shadow under the letters buys more legibility over moving
+   imagery than another layer of grey over the whole picture, and it costs the
+   footage nothing. */
+.closing.has-film .closing-heading,
+.closing.has-film .closing-prose,
+.closing.has-film .closing-links,
+.closing.has-film .foot-kicker {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55), 0 0 24px rgba(0, 0, 0, 0.45);
 }
 
 /* The projects heading needs air above it, coming off a full height film. */

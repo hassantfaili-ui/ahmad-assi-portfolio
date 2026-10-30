@@ -1,8 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  CompleteMultipartUploadCommand,
+  CreateMultipartUploadCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  ListPartsCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -10,12 +13,16 @@ import {
 import {
   buildObjectKey,
   deleteObject,
+  finishMultipartUpload,
   getSignedDownloadUrl,
   getSignedUploadUrl,
   headObject,
   keyExpectation,
   objectExists,
+  PART_SIZE_BYTES,
+  partCount,
   sizeVerdict,
+  startMultipartUpload,
 } from './r2';
 import {
   MAX_DOCUMENT_BYTES,
@@ -439,5 +446,110 @@ describe('the command each function actually sends', () => {
 
     expect(send.mock.calls[0][0]).toBeInstanceOf(HeadObjectCommand);
     expect(send.mock.calls[0][0]).not.toBeInstanceOf(GetObjectCommand);
+  });
+});
+
+describe('partCount', () => {
+  it('cuts a file into 8MB parts, the last one taking the rest', () => {
+    expect(partCount(PART_SIZE_BYTES)).toBe(1);
+    expect(partCount(PART_SIZE_BYTES + 1)).toBe(2);
+    expect(partCount(105_474_321)).toBe(13);
+  });
+
+  it('never asks for zero parts', () => {
+    expect(partCount(0)).toBe(1);
+  });
+});
+
+describe('startMultipartUpload', () => {
+  it('binds the content type when the upload is opened, and signs a PUT per part', async () => {
+    const send = stubSend(() => ({ UploadId: 'upload-1' }));
+
+    const started = await startMultipartUpload({
+      key: 'media/film.mp4',
+      contentType: 'video/mp4',
+      bytes: 3 * PART_SIZE_BYTES - 5,
+      expiresIn: 3600,
+    });
+
+    expect(send.mock.calls[0][0]).toBeInstanceOf(CreateMultipartUploadCommand);
+    expect(send.mock.calls[0][0].input).toMatchObject({
+      Bucket: BUCKET,
+      Key: 'media/film.mp4',
+      ContentType: 'video/mp4',
+    });
+    expect(started.uploadId).toBe('upload-1');
+    expect(started.partSize).toBe(PART_SIZE_BYTES);
+    expect(started.urls).toHaveLength(3);
+
+    const urls = started.urls.map((url) => new URL(url));
+    expect(urls.map((url) => url.searchParams.get('partNumber'))).toEqual(['1', '2', '3']);
+    expect(urls.every((url) => url.searchParams.get('uploadId') === 'upload-1')).toBe(true);
+    expect(urls.every((url) => url.searchParams.get('X-Amz-Expires') === '3600')).toBe(true);
+    // The same checksum trap as getSignedUploadUrl: an empty CRC signed into
+    // the URL would make R2 refuse every part.
+    expect(urls.some((url) => url.search.includes('x-amz-checksum'))).toBe(false);
+  });
+
+  it('fails loudly when R2 opens nothing', async () => {
+    stubSend(() => ({}));
+    await expect(
+      startMultipartUpload({ key: 'media/film.mp4', contentType: 'video/mp4', bytes: 1 }),
+    ).rejects.toThrow('multipart');
+  });
+});
+
+describe('finishMultipartUpload', () => {
+  it('joins every part, in order, with the ETags the bucket holds', async () => {
+    const send = stubSend((command) => {
+      if (command instanceof ListPartsCommand) {
+        return { Parts: [{ PartNumber: 2, ETag: '"b"' }, { PartNumber: 1, ETag: '"a"' }] };
+      }
+      return {};
+    });
+
+    await expect(
+      finishMultipartUpload({ key: 'media/film.mp4', uploadId: 'upload-1', parts: 2 }),
+    ).resolves.toBe(true);
+
+    const complete = send.mock.calls.find(([command]) => command instanceof CompleteMultipartUploadCommand);
+    expect(complete?.[0].input).toMatchObject({
+      Key: 'media/film.mp4',
+      UploadId: 'upload-1',
+      MultipartUpload: {
+        Parts: [
+          { PartNumber: 1, ETag: '"a"' },
+          { PartNumber: 2, ETag: '"b"' },
+        ],
+      },
+    });
+  });
+
+  it('reads every page of parts, not only the first', async () => {
+    stubSend((command) => {
+      if (command instanceof ListPartsCommand) {
+        return command.input.PartNumberMarker
+          ? { Parts: [{ PartNumber: 2, ETag: '"b"' }], IsTruncated: false }
+          : { Parts: [{ PartNumber: 1, ETag: '"a"' }], IsTruncated: true, NextPartNumberMarker: '1' };
+      }
+      return {};
+    });
+
+    await expect(
+      finishMultipartUpload({ key: 'media/film.mp4', uploadId: 'upload-1', parts: 2 }),
+    ).resolves.toBe(true);
+  });
+
+  it('refuses to join a film with a part missing, rather than make it shorter', async () => {
+    const send = stubSend((command) =>
+      command instanceof ListPartsCommand
+        ? { Parts: [{ PartNumber: 1, ETag: '"a"' }, { PartNumber: 3, ETag: '"c"' }] }
+        : {},
+    );
+
+    await expect(
+      finishMultipartUpload({ key: 'media/film.mp4', uploadId: 'upload-1', parts: 3 }),
+    ).resolves.toBe(false);
+    expect(send.mock.calls.some(([command]) => command instanceof CompleteMultipartUploadCommand)).toBe(false);
   });
 });

@@ -1,6 +1,8 @@
 import ProjectCard from '@/components/site/ProjectCard';
 import ProjectPanels from '@/components/site/ProjectPanels';
 import Rail from '@/components/site/Rail';
+import { words } from '@/lib/dictionary';
+import { localePath, type Locale } from '@/lib/i18n';
 import type { ProjectSummary } from '@/lib/queries';
 import { tiers } from '@/lib/tiers';
 
@@ -21,9 +23,10 @@ import { tiers } from '@/lib/tiers';
 
 export interface ProjectGridProps {
   projects: ProjectSummary[];
+  locale?: Locale;
 }
 
-export function ProjectGrid({ projects }: ProjectGridProps) {
+export function ProjectGrid({ projects, locale = 'en' }: ProjectGridProps) {
   const { leads, set, index } = tiers(projects);
 
   return (
@@ -31,13 +34,13 @@ export function ProjectGrid({ projects }: ProjectGridProps) {
       <div className="works" data-grid="">
         <ul className="leads">
           {leads.map((project) => (
-            <ProjectCard key={project.id} project={project} lead />
+            <ProjectCard key={project.id} project={project} locale={locale} lead />
           ))}
         </ul>
 
-        <Rail count={set.length}>
+        <Rail count={set.length} locale={locale}>
           {set.map((project) => (
-            <ProjectCard key={project.id} project={project} />
+            <ProjectCard key={project.id} project={project} locale={locale} />
           ))}
         </Rail>
 
@@ -47,13 +50,15 @@ export function ProjectGrid({ projects }: ProjectGridProps) {
         */}
         {index.length > 0 && (
           <div className="index-block">
+            {/* The dictionary has no phrase for this heading yet, so the
+                French page shows the English one until it does. */}
             <p className="rail-label index-head">
-              Also in the archive <span className="rail-count">{index.length}</span>
+              {words(locale).alsoInTheArchive} <span className="rail-count">{index.length}</span>
             </p>
             <ul className="index-list">
               {index.map((project) => (
                 <li key={project.id}>
-                  <a href={`/work/${project.slug}`}>
+                  <a href={localePath(locale, `/work/${project.slug}`)}>
                     <span className="index-year">{project.year}</span>
                     <span className="index-title">{project.title}</span>
                     <span className="index-kind">{project.buildingType}</span>
@@ -73,7 +78,7 @@ export function ProjectGrid({ projects }: ProjectGridProps) {
         The expansions sit outside the grid, as their own block under it. Only
         the cards get one, which is why the index is not in this list.
       */}
-      <ProjectPanels projects={[...leads, ...set]} />
+      <ProjectPanels projects={[...leads, ...set]} locale={locale} />
     </>
   );
 }

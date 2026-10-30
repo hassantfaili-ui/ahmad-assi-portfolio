@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 
 import { requireIdentityOr401 } from '@/lib/api-auth';
-import { buildObjectKey, getSignedUploadUrl } from '@/lib/r2';
+import {
+  buildObjectKey,
+  getSignedUploadUrl,
+  MULTIPART_THRESHOLD_BYTES,
+  startMultipartUpload,
+} from '@/lib/r2';
 import { validateUpload } from '@/lib/upload-policy';
 
 /**
@@ -16,12 +21,23 @@ import { validateUpload } from '@/lib/upload-policy';
  * The whole batch is signed in one call rather than one call per file, because
  * dropping thirty renders at once is the ordinary case and thirty round trips
  * before the first byte moves is a visible delay.
+ *
+ * A file over 16MB is handed a signed URL per 8MB part instead of one URL, so
+ * that a connection dropping part way costs a part rather than the whole film.
+ * See MULTIPART_THRESHOLD_BYTES in src/lib/r2.ts.
  */
 
 export const runtime = 'nodejs';
 
-/** Deliberately short. A signed URL is a capability, and this one is used at once. */
-const URL_LIFETIME_SECONDS = 600;
+/**
+ * An hour. A signed URL is a capability, so it should not outlive its use, but
+ * its use is not instant: a batch is signed in one call and then sent one file
+ * after another, and a film's full size copy goes first. A 300MB walkthrough on
+ * a 10 Mbps upload takes four minutes on its own, and ten minutes ran out
+ * before the 720p and the poster behind it, or the last of thirty renders, had
+ * started. Each URL still writes only its own key, at its own content type.
+ */
+const URL_LIFETIME_SECONDS = 3600;
 
 /** More than one folder's worth in a single drop is a mistake, not a workflow. */
 const MAX_FILES_PER_BATCH = 60;
@@ -35,7 +51,10 @@ interface RequestedFile {
 export interface PresignedUpload {
   name: string;
   key: string;
-  url: string;
+  /** One URL for the whole file. Absent when the file is sent in parts. */
+  url?: string;
+  /** A URL per part, in order, for a file over the multipart threshold. */
+  parts?: { uploadId: string; partSize: number; urls: string[] };
   contentType: string;
   kind: string;
 }
@@ -122,14 +141,26 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
 
     const key = buildObjectKey(prefix, file.name);
+    const size = Number(file.size);
     uploads.push({
       name: file.name,
       key,
-      url: await getSignedUploadUrl({
-        key,
-        contentType: verdict.contentType,
-        expiresIn: URL_LIFETIME_SECONDS,
-      }),
+      ...(size > MULTIPART_THRESHOLD_BYTES
+        ? {
+            parts: await startMultipartUpload({
+              key,
+              contentType: verdict.contentType,
+              bytes: size,
+              expiresIn: URL_LIFETIME_SECONDS,
+            }),
+          }
+        : {
+            url: await getSignedUploadUrl({
+              key,
+              contentType: verdict.contentType,
+              expiresIn: URL_LIFETIME_SECONDS,
+            }),
+          }),
       contentType: verdict.contentType,
       kind: verdict.kind,
     });

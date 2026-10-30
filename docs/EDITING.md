@@ -80,6 +80,12 @@ the keyboard: tab to the handle and use the arrow keys.
 **Drawings** are separate from photographs and appear in their own section, each
 labelled with what it is: a plan, a section, an elevation.
 
+Drawings have the same shape controls as pictures, including **3:2**. Choose a
+ratio, then click the preview or use the arrow keys to choose which part stays.
+**Auto** shows the whole drawing again. The original file is kept, and the crop
+is saved with **Save everything**. Moving an item between Pictures and Drawings
+keeps its chosen shape.
+
 ---
 
 ## Where a project appears

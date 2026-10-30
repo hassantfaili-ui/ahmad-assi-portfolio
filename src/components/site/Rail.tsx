@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 
+import { words } from '@/lib/dictionary';
+import type { Locale } from '@/lib/i18n';
+
 /**
  * The strip of the remaining projects, and its two buttons.
  *
@@ -24,9 +27,12 @@ export interface RailProps {
   count: number;
   /** The cards. Rendered on the server and passed straight through. */
   children: ReactNode;
+  /** Defaults to English so a caller that has not been taught the language yet
+      still renders the site it always did. */
+  locale?: Locale;
 }
 
-export function Rail({ count, children }: RailProps) {
+export function Rail({ count, children, locale = 'en' }: RailProps) {
   const railRef = useRef<HTMLUListElement>(null);
 
   /**
@@ -84,14 +90,14 @@ export function Rail({ count, children }: RailProps) {
       {count > 0 && (
         <div className="rail-head">
           <p className="rail-label">
-            The rest of the set <span className="rail-count">{count}</span>
+            {words(locale).restOfTheSet} <span className="rail-count">{count}</span>
           </p>
           <div className="rail-nav">
             <button
               type="button"
               className="rail-btn"
               data-rail-prev=""
-              aria-label="Scroll projects left"
+              aria-label={words(locale).scrollLeft}
               disabled={atStart}
               onClick={() => nudge(-1)}
             >
@@ -103,7 +109,7 @@ export function Rail({ count, children }: RailProps) {
               type="button"
               className="rail-btn"
               data-rail-next=""
-              aria-label="Scroll projects right"
+              aria-label={words(locale).scrollRight}
               disabled={atEnd}
               onClick={() => nudge(1)}
             >

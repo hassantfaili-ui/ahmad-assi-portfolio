@@ -9,8 +9,8 @@ import '@fontsource-variable/archivo/wdth';
 
 import '@/app/globals.css';
 
-import Footer from '@/components/site/Footer';
-import Header from '@/components/site/Header';
+import { SiteFooter, SiteHeader, SkipLink } from '@/components/site/pages/SiteChrome';
+import { HTML_LANG } from '@/lib/i18n';
 import { getProfile } from '@/lib/queries';
 
 /**
@@ -62,22 +62,25 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     /* The inline script above rewrites this element's class and data-theme
        before React hydrates, which is exactly the mismatch React would
-       otherwise report. */
-    <html lang="en-CA" suppressHydrationWarning>
+       otherwise report.
+
+       French is a second root layout of its own, in src/app/(fr), so this
+       document is only ever English and this attribute is only ever right. */
+    <html lang={HTML_LANG.en} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
 
       <body>
-        <a className="skip" href="#main">
-          Skip to content
-        </a>
+        {/* The chrome reads the language off the address rather than being told,
+            so one component behaves the same way under both roots. */}
+        <SkipLink />
 
-        <Header name={profile?.name ?? ''} />
+        <SiteHeader name={profile?.name ?? ''} />
 
         <main id="main">{children}</main>
 
-        <Footer
+        <SiteFooter
           name={profile?.name ?? ''}
           discipline={profile?.discipline ?? ''}
           location={profile?.location ?? ''}

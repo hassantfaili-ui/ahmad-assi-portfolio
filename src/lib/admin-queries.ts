@@ -221,3 +221,99 @@ export async function countLeads(): Promise<number> {
   await requireIdentity();
   return db.project.count({ where: { tier: 'lead' } });
 }
+
+/**
+ * Everything French the Home, Contact and Resume screens open with.
+ *
+ * Read here rather than in each page, because all three want the same two
+ * halves and the lists have to be paired by position: a translation belongs to
+ * the row that sits at the same index in the English list, since the rows
+ * themselves are deleted and rewritten on every save and their ids do not
+ * survive it.
+ */
+export async function getProfileFrench() {
+  await requireIdentity();
+
+  const [profile, facts, social, experience, education, skillGroups, languages, entries] =
+    await Promise.all([
+      db.profile.findUnique({ where: { id: 'profile' }, select: { id: true } }),
+      db.fact.findMany({ orderBy: { order: 'asc' }, select: { id: true, items: true } }),
+      db.socialLink.findMany({ orderBy: { order: 'asc' }, select: { id: true } }),
+      db.experienceEntry.findMany({ orderBy: { order: 'asc' }, select: { id: true, contributions: true } }),
+      db.educationEntry.findMany({ orderBy: { order: 'asc' }, select: { id: true } }),
+      db.skillGroup.findMany({
+        orderBy: { order: 'asc' },
+        select: { id: true, items: { orderBy: { order: 'asc' }, select: { id: true } } },
+      }),
+      db.language.findMany({ orderBy: { order: 'asc' }, select: { id: true } }),
+      db.resumeEntry.findMany({ orderBy: [{ section: 'asc' }, { order: 'asc' }], select: { id: true } }),
+    ]);
+
+  const ids = [
+    ...(profile ? [profile.id] : []),
+    ...facts.map((row) => row.id),
+    ...social.map((row) => row.id),
+    ...experience.map((row) => row.id),
+    ...education.map((row) => row.id),
+    ...skillGroups.flatMap((row) => [row.id, ...row.items.map((item) => item.id)]),
+    ...languages.map((row) => row.id),
+    ...entries.map((row) => row.id),
+  ];
+
+  /* One query for every row on the screen. A call per row would be a hundred
+     round trips over Hyperdrive to fill in one form. */
+  const rows = await db.translation.findMany({
+    where: { locale: 'fr', recordId: { in: ids } },
+    select: { model: true, recordId: true, field: true, value: true },
+  });
+
+  const held = new Map<string, Record<string, string>>();
+  for (const row of rows) {
+    const key = `${row.model}:${row.recordId}`;
+    const fields = held.get(key) ?? {};
+    if (row.value.trim()) fields[row.field] = row.value;
+    held.set(key, fields);
+  }
+  const of = (model: string, id: string) => held.get(`${model}:${id}`) ?? {};
+
+  /* An array is stored one row per line, numbered, so a paragraph can be
+     translated without the others and a missing one falls back on its own. */
+  const lines = (model: string, id: string, count: number) =>
+    Array.from({ length: count }, (_, index) => of(model, id)[`${'items'}.${index}`] ?? '');
+
+  return {
+    profile: profile ? of('Profile', profile.id) : {},
+    lists: {
+      facts: facts.map((row) => ({
+        label: of('Fact', row.id).label ?? '',
+        items: lines('Fact', row.id, row.items.length),
+      })),
+      social: social.map((row) => ({ label: of('SocialLink', row.id).label ?? '' })),
+      experience: experience.map((row) => {
+        const f = of('ExperienceEntry', row.id);
+        return {
+          role: f.role ?? '',
+          location: f.location ?? '',
+          period: f.period ?? '',
+          contributions: Array.from(
+            { length: row.contributions.length },
+            (_, index) => f[`contributions.${index}`] ?? '',
+          ),
+        };
+      }),
+      education: education.map((row) => {
+        const f = of('EducationEntry', row.id);
+        return { credential: f.credential ?? '', institution: f.institution ?? '', note: f.note ?? '' };
+      }),
+      skillGroups: skillGroups.map((row) => ({
+        label: of('SkillGroup', row.id).label ?? '',
+        items: row.items.map((item) => of('Skill', item.id).name ?? ''),
+      })),
+      languages: languages.map((row) => of('Language', row.id).text ?? ''),
+      entries: entries.map((row) => {
+        const f = of('ResumeEntry', row.id);
+        return { title: f.title ?? '', detail: f.detail ?? '' };
+      }),
+    },
+  };
+}

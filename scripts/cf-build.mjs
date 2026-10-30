@@ -57,7 +57,8 @@ const BUNDLE = join(ROOT, '.open-next', 'server-functions', 'default');
  *
  * A local database is the one thing this build can never legitimately use, so
  * that is what it refuses. Set DEPLOY_FROM_LOCAL_DATABASE=true to override,
- * which is only ever right for testing the packaging itself.
+ * which is right for packaging tests, or for cf:publish's disposable database
+ * restored from a fresh production snapshot and checked again before deploy.
  */
 function refuseLocalDatabase() {
   const url = process.env.DATABASE_URL ?? '';

@@ -15,26 +15,35 @@ import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
 import { useSaveFlag } from '@/hooks/use-save-flag';
 import type { UploadedFilm, UploadedItem } from '@/hooks/use-uploads';
 import { runAction } from '@/lib/action-result';
-import { deleteFilm, saveFilm } from '@/lib/mutations';
+import { deleteSiteFilm, saveSiteFilm, type FilmSlot } from '@/lib/mutations';
 import { mediaUrl } from '@/lib/media-url';
 import { formatBytes } from '@/lib/upload-policy';
 
 /**
- * The film behind Ahmad's name on the home page.
+ * A film that belongs to a fixed place on the home page rather than to a
+ * project.
  *
- * It is the one Film row with no project attached, which is why every call here
- * passes null where a project id would go.
+ * There are two of them and they are edited by one component, because they are
+ * the same object in the same state with the same three things that can go
+ * wrong. Only the sentences differ, so only the sentences are held apart, in
+ * COPY below. The slot is what says which film is being edited: "hero" behind
+ * the name at the top, "closing" behind About and Get in touch at the bottom.
+ * Neither is identified by having no project any more, which was fine while
+ * there was only one of them.
  *
- * The screen is mostly explanation, and that is deliberate. This film starts
- * playing by itself on every visit, so its weight is spent out of the visitor's
- * data rather than ours, and it is encoded far harder than a project
- * walkthrough for exactly that reason. Nothing in the file itself says so, so
- * the only place that reasoning can live where it will be read before it is
- * undone is here, next to the button that replaces it.
+ * The file is still HeroFilmEditor.tsx because that is where the hero editor
+ * was written and moving it would have crossed into another lane's diff.
+ *
+ * The screen is mostly explanation, and that is deliberate. These films start
+ * playing by themselves on every visit, so their weight is spent out of the
+ * visitor's data rather than ours, and they are encoded far harder than a
+ * project walkthrough for exactly that reason. Nothing in the file itself says
+ * so, so the only place that reasoning can live where it will be read before it
+ * is undone is here, next to the button that replaces it.
  */
 
 /** Only the fields this screen shows. Kept local so no server module is imported. */
-export interface HeroMedia {
+export interface SiteFilmMedia {
   id: string;
   key: string;
   bytes: number;
@@ -43,15 +52,70 @@ export interface HeroMedia {
   durationSeconds: number | null;
 }
 
-export interface HeroFilmValue {
+export interface SiteFilmValue {
   caption: string | null;
   youtubeId: string | null;
-  poster: HeroMedia | null;
-  sources: { height: number; media: HeroMedia }[];
+  poster: SiteFilmMedia | null;
+  sources: { height: number; media: SiteFilmMedia }[];
 }
 
+/**
+ * Everything the two films say differently.
+ *
+ * Written out per slot rather than assembled from a noun, because "the top of
+ * the home page" and "behind About and Get in touch" are not the same kind of
+ * phrase and a sentence built out of both reads like a form letter.
+ */
+interface SlotCopy {
+  heading: string;
+  where: string;
+  emptyTitle: string;
+  emptyBody: string;
+  removeButton: string;
+  confirmTitle: string;
+  confirmBody: string;
+  savedToast: string;
+  removedToast: string;
+  /** Removed, but a film uploaded during the removal is still on screen. */
+  removedButKeptToast: string;
+}
+
+const COPY: Record<FilmSlot, SlotCopy> = {
+  hero: {
+    heading: 'The film behind your name',
+    where: 'It plays at the top of the home page, behind your name, on every visit.',
+    emptyTitle: 'There is no film at the top of the home page',
+    emptyBody:
+      'Your name sits on the plain background at the moment, with nothing playing behind it. Drop a film below to change that.',
+    removeButton: 'Take the film off the top of the home page',
+    confirmTitle: 'Take the film off the top of the home page?',
+    confirmBody:
+      'Your name will sit on the plain background, with no film and no still behind it, until you upload another one.',
+    savedToast: 'Saved. The top of the home page is playing this film.',
+    removedToast: 'The film is off the top of the home page.',
+    removedButKeptToast:
+      'The film is off the top of the home page. The one you uploaded while that was happening is still here and still needs saving.',
+  },
+  closing: {
+    heading: 'The film behind About and Get in touch',
+    where:
+      'It plays at the bottom of the home page, behind the writing about you and the invitation to get in touch. Leaving this empty means there is no film down there, and the writing sits on the plain background.',
+    emptyTitle: 'There is no film at the bottom of the home page',
+    emptyBody:
+      'About and Get in touch sit on the plain background. That is a perfectly good way for the page to end, so leave this empty unless you have footage that suits it. Drop a film below to try one.',
+    removeButton: 'Take the film off the bottom of the home page',
+    confirmTitle: 'Take the film off the bottom of the home page?',
+    confirmBody:
+      'About and Get in touch will sit on the plain background, with no film and no still behind them, until you upload another one.',
+    savedToast: 'Saved. That film plays behind the writing at the bottom of the home page.',
+    removedToast: 'The film is off the bottom of the home page.',
+    removedButKeptToast:
+      'The film is off the bottom of the home page. The one you uploaded while that was happening is still here and still needs saving.',
+  },
+};
+
 /** Tallest first, which is the order the home page reads the two ends of. */
-function tallestFirst(sources: { height: number; media: HeroMedia }[]) {
+function tallestFirst(sources: { height: number; media: SiteFilmMedia }[]) {
   return [...sources].sort((a, b) => b.height - a.height);
 }
 
@@ -87,9 +151,10 @@ function describeLength(seconds: number | null): string | null {
 /**
  * Who plays which encode, in the visitor's terms.
  *
- * This mirrors the choice src/components/site/HeroFilm.tsx makes in the
- * browser: the widest screens get the largest encode, everything else gets the
- * smallest. Said here so the numbers below are not just a list of files.
+ * This mirrors the choice the home page makes in the browser, in
+ * src/components/site/HeroFilm.tsx: the widest screens get the largest encode,
+ * everything else gets the smallest. Said here so the numbers below are not
+ * just a list of files.
  */
 function whoPlaysIt(index: number, count: number): string {
   if (count === 1) return 'Every visitor plays this one.';
@@ -100,11 +165,12 @@ function whoPlaysIt(index: number, count: number): string {
   return 'Kept as a spare. Nothing plays this one at the moment.';
 }
 
-export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
+export function SiteFilmEditor({ film, slot }: { film: SiteFilmValue | null; slot: FilmSlot }) {
+  const copy = COPY[slot];
   const { push } = useToast();
   const router = useRouter();
 
-  const [poster, setPoster] = useState<HeroMedia | null>(film?.poster ?? null);
+  const [poster, setPoster] = useState<SiteFilmMedia | null>(film?.poster ?? null);
   const [sources, setSources] = useState(tallestFirst(film?.sources ?? []));
   const [length, setLength] = useState<number | null>(
     film?.sources[0]?.media.durationSeconds ?? null,
@@ -128,7 +194,7 @@ export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
   const [busy, startWork] = useTransition();
 
   /* Carried through a save untouched. It is only set on a film hosted on
-     YouTube, which this hero is not, but dropping it on save would quietly
+     YouTube, which neither of these is, but dropping it on save would quietly
      throw away a link nothing here put back. */
   const youtubeId = film?.youtubeId ?? null;
 
@@ -138,19 +204,21 @@ export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
 
   const hasFilm = sources.length > 0 || Boolean(poster) || Boolean(youtubeId);
 
-  /* The unsaved flag for this screen. One flag, because the one Save button
+  /* The unsaved flag for this film. One flag, because the one Save button
      covers both things that can be waiting: a caption typed into the field, and
      a film dropped into the box above.
 
-     It counts edits rather than latching a boolean, because a save of a hero
-     film is a large payload on a slow line and everything here stays live while
-     it is out. Clearing on any ok answer would report a caption typed during
-     the round trip, or worse a film uploaded during it, as being on the home
-     page when neither was ever sent. */
+     It counts edits rather than latching a boolean, because a save of one of
+     these is a large payload on a slow line and everything here stays live
+     while it is out. Clearing on any ok answer would report a caption typed
+     during the round trip, or worse a film uploaded during it, as being on the
+     home page when neither was ever sent. */
   const flag = useSaveFlag();
   const { markDirty, snapshot, settle, reset } = flag;
 
-  useRegisterUnsaved('hero:film', flag.dirty);
+  /* Keyed by slot. Both films are edited on one screen, and a shared key would
+     mean the clean one releasing the other one's claim on every render. */
+  useRegisterUnsaved(`film:${slot}`, flag.dirty);
 
   /* A film uploaded but not yet on the home page. Read off the ids rather than
      a boolean so it stays true for a film that landed while a save was out.
@@ -202,7 +270,7 @@ export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
 
     startWork(async () => {
       const result = await runAction(() =>
-        saveFilm(null, {
+        saveSiteFilm(slot, {
           posterMediaId: poster?.id ?? null,
           youtubeId,
           caption: caption.trim() || null,
@@ -225,17 +293,17 @@ export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
          a film that was never sent. */
       setSavedSourceIds(sentIds);
       if (liveSourceIds.current === sentIds) settle(at);
-      push('Saved. The home page is playing this film.');
+      push(copy.savedToast);
       router.refresh();
     });
-  }, [caption, poster, push, router, settle, snapshot, sources, youtubeId]);
+  }, [caption, copy, poster, push, router, settle, slot, snapshot, sources, youtubeId]);
 
   const remove = useCallback(() => {
     /* The film he answered the question about. */
     const answered = sourceIds(sources);
 
     startWork(async () => {
-      const result = await runAction(() => deleteFilm(null));
+      const result = await runAction(() => deleteSiteFilm(slot));
 
       if (!result.ok) {
         setProblems([result.message ?? 'The film was not removed. Try again.']);
@@ -252,9 +320,7 @@ export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
          agreed to, and clearing the screen would throw away a compression
          nothing here can repeat. It stays, and so does the flag. */
       if (liveSourceIds.current !== answered) {
-        push(
-          'The film is off the home page. The one you uploaded while that was happening is still here and still needs saving.',
-        );
+        push(copy.removedButKeptToast);
         router.refresh();
         return;
       }
@@ -265,20 +331,18 @@ export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
       setLength(null);
       setCaption('');
       reset(false);
-      push('The film is off the home page.');
+      push(copy.removedToast);
       router.refresh();
     });
-  }, [push, reset, router, sources]);
+  }, [copy, push, reset, router, slot, sources]);
 
   return (
-    <section className="grid gap-6" aria-labelledby="hero-film">
+    <section className="grid gap-6" aria-labelledby={`${slot}-film`}>
       <div className="grid gap-1">
-        <h2 id="hero-film" className="text-lg font-semibold tracking-tight">
-          The film behind your name
+        <h2 id={`${slot}-film`} className="text-lg font-semibold tracking-tight">
+          {copy.heading}
         </h2>
-        <p className="text-sm text-neutral-600">
-          It plays on the home page, behind your name, on every visit.
-        </p>
+        <p className="text-sm text-neutral-600">{copy.where}</p>
       </div>
 
       {/* The one thing on this screen that would otherwise be changed by
@@ -417,17 +481,14 @@ export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
               onClick={() => setConfirming(true)}
               disabled={busy}
             >
-              Take the film off the home page
+              {copy.removeButton}
             </Button>
           </div>
         </div>
       ) : (
         <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-6 text-sm text-neutral-700">
-          <p className="font-medium text-neutral-900">There is no film on the home page</p>
-          <p className="mt-1">
-            Your name sits on the plain background at the moment, with nothing playing behind it.
-            Drop a film below to change that.
-          </p>
+          <p className="font-medium text-neutral-900">{copy.emptyTitle}</p>
+          <p className="mt-1">{copy.emptyBody}</p>
         </div>
       )}
 
@@ -447,7 +508,7 @@ export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
 
       <Field
         label="What the film shows"
-        htmlFor="hero-caption"
+        htmlFor={`${slot}-caption`}
         hint="Kept with the film, so you know later which one this is. Something like: Lincoln Beach Center, walkthrough."
       >
         <Input
@@ -475,13 +536,10 @@ export function HeroFilmEditor({ film }: { film: HeroFilmValue | null }) {
       <ConfirmDialog
         open={confirming}
         onOpenChange={setConfirming}
-        title="Take the film off the home page?"
+        title={copy.confirmTitle}
         description={
           <>
-            <p>
-              Your name will sit on the plain background, with no film and no still behind it, until
-              you upload another one.
-            </p>
+            <p>{copy.confirmBody}</p>
             {waiting ? (
               /* The library line below is true of a film that has been saved and
                  false of one that has only been uploaded, so it is not said

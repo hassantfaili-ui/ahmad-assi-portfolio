@@ -410,7 +410,7 @@ async function migrateHeroFilm() {
   const small = await ensureMedia('/media/hero-720.mp4', 'hero');
   const poster = await ensureMedia('/media/hero-poster.jpg', 'hero');
 
-  await db.film.deleteMany({ where: { projectId: null } });
+  await db.film.deleteMany({ where: { slot: 'hero' } });
 
   const sources = [];
   if (large) sources.push({ mediaId: large.id, height: 1440 });
@@ -419,6 +419,11 @@ async function migrateHeroFilm() {
   await db.film.create({
     data: {
       projectId: null,
+      /* The site looks this film up by its slot, not by its lack of a project.
+         Seeding it without one produced a home page whose video element had no
+         source at all, and the check below passed anyway because it asked the
+         same wrong question the seed did. */
+      slot: 'hero',
       posterMediaId: poster?.id ?? null,
       caption: 'Lincoln Beach Center, Walkthrough',
       sources: { create: sources },
@@ -631,7 +636,7 @@ async function verify() {
     }
   }
 
-  const hero = await db.film.findFirst({ where: { projectId: null }, include: { sources: true } });
+  const hero = await db.film.findFirst({ where: { slot: 'hero' }, include: { sources: true } });
   if (!hero) problems.push('No hero film');
   else if (hero.sources.length < 2) problems.push(`Hero film has ${hero.sources.length} encodes, expected 2`);
 

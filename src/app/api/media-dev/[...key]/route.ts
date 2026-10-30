@@ -3,6 +3,8 @@ import { join, normalize, resolve } from 'node:path';
 import { Readable } from 'node:stream';
 import { NextResponse } from 'next/server';
 
+import { parseRange } from '@/lib/byte-range';
+
 /**
  * Media off local disk, in development only.
  *
@@ -102,11 +104,38 @@ export async function GET(
 
   const info = statSync(found);
   const extension = found.split('.').pop()?.toLowerCase() ?? '';
+  const contentType = CONTENT_TYPES[extension] ?? 'application/octet-stream';
+
+  /* Byte ranges, as R2 answers them. Without them a browser can play a video
+     from the start but cannot seek it, so the walkthrough's frame picker sat
+     at 0:00 here while working against the real bucket. */
+  const range = parseRange(request.headers.get('range'), info.size);
+  if (range === 'unsatisfiable') {
+    return new NextResponse(null, {
+      status: 416,
+      headers: { 'content-range': `bytes */${info.size}` },
+    });
+  }
+
+  if (range) {
+    const stream = createReadStream(found, { start: range.start, end: range.end });
+    return new NextResponse(Readable.toWeb(stream) as ReadableStream, {
+      status: 206,
+      headers: {
+        'content-type': contentType,
+        'content-length': String(range.end - range.start + 1),
+        'content-range': `bytes ${range.start}-${range.end}/${info.size}`,
+        'accept-ranges': 'bytes',
+        'cache-control': 'no-store',
+      },
+    });
+  }
 
   return new NextResponse(Readable.toWeb(createReadStream(found)) as ReadableStream, {
     headers: {
-      'content-type': CONTENT_TYPES[extension] ?? 'application/octet-stream',
+      'content-type': contentType,
       'content-length': String(info.size),
+      'accept-ranges': 'bytes',
       'cache-control': 'no-store',
     },
   });

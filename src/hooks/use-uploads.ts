@@ -5,7 +5,7 @@ import { useCallback, useRef, useState } from 'react';
 import {
   canTranscode,
   completeUpload,
-  putToR2,
+  sendUpload,
   readImageSize,
   requestPresigned,
   transcodeVideo,
@@ -18,7 +18,7 @@ import {
  * The upload queue.
  *
  * One dropped file is one row in the interface, even when it becomes three
- * objects in the bucket. A film produces a 1440p encode, a 720p encode and a
+ * objects in the bucket. A film produces a full size copy, a 720p encode and a
  * poster frame, and Ahmad dropped one thing: showing him three progress bars
  * for it would be an accurate description of the implementation and a confusing
  * description of what he did.
@@ -56,6 +56,11 @@ export interface UploadRow {
   label: string;
   error?: string;
   result?: UploadedItem;
+  /**
+   * False for a failure noted from outside the queue, a PDF that could not be
+   * read say. There is no file held for it, so there is nothing to try again.
+   */
+  canRetry?: boolean;
 }
 
 let nextId = 0;
@@ -66,6 +71,39 @@ export interface UseUploadsOptions {
   /** 'hero' discards audio and encodes smaller. See src/lib/transcode.ts. */
   filmProfile?: 'hero' | 'walkthrough';
   onUploaded?: (items: UploadedItem[]) => void;
+}
+
+/** What the bar says while a file is being sent again after a dropped connection. */
+export function retryLabel(attempt: number, of: number): string {
+  return `The connection dropped, sending it again (${attempt} of ${of})`;
+}
+
+/**
+ * The label for one file's upload, through any retries.
+ *
+ * Says the connection dropped from the moment it does until the file is back
+ * past the point where it dropped, then goes back to what it said before.
+ * Without the way back, one dropped part early in a long film would leave the
+ * bar saying so for the minutes it took to send the rest.
+ */
+export function uploadLabel(base: string) {
+  let label = base;
+  let last = 0;
+  let droppedAt: number | null = null;
+  return {
+    progress(fraction: number): string {
+      if (droppedAt !== null && fraction > droppedAt) {
+        label = base;
+        droppedAt = null;
+      }
+      last = fraction;
+      return label;
+    },
+    retry(attempt: number, of: number) {
+      label = retryLabel(attempt, of);
+      droppedAt = last;
+    },
+  };
 }
 
 export function useUploads({ destination, slug, filmProfile = 'walkthrough', onUploaded }: UseUploadsOptions) {
@@ -102,9 +140,10 @@ export function useUploads({ destination, slug, filmProfile = 'walkthrough', onU
       }
 
       const [upload] = uploads;
-      await putToR2(upload.url, file, upload.contentType, (fraction) => {
-        patch(id, { progress: fraction * 0.95, label: 'Uploading' });
-      }, signal);
+      const label = uploadLabel('Uploading');
+      const multipart = await sendUpload(upload, file, (fraction) => {
+        patch(id, { progress: fraction * 0.95, label: label.progress(fraction) });
+      }, signal, label.retry);
 
       patch(id, { stage: 'finishing', progress: 0.97, label: 'Finishing' });
 
@@ -114,6 +153,7 @@ export function useUploads({ destination, slug, filmProfile = 'walkthrough', onU
         name: file.name,
         width: size?.width,
         height: size?.height,
+        multipart,
       });
 
       patch(id, { stage: 'done', progress: 1, label: 'Done' });
@@ -169,18 +209,20 @@ export function useUploads({ destination, slug, filmProfile = 'walkthrough', onU
 
       for (const [index, part] of parts.entries()) {
         const upload = uploads[index];
-        await putToR2(upload.url, part.blob, upload.contentType, (fraction) => {
+        const label = uploadLabel(part.height ? `Uploading ${part.height}p` : 'Uploading the poster');
+        const multipart = await sendUpload(upload, part.blob, (fraction) => {
           patch(id, {
             progress: COMPRESS_SHARE + index * uploadShare + fraction * uploadShare,
-            label: part.height ? `Uploading ${part.height}p` : 'Uploading the poster',
+            label: label.progress(fraction),
           });
-        }, signal);
+        }, signal, label.retry);
 
         rows.push(
           await completeUpload({
             key: upload.key,
             name: part.name,
             durationSeconds: part.height ? result.durationSeconds : undefined,
+            multipart,
           }),
         );
       }
@@ -333,11 +375,35 @@ export function useUploads({ destination, slug, filmProfile = 'walkthrough', onU
     setRows((current) => current.filter((row) => row.id !== id));
   }, []);
 
+  /**
+   * A failure that happened before the queue, shown in the same list.
+   *
+   * The PDF picker reads a file entirely in the browser, and when the file
+   * cannot be read the natural place to say so is the row every other file
+   * gets, not a toast that is gone before it is read.
+   */
+  const noteFailure = useCallback((file: File, error: string) => {
+    const id = `upload-${nextId++}`;
+    setRows((current) => [
+      ...current,
+      {
+        id,
+        name: file.name,
+        bytes: file.size,
+        stage: 'failed' as const,
+        progress: 0,
+        label: 'Refused',
+        error,
+        canRetry: false,
+      },
+    ]);
+  }, []);
+
   const clearFinished = useCallback(() => {
     setRows((current) => current.filter((row) => row.stage !== 'done'));
   }, []);
 
   const busy = rows.some((row) => row.stage !== 'done' && row.stage !== 'failed');
 
-  return { rows, add, retry, cancel, dismiss, clearFinished, busy };
+  return { rows, add, noteFailure, retry, cancel, dismiss, clearFinished, busy };
 }

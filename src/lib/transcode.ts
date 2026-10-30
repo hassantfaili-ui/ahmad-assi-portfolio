@@ -7,21 +7,26 @@
  * equivalent, and Workers cannot run ffmpeg, so if the file is not made smaller
  * here then every visitor downloads whatever he selected, at full size, forever.
  *
- * The parameters are not invented. They match what scripts/build-hero.sh and
- * scripts/build-walkthrough.sh produced by hand, so the encodes already on the
- * site and the ones Ahmad makes from now on are the same shape:
+ * The hero's parameters are not invented. They match what scripts/build-hero.sh
+ * produced by hand:
  *
  *   hero         1440p at 4 Mbps and 720p at 1.1 Mbps, audio discarded, because
  *                it is a muted background loop that autoplays on every visit and
  *                the size is spent from the visitor's data allowance
- *   walkthrough  1440p at 9 Mbps and 720p at 2.5 Mbps, audio kept, because it
- *                plays behind a click and the master has a real soundtrack
+ *   walkthrough  the film at its own resolution, and a 720p at 2.5 Mbps beside
+ *                it, audio kept, because it plays behind a click and the master
+ *                has a real soundtrack
  *
- * Not 4K, in either case. Sixty seconds of watchable 4K is about 80MB. For the
- * hero that is downloaded before a word is read, behind a scrim, cropped to the
- * viewport. For the walkthrough, 1440p at a bitrate that fits was compared frame
- * for frame against 4K at matched display size and judged indistinguishable.
- */
+ * The walkthrough used to be squeezed into a 1440p at 9 Mbps, like the one
+ * scripts/build-walkthrough.sh made for Lincoln Beach. That undid the reason
+ * for exporting at high quality in the first place: a 1440p export at 26 Mbps
+ * came out at a third of its bitrate, and anything shorter than 1440 pixels,
+ * a 2944x1248 widescreen render say, had its top copy dropped and was shown at
+ * 720p. So a walkthrough that is already H.264 at a sane bitrate is now copied
+ * into the MP4 untouched, frame for frame, and only re-encoded when it has to
+ * be: a ProRes master, an HEVC file from a phone, a 4K export at 100 Mbps.
+ * Even then it keeps its own resolution, up to 4K, never squeezed to 1440.
+  */
 
 import {
   ALL_FORMATS,
@@ -37,7 +42,8 @@ import {
 export type TranscodeProfile = 'hero' | 'walkthrough';
 
 export interface TranscodeEncode {
-  height: 1440 | 720;
+  /** The encode's own height in pixels: 720, 1440, or a walkthrough's own. */
+  height: number;
   blob: Blob;
 }
 
@@ -58,27 +64,104 @@ export interface TranscodeProgress {
   label: string;
 }
 
-interface Rung {
-  height: 1440 | 720;
+/**
+ * One encode to make. A rung with no bitrate is the source copied across as it
+ * is, which is only ever planned for a walkthrough that is already fit to play.
+ */
+export interface Rung {
+  height: number;
+  bitrate?: number;
+}
+
+const HERO_RUNGS: Rung[] = [
+  { height: 1440, bitrate: 4_000_000 },
+  { height: 720, bitrate: 1_100_000 },
+];
+
+/** The copy beside a walkthrough for a phone, or a browser the big one fails in. */
+const WALKTHROUGH_SMALL: Rung = { height: 720, bitrate: 2_500_000 };
+
+/**
+ * Past this a walkthrough is re-encoded rather than copied, even when it is
+ * already H.264. A D5 or Lumion export at "high" lands between 18 and 28 Mbps,
+ * which is comfortably under it; a 4K export at 80 Mbps is not, and a visitor
+ * who presses play on a phone would pay for every bit of that.
+ */
+export const COPY_MAX_BITRATE = 30_000_000;
+
+/** Nothing is kept taller than 4K. An 8K master is made into a 4K copy. */
+export const MAX_HEIGHT = 2160;
+
+/**
+ * The H.264 profiles every browser that plays MP4 can decode: Baseline, Main
+ * and High. High 10 and the 4:2:2 and 4:4:4 profiles are what a colour graded
+ * export can carry, and Chrome and Safari show a black frame for them.
+ */
+const PLAYABLE_AVC_PROFILES = new Set([0x42, 0x4d, 0x64]);
+
+export interface SourceFacts {
+  width: number;
+  height: number;
+  /** Mediabunny's name for the codec, 'avc' for H.264, or null if unknown. */
+  codec: string | null;
+  /** The full codec string, avc1.640033 say, which carries the profile. */
+  codecString: string | null;
+  /** The whole file's average, bits per second. */
   bitrate: number;
 }
 
-const PROFILES: Record<TranscodeProfile, { rungs: Rung[]; keepAudio: boolean }> = {
-  hero: {
-    rungs: [
-      { height: 1440, bitrate: 4_000_000 },
-      { height: 720, bitrate: 1_100_000 },
-    ],
-    keepAudio: false,
-  },
-  walkthrough: {
-    rungs: [
-      { height: 1440, bitrate: 9_000_000 },
-      { height: 720, bitrate: 2_500_000 },
-    ],
-    keepAudio: true,
-  },
-};
+/** Whether the source can go on the page as it is, without being re-encoded. */
+export function canCopy(source: SourceFacts): boolean {
+  if (source.codec !== 'avc' || !source.codecString) return false;
+
+  const profile = parseInt(source.codecString.split('.')[1]?.slice(0, 2) ?? '', 16);
+  return (
+    PLAYABLE_AVC_PROFILES.has(profile) &&
+    source.height <= MAX_HEIGHT &&
+    Number.isFinite(source.bitrate) &&
+    source.bitrate > 0 &&
+    source.bitrate <= COPY_MAX_BITRATE
+  );
+}
+
+/**
+ * The bitrate for a walkthrough that has to be re-encoded at its own size.
+ *
+ * 16 Mbps for 2560x1440, scaled by the pixel count, so 4K lands on the 30 Mbps
+ * ceiling and 1080p on the 12 Mbps floor. The floor is there because a small
+ * frame at a proportionally small bitrate is exactly the soft picture this
+ * replaced.
+ */
+export function walkthroughBitrate(width: number, height: number): number {
+  const scaled = 16_000_000 * ((width * height) / (2560 * 1440));
+  return Math.round(Math.min(COPY_MAX_BITRATE, Math.max(12_000_000, scaled)));
+}
+
+/**
+ * Which encodes to make of a source, largest first.
+ *
+ * Never upscale. A 720p export asked for at 1440p would be bigger, slower and
+ * no sharper, so a rung taller than the source is dropped. The shortest rung is
+ * always kept, otherwise a small source would produce no encode at all.
+ */
+export function planRungs(profile: TranscodeProfile, source: SourceFacts): Rung[] {
+  if (profile === 'hero') {
+    const applicable = HERO_RUNGS.filter(
+      (rung, index) => rung.height <= source.height || index === HERO_RUNGS.length - 1,
+    );
+    return applicable.length > 0 ? applicable : [HERO_RUNGS[HERO_RUNGS.length - 1]];
+  }
+
+  const height = Math.min(source.height, MAX_HEIGHT);
+  const width = Math.round(source.width * (height / source.height));
+  const top: Rung = canCopy(source)
+    ? { height: source.height }
+    : { height, bitrate: walkthroughBitrate(width, height) };
+
+  /* A source 720 tall or shorter is its own small copy. Two rungs of one
+     height would also collide in FilmSource, which allows one per height. */
+  return top.height > WALKTHROUGH_SMALL.height ? [top, WALKTHROUGH_SMALL] : [top];
+}
 
 /**
  * Whether this browser can encode video at all.
@@ -129,6 +212,30 @@ async function canvasToBlob(canvas: HTMLCanvasElement | OffscreenCanvas): Promis
   });
 }
 
+/**
+ * What to do with the sound of one encode.
+ *
+ * The codec is always named. Left out, Mediabunny copies the sound when it can
+ * and otherwise picks the container's first choice, which for MP4 is Opus, and
+ * Safari before 17 plays a film with Opus sound as silence or not at all. It
+ * cannot copy far more often than it looks: AAC out of nearly every encoder
+ * starts a few milliseconds before zero, to prime the decoder, and that alone
+ * rules the copy out. The 100MB test upload on 2026-10-22 came back with Opus
+ * sound for exactly that reason.
+ *
+ * A copy rung names no bitrate, so AAC that can be moved across still is, and
+ * AAC that cannot is encoded at Mediabunny's high quality, which keeps the
+ * full size copy as close to the master as it can be. The 720p asks for 128
+ * kbps, like every encode before it.
+ */
+export function audioOptions(
+  keepAudio: boolean,
+  copy: boolean,
+): { discard: true } | { codec: 'aac'; bitrate?: number } {
+  if (!keepAudio) return { discard: true };
+  return copy ? { codec: 'aac' } : { codec: 'aac', bitrate: 128_000 };
+}
+
 export async function transcodeVideo(
   file: File,
   options: {
@@ -140,7 +247,7 @@ export async function transcodeVideo(
   if (!canTranscode()) throw new TranscodeUnsupportedError();
 
   const { profile = 'walkthrough', onProgress, signal } = options;
-  const { rungs, keepAudio } = PROFILES[profile];
+  const keepAudio = profile === 'walkthrough';
 
   const report = (stage: TranscodeStage, fraction: number, label: string) =>
     onProgress?.({ stage, fraction: Math.max(0, Math.min(1, fraction)), label });
@@ -159,11 +266,13 @@ export async function transcodeVideo(
     const sourceWidth = videoTrack.displayWidth;
     const sourceHeight = videoTrack.displayHeight;
 
-    /* Never upscale. A 720p export asked for at 1440p would be bigger, slower and
-       no sharper, so a rung taller than the source is dropped. The shortest rung
-       is always kept, otherwise a small source would produce no encode at all. */
-    const applicable = rungs.filter((rung, index) => rung.height <= sourceHeight || index === rungs.length - 1);
-    const wanted = applicable.length > 0 ? applicable : [rungs[rungs.length - 1]];
+    const wanted = planRungs(profile, {
+      width: sourceWidth,
+      height: sourceHeight,
+      codec: videoTrack.codec,
+      codecString: await videoTrack.getCodecParameterString(),
+      bitrate: durationSeconds > 0 ? (file.size * 8) / durationSeconds : Number.NaN,
+    });
 
     /* The poster is cheap next to the encodes, so the encodes get almost all of
        the progress bar. Splitting it evenly would make the bar sit still for
@@ -176,21 +285,27 @@ export async function transcodeVideo(
 
       const output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
 
+      /* A copy rung gives no video options at all, which is what tells
+         Mediabunny to move the encoded frames across rather than decode and
+         encode them again. */
+      const copy = rung.bitrate === undefined;
       const conversion = await Conversion.init({
         input,
         output,
         tracks: 'primary',
         showWarnings: false,
-        video: {
-          height: Math.min(rung.height, sourceHeight),
-          fit: 'contain',
-          codec: 'avc',
-          bitrate: rung.bitrate,
-          /* A keyframe every two seconds at 30fps. Seeking into a long
-             walkthrough is unusable without them, and the size cost is small. */
-          keyFrameInterval: 2,
-        },
-        audio: keepAudio ? { codec: 'aac', bitrate: 128_000 } : { discard: true },
+        video: copy
+          ? {}
+          : {
+              height: Math.min(rung.height, sourceHeight),
+              fit: 'contain',
+              codec: 'avc',
+              bitrate: rung.bitrate,
+              /* A keyframe every two seconds at 30fps. Seeking into a long
+                 walkthrough is unusable without them, and the size cost is small. */
+              keyFrameInterval: 2,
+            },
+        audio: audioOptions(keepAudio, copy),
       });
 
       // An audio-only MP4 is valid too. Require the actual video track so a
@@ -207,7 +322,7 @@ export async function transcodeVideo(
           const { transcodeNativeVideo } = await import('./transcode-native');
           return await transcodeNativeVideo(file, {
             keepAudio,
-            bitrate: rungs[rungs.length - 1].bitrate,
+            bitrate: profile === 'hero' ? 1_100_000 : 2_500_000,
             signal,
             onProgress,
           });
@@ -218,7 +333,11 @@ export async function transcodeVideo(
 
       const base = index * encodeShare;
       conversion.onProgress = (fraction) =>
-        report('encoding', base + fraction * encodeShare, `Compressing to ${rung.height}p`);
+        report(
+          'encoding',
+          base + fraction * encodeShare,
+          copy ? `Preparing the ${rung.height}p original` : `Compressing to ${rung.height}p`,
+        );
 
       const cancel = () => { void conversion.cancel(); };
       signal?.addEventListener('abort', cancel, { once: true });
@@ -231,6 +350,7 @@ export async function transcodeVideo(
         if (conversion.state !== 'done') await conversion.cancel();
       }
 
+
       const buffer = (output.target as BufferTarget).buffer;
       if (!buffer) throw new Error(`The ${rung.height}p encode produced no data.`);
 
@@ -239,9 +359,7 @@ export async function transcodeVideo(
 
     signal?.throwIfAborted();
     if (encodes.length === 0) {
-      throw new Error(
-        'This browser cannot compress this film, even at 720p. Try uploading it from a computer using Chrome or Safari.',
-      );
+      throw new Error('This browser cannot compress this film, even at 720p. Try uploading it from a computer using Chrome or Safari.');
     }
     report('poster', 0.94, 'Taking the poster frame');
 

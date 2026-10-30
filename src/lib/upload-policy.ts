@@ -38,10 +38,11 @@ export const MAX_IMAGE_BYTES = 64 * MB;
 /**
  * 4GB, which sounds absurd until you remember where the ceiling applies.
  *
- * Video is transcoded in the browser, to a 1440p and a 720p MP4, before a byte
- * leaves the machine. So this limits what he selects in the file picker, not
- * what gets stored: a 3GB ProRes walkthrough off a camera becomes something in
- * the tens of megabytes by the time R2 sees it.
+ * Video is prepared in the browser before a byte leaves the machine: a ProRes
+ * or HEVC master, or one past 30 Mbps, is re-encoded at its own resolution. So
+ * this limits what he selects in the file picker, not what gets stored: a 3GB
+ * ProRes walkthrough off a camera becomes something under a few hundred
+ * megabytes by the time R2 sees it. See src/lib/transcode.ts.
  */
 export const MAX_VIDEO_BYTES = 4 * GB;
 

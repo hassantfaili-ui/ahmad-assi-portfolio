@@ -3,7 +3,7 @@ import { getIdentity } from '@/lib/access';
 import type { Metadata } from 'next';
 
 import { ResumeForm } from '@/components/admin/ResumeForm';
-import { listProfileImages } from '@/lib/admin-queries';
+import { getProfileFrench, listProfileImages } from '@/lib/admin-queries';
 import { getProfile } from '@/lib/queries';
 
 /**
@@ -28,7 +28,7 @@ export default async function AdminResumePage() {
      anonymous requests. */
   if (!(await getIdentity())) return <SignedOut />;
 
-  const [data, portraitImages] = await Promise.all([getProfile(), listProfileImages()]);
+  const [data, french, portraitImages] = await Promise.all([getProfile(), getProfileFrench(), listProfileImages()]);
 
   return (
     <div className="grid gap-8">
@@ -41,7 +41,7 @@ export default async function AdminResumePage() {
         </p>
       </header>
 
-      <ResumeForm data={data} portraitImages={portraitImages} />
+      <ResumeForm data={data} french={french} portraitImages={portraitImages} />
     </div>
   );
 }

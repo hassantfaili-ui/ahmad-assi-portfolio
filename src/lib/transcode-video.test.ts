@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const media = vi.hoisted(() => ({
-  video: { displayWidth: 2560, displayHeight: 1440 },
+  video: { displayWidth: 2560, displayHeight: 1440, codec: null, getCodecParameterString: async () => null },
   getVideo: vi.fn(),
   dispose: vi.fn(),
   init: vi.fn(),

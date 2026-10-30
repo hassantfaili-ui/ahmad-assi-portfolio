@@ -50,6 +50,28 @@ const nextConfig: NextConfig = {
    * report-only pass against the real pages first, which is its own piece of
    * work rather than something to slip in here.
    */
+  /**
+   * Settings has moved to Home.
+   *
+   * Its only content was the film behind Ahmad's name, and that film is the
+   * first thing on the home page, so it is now edited on the screen that holds
+   * the home page top to bottom. The address stays alive because it is in a
+   * browser history and quite possibly a bookmark, and a 404 would read as the
+   * editing area having lost something.
+   *
+   * It lives here rather than as a page that calls redirect() so that every
+   * file under (admin) is still a real screen that checks who is asking. That
+   * rule is worth keeping absolute: a page exempt from it because it happens to
+   * render nothing today is a page someone adds a query to tomorrow.
+   *
+   * Temporary, not permanent. A permanent redirect is cached by the browser
+   * until it is cleared, so reviving this path later would keep sending Ahmad
+   * to Home on a machine nothing could reach to fix.
+   */
+  async redirects() {
+    return [{ source: '/admin/settings', destination: '/admin/home', permanent: false }];
+  },
+
   async headers() {
     return [
       {
