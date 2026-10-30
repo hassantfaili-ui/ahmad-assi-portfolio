@@ -18,7 +18,7 @@
     "e2e": "playwright test",
     "cf:build": "node scripts/cf-build.mjs",
     "cf:preview": "opennextjs-cloudflare preview",
-    "cf:deploy": "opennextjs-cloudflare deploy",
+    "cf:deploy": "opennextjs-cloudflare deploy --config wrangler.jsonc",
     "cf:publish": "node scripts/deploy-through-hyperdrive.mjs",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",

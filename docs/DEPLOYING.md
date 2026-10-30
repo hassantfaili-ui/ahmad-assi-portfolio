@@ -5,6 +5,9 @@ website changes from the current `main` checkout with `npm run cf:publish` after
 the checks pass. That command builds from verified production content and deploys
 it. Confirm the result on the live English and French pages and the affected admin screen.
 
+The deploy command explicitly uses the tracked `wrangler.jsonc`, so stale Astro
+metadata in `.wrangler/deploy/config.json` cannot redirect it to another Worker.
+
 The infrastructure steps below are one time setup. See the publishing section
 for the production-content snapshot workflow.
 
