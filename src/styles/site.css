@@ -1622,6 +1622,13 @@ button {
 
 /* ------------------------------------------------------------ at a glance --- */
 
+.resume-portrait {
+  display: block;
+  width: min(12rem, 45vw);
+  height: auto;
+  margin: 2rem auto 0;
+}
+
 .atglance {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));

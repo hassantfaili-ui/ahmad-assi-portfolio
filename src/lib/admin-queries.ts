@@ -84,6 +84,16 @@ export type AdminProjectRow = {
   hasFilm: boolean;
 };
 
+/** Profile uploads can be reused after leaving the form without saving. */
+export async function listProfileImages() {
+  await requireIdentity();
+  return db.media.findMany({
+    where: { kind: 'image', key: { startsWith: 'profile/' } },
+    orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+    select: { id: true, key: true, bytes: true, width: true, height: true, originalName: true },
+  });
+}
+
 /** Every project, published or not, in running order. */
 export async function listProjects(): Promise<AdminProjectRow[]> {
   await requireIdentity();

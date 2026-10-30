@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/toast';
 import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
@@ -295,7 +296,13 @@ function marking<T>(
 
 // ------------------------------------------------------------ the screen ---
 
-export function ResumeForm({ data }: { data: ResumeData }) {
+export function ResumeForm({
+  data,
+  portraitImages = [],
+}: {
+  data: ResumeData;
+  portraitImages?: (FileRef & { originalName: string })[];
+}) {
   const { push } = useToast();
 
   // One flag for each save button, because the two halves are written by two
@@ -340,6 +347,10 @@ export function ResumeForm({ data }: { data: ResumeData }) {
   const [portrait, setPortraitState] = useState<FileRef | null>(
     () => data.profile?.portraitMedia ?? null,
   );
+  const portraitChoices =
+    portrait && !portraitImages.some((image) => image.id === portrait.id)
+      ? [{ ...portrait, originalName: fileName(portrait.key) }, ...portraitImages]
+      : portraitImages;
   const [cv, setCvState] = useState<FileRef | null>(() => data.profile?.cvMedia ?? null);
   const [portfolio, setPortfolioState] = useState<FileRef | null>(
     () => data.profile?.portfolioMedia ?? null,
@@ -787,8 +798,29 @@ export function ResumeForm({ data }: { data: ResumeData }) {
 
           <Panel
             title="Your portrait"
-            description="Dropping a picture here puts it in your library. It is attached to your details when you press Save your details."
+            description="Shown at the top of your resume page. Upload a photo or choose one already in your library, then save your details below."
           >
+            {portraitChoices.length > 0 && (
+              <Field
+                label="Previously uploaded portraits"
+                htmlFor="profile-portrait-media"
+                hint="Use the photo you already uploaded without uploading it again."
+              >
+                <Select
+                  value={portrait?.id ?? ''}
+                  onChange={(event) =>
+                    setPortrait(portraitChoices.find((image) => image.id === event.target.value) ?? null)
+                  }
+                >
+                  <option value="">Choose a photo</option>
+                  {portraitChoices.map((image) => (
+                    <option key={image.id} value={image.id}>
+                      {image.originalName}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            )}
             {portrait && (
               <div className="flex flex-wrap items-start gap-4">
                 <Image
@@ -839,6 +871,19 @@ export function ResumeForm({ data }: { data: ResumeData }) {
               label="Drop your portrait here"
               hint="One picture. JPG, PNG, WebP, AVIF, GIF or TIFF, up to 64 MB."
             />
+
+            <div className="flex flex-wrap items-center gap-3">
+              <Button type="button" onClick={onSaveProfile} disabled={savingProfile}>
+                {savingProfile ? 'Saving' : 'Save portrait and details'}
+              </Button>
+              <p role="status" className="text-sm text-neutral-600">
+                {profileFlag.dirty
+                  ? 'Your changes are not on the site yet. Save to publish them.'
+                  : portrait
+                    ? 'Your portrait is saved on the resume page.'
+                    : 'No portrait is saved on the resume page.'}
+              </p>
+            </div>
           </Panel>
 
           <Panel
