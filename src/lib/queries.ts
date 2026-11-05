@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { db } from '@/lib/db';
+import { ON_THE_SITE } from '@/lib/on-the-site';
 import { DEFAULT_LOCALE, type Locale } from '@/lib/i18n';
 import { pictureKey } from '@/lib/translate';
 import {
@@ -351,7 +352,7 @@ export async function getPublishedProjects(
   locale: Locale = DEFAULT_LOCALE,
 ): Promise<ProjectSummary[]> {
   const rows = await db.project.findMany({
-    where: { published: true },
+    where: ON_THE_SITE,
     select: summarySelect,
     orderBy: [{ order: 'asc' }, { id: 'asc' }],
   });
@@ -364,7 +365,7 @@ export async function getPublishedProjects(
 
 export async function getProjectSlugs(): Promise<string[]> {
   const rows = await db.project.findMany({
-    where: { published: true },
+    where: ON_THE_SITE,
     select: { slug: true },
     orderBy: [{ order: 'asc' }, { id: 'asc' }],
   });
@@ -385,7 +386,7 @@ export async function getProjectBySlug(
   locale: Locale = DEFAULT_LOCALE,
 ): Promise<ProjectDetail | null> {
   const row = await db.project.findFirst({
-    where: { slug, published: true },
+    where: { slug, ...ON_THE_SITE },
     select: {
       ...summarySelect,
       sheet: true,

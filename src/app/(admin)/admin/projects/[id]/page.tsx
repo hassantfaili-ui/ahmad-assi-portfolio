@@ -121,6 +121,7 @@ export default async function ProjectEditorPage({ params }: ProjectEditorPagePro
         order: project.order,
         updatedAt: project.updatedAt.toISOString(),
         published: project.published,
+        shelved: project.shelved,
         leadImageId: project.leadImageId,
         leadImageAlt: project.leadImageAlt,
         leadImage: project.leadImage ? toMedia(project.leadImage) : null,

@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 /* Every write the table can make, mocked so a test can hold one open while
@@ -14,6 +14,7 @@ const mutations = vi.hoisted(() => ({
   deleteProject: vi.fn(),
   reorderProjects: vi.fn(),
   setProjectPublished: vi.fn(),
+  setProjectShelved: vi.fn(),
   setProjectTier: vi.fn(),
 }));
 vi.mock('@/lib/mutations', () => mutations);
@@ -52,6 +53,7 @@ function row(overrides: Partial<AdminProjectRow> & Pick<AdminProjectRow, 'id' | 
     tier: 'set',
     order: 0,
     published: false,
+    shelved: false,
     credit: 'Studio',
     leadImage: null,
     leadImageAlt: '',
@@ -172,5 +174,76 @@ describe('ProjectsTable, when writes overlap and the earlier one fails', () => {
       expect(handles[2]).toHaveAccessibleName(/Reorder Gamma Hall/);
     });
     expect(switchFor('Beta House')).toHaveAttribute('aria-checked', 'true');
+  });
+});
+
+describe('ProjectsTable, the Archives folder', () => {
+  function archivesFolder() {
+    return screen.getByRole('region', { name: /Archives/ });
+  }
+
+  it('moves an archived project out of the running order into the folder, and Restore brings it back', async () => {
+    const user = userEvent.setup({ delay: null });
+    mutations.setProjectShelved.mockResolvedValue({ ok: true });
+
+    render(<ProjectsTable projects={[{ ...ALPHA, published: true }, BETA]} initialNotice={null} />);
+
+    expect(within(archivesFolder()).getByText(/Nothing archived/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Archive Alpha Court' }));
+    await waitFor(() => expect(mutations.setProjectShelved).toHaveBeenCalledWith('alpha', true));
+
+    /* Out of the sortable list, into the folder. */
+    expect(screen.queryByRole('button', { name: /Reorder Alpha Court/ })).not.toBeInTheDocument();
+    expect(within(archivesFolder()).getByText('Alpha Court')).toBeInTheDocument();
+    expect(push).toHaveBeenCalledWith('Alpha Court is in your Archives folder now, and off the site.');
+
+    await user.click(within(archivesFolder()).getByRole('button', { name: 'Restore Alpha Court' }));
+    await waitFor(() => expect(mutations.setProjectShelved).toHaveBeenCalledWith('alpha', false));
+
+    expect(screen.getByRole('button', { name: /Reorder Alpha Court/ })).toBeInTheDocument();
+    expect(within(archivesFolder()).queryByText('Alpha Court')).not.toBeInTheDocument();
+    expect(push).toHaveBeenCalledWith('Alpha Court is back in the list and on the site.');
+  });
+
+  it('never touches the tier: the site Archive list placement is a separate thing', async () => {
+    const user = userEvent.setup({ delay: null });
+    mutations.setProjectShelved.mockResolvedValue({ ok: true });
+
+    render(<ProjectsTable projects={[{ ...ALPHA, tier: 'index' }]} initialNotice={null} />);
+
+    await user.click(screen.getByRole('button', { name: 'Archive Alpha Court' }));
+    await waitFor(() => expect(mutations.setProjectShelved).toHaveBeenCalledTimes(1));
+    expect(mutations.setProjectTier).not.toHaveBeenCalled();
+  });
+
+  it('puts the project back in the running order when the archive is refused', async () => {
+    const user = userEvent.setup({ delay: null });
+    mutations.setProjectShelved.mockResolvedValue({ ok: false, message: 'Refused.' });
+
+    render(<ProjectsTable projects={[ALPHA, BETA]} initialNotice={null} />);
+
+    await user.click(screen.getByRole('button', { name: 'Archive Alpha Court' }));
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /Reorder Alpha Court/ })).toBeInTheDocument(),
+    );
+    expect(within(archivesFolder()).queryByText('Alpha Court')).not.toBeInTheDocument();
+    expect(push).toHaveBeenCalledWith('Refused.', 'error');
+  });
+
+  it('keeps archived projects out of a reorder and in the folder afterwards', async () => {
+    const user = userEvent.setup({ delay: null });
+    mutations.reorderProjects.mockResolvedValue({ ok: true });
+
+    render(
+      <ProjectsTable projects={[ALPHA, { ...BETA, shelved: true }, GAMMA]} initialNotice={null} />,
+    );
+
+    screen.getByRole('button', { name: /Reorder Alpha Court/ }).focus();
+    await user.keyboard('{ArrowDown}');
+
+    await waitFor(() => expect(mutations.reorderProjects).toHaveBeenCalledWith(['gamma', 'alpha']));
+    expect(within(archivesFolder()).getByText('Beta House')).toBeInTheDocument();
   });
 });

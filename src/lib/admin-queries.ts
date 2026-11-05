@@ -2,6 +2,7 @@ import 'server-only';
 
 import { getIdentity } from '@/lib/access';
 import { db } from '@/lib/db';
+import { ON_THE_SITE } from '@/lib/on-the-site';
 
 /**
  * The reads the editing screens perform.
@@ -76,6 +77,8 @@ export type AdminProjectRow = {
   tier: 'lead' | 'set' | 'index';
   order: number;
   published: boolean;
+  /** In the admin Archives folder. Not the site's Archive list (that is tier index). */
+  shelved: boolean;
   credit: string;
   leadImage: AdminMedia | null;
   leadImageAlt: string;
@@ -107,6 +110,7 @@ export async function listProjects(): Promise<AdminProjectRow[]> {
       tier: true,
       order: true,
       published: true,
+      shelved: true,
       credit: true,
       leadImageAlt: true,
       leadImage: { select: mediaSelect },
@@ -124,6 +128,7 @@ export async function listProjects(): Promise<AdminProjectRow[]> {
     tier: row.tier as AdminProjectRow['tier'],
     order: row.order,
     published: row.published,
+    shelved: row.shelved,
     credit: row.credit,
     leadImage: row.leadImage as AdminMedia | null,
     leadImageAlt: row.leadImageAlt,
@@ -216,10 +221,15 @@ export async function listMedia(): Promise<MediaWithUsage[]> {
   });
 }
 
-/** How many projects are marked lead, for the overflow warning. */
+/**
+ * How many lead projects a visitor sees, for the overflow warning.
+ *
+ * Counted the same way the save actions count, so the warning on load and the
+ * warning after a change agree: an unpublished or archived lead takes no card.
+ */
 export async function countLeads(): Promise<number> {
   await requireIdentity();
-  return db.project.count({ where: { tier: 'lead' } });
+  return db.project.count({ where: { tier: 'lead', ...ON_THE_SITE } });
 }
 
 /**

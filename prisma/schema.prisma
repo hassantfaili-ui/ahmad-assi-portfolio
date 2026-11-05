@@ -133,7 +133,17 @@ model Project {
   order     Int     @default(99)
   published Boolean @default(true)
 
-  leadImageId  String?
+  /// Put away in the Archives folder at the bottom of the admin Projects list.
+  /// A shelved project is never shown on the site, whatever `published` says,
+  /// and keeps its tier, order and published setting so restoring it puts it
+  /// back exactly as it was.
+  ///
+  /// NOT the same thing as the website's own Archive list. That one is the
+  /// `index` tier: projects shown on the site as a line in the archive list.
+  /// Shelving never touches `tier`, and the `index` tier never shelves.
+  shelved Boolean @default(false)
+
+  leadImageId String?
   leadImage    Media?  @relation("ProjectLeadImage", fields: [leadImageId], references: [id], onDelete: SetNull)
   leadImageAlt String  @default("")
 

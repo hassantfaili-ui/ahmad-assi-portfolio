@@ -5,7 +5,16 @@ import Image from 'next/image';
 import { GuardedLink } from '@/components/admin/GuardedLink';
 import { useRouter } from 'next/navigation';
 import { useCallback, useRef, useState, useTransition, type FormEvent } from 'react';
-import { Clapperboard, ImageOff, Plus, Trash2, TriangleAlert } from 'lucide-react';
+import {
+  Archive,
+  ArchiveRestore,
+  Clapperboard,
+  FolderArchive,
+  ImageOff,
+  Plus,
+  Trash2,
+  TriangleAlert,
+} from 'lucide-react';
 
 import { SortableList } from '@/components/admin/SortableList';
 import { useRegisterUnsaved } from '@/components/admin/UnsavedWork';
@@ -23,6 +32,7 @@ import {
   deleteProject,
   reorderProjects,
   setProjectPublished,
+  setProjectShelved,
   setProjectTier,
 } from '@/lib/mutations';
 import { cn } from '@/lib/utils';
@@ -48,6 +58,12 @@ import { TIERS } from '@/lib/validation';
  * That same worry is why an unpublished row does not merely say so. It is
  * dimmed, its cover is greyed, and it carries a badge, because "published" is
  * the one fact on this screen that is expensive to misread.
+ *
+ * Below the running order sits the Archives folder: projects Ahmad has put
+ * away with the Archive button. They are off the site but kept whole, and
+ * Restore puts one back exactly where it was. This folder is NOT the website's
+ * Archive list, which is the `index` tier ("Archive, a line in the list") and
+ * is shown on the site. Shelving never changes a project's tier.
  */
 
 export interface ProjectsTableProps {
@@ -75,6 +91,63 @@ const PUT_BACK = 'That change was not saved, so it has been put back the way it 
 function countLabel(count: number, noun: string): string {
   if (count === 0) return `No ${noun}s`;
   return `${count} ${count === 1 ? noun : `${noun}s`}`;
+}
+
+/** The small cover beside a project, greyed when the project is not on the site. */
+function ProjectCover({ row, dimmed }: { row: AdminProjectRow; dimmed: boolean }) {
+  return (
+    <div
+      className={cn(
+        'relative h-14 w-20 shrink-0 overflow-hidden rounded-md border bg-neutral-100',
+        row.leadImage ? 'border-neutral-200' : 'border-dashed border-neutral-300',
+        dimmed && 'opacity-50 grayscale',
+      )}
+    >
+      {row.leadImage ? (
+        // No alt text: the title sits beside it and names the same
+        // thing, so describing it again is noise in a screen reader.
+        <Image
+          src={row.leadImage.key}
+          alt=""
+          width={row.leadImage.width ?? 800}
+          height={row.leadImage.height ?? 600}
+          sizes="80px"
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        <span className="flex h-full w-full flex-col items-center justify-center gap-1 px-1 text-center text-[10px] leading-tight text-neutral-500">
+          <ImageOff className="h-4 w-4" aria-hidden="true" />
+          No cover
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** Year, credit, and what the project holds, under its title. */
+function ProjectMeta({ row }: { row: AdminProjectRow }) {
+  return (
+    <>
+      <p className="mt-1 truncate text-xs text-neutral-500">
+        {row.year}, {row.credit.trim() || 'no credit written yet'}
+      </p>
+
+      <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500">
+        <span>{countLabel(row.imageCount, 'image')}</span>
+        <span>{countLabel(row.drawingCount, 'drawing')}</span>
+        <span className="inline-flex items-center gap-1">
+          {row.hasFilm ? (
+            <>
+              <Clapperboard className="h-3 w-3" aria-hidden="true" />
+              Film
+            </>
+          ) : (
+            'No film'
+          )}
+        </span>
+      </p>
+    </>
+  );
 }
 
 export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
@@ -134,7 +207,10 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
         return row ? [row] : [];
       });
 
-      setRows(next);
+      /* Only the running order is sortable. Archived rows are not in it, so
+         they are carried along untouched rather than dropped from the list. */
+      const sorted = new Set(idsInOrder);
+      setRows([...next, ...previous.filter((row) => !sorted.has(row.id))]);
 
       latestOrder.current += 1;
       const ticket = latestOrder.current;
@@ -233,6 +309,37 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
     [rows, push, markBusy, clearBusy],
   );
 
+  const handleShelve = useCallback(
+    (target: AdminProjectRow, shelved: boolean) => {
+      setRows(rows.map((row) => (row.id === target.id ? { ...row, shelved } : row)));
+      markBusy(target.id);
+
+      startSaving(async () => {
+        const result = await runAction(() => setProjectShelved(target.id, shelved));
+        clearBusy(target.id);
+
+        if (!result.ok) {
+          /* Only this row goes back, for the same reason as the switch. */
+          setRows((current) =>
+            current.map((row) => (row.id === target.id ? { ...row, shelved: target.shelved } : row)),
+          );
+          push(result.message ?? PUT_BACK, 'error');
+          return;
+        }
+
+        setNotice(result.warning ?? null);
+        if (shelved) {
+          push(`${target.title} is in your Archives folder now, and off the site.`);
+        } else if (target.published) {
+          push(`${target.title} is back in the list and on the site.`);
+        } else {
+          push(`${target.title} is back in the list. It is still not published.`);
+        }
+      });
+    },
+    [rows, push, markBusy, clearBusy],
+  );
+
   const handleDelete = useCallback(() => {
     const target = pendingDelete;
     if (!target) return;
@@ -285,8 +392,10 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
     [newTitle, router],
   );
 
-  const total = rows.length;
-  const publishedCount = rows.filter((row) => row.published).length;
+  const active = rows.filter((row) => !row.shelved);
+  const archived = rows.filter((row) => row.shelved);
+  const total = active.length;
+  const publishedCount = active.filter((row) => row.published).length;
   const hiddenCount = total - publishedCount;
 
   return (
@@ -299,6 +408,9 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
             : `${total} ${total === 1 ? 'project' : 'projects'}, ${publishedCount} published${
                 hiddenCount > 0 ? `, ${hiddenCount} not published` : ''
               }.`}
+          {archived.length > 0
+            ? ` ${archived.length} more in your Archives folder at the bottom.`
+            : ''}
         </p>
       </header>
 
@@ -340,7 +452,11 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
         </div>
       </form>
 
-      {total === 0 ? (
+      {total === 0 && archived.length > 0 ? (
+        <p className="rounded-lg border border-dashed border-neutral-300 bg-white p-6 text-center text-sm text-neutral-600">
+          Every project is in your Archives folder below. Restore one to put it back on the site.
+        </p>
+      ) : total === 0 ? (
         <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-10 text-center">
           <h2 className="text-base font-semibold text-neutral-900">No projects yet</h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-neutral-600">
@@ -357,38 +473,14 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
           </p>
 
           <SortableList
-            items={rows}
+            items={active}
             getId={(row) => row.id}
             getLabel={(row) => row.title}
             onReorder={handleReorder}
             itemClassName="items-center"
             renderItem={(row) => (
               <div className="grid gap-3 sm:grid-cols-[5rem_minmax(0,1fr)_auto] sm:items-center">
-                <div
-                  className={cn(
-                    'relative h-14 w-20 shrink-0 overflow-hidden rounded-md border bg-neutral-100',
-                    row.leadImage ? 'border-neutral-200' : 'border-dashed border-neutral-300',
-                    !row.published && 'opacity-50 grayscale',
-                  )}
-                >
-                  {row.leadImage ? (
-                    // No alt text: the title sits beside it and names the same
-                    // thing, so describing it again is noise in a screen reader.
-                    <Image
-                      src={row.leadImage.key}
-                      alt=""
-                      width={row.leadImage.width ?? 800}
-                      height={row.leadImage.height ?? 600}
-                      sizes="80px"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <span className="flex h-full w-full flex-col items-center justify-center gap-1 px-1 text-center text-[10px] leading-tight text-neutral-500">
-                      <ImageOff className="h-4 w-4" aria-hidden="true" />
-                      No cover
-                    </span>
-                  )}
-                </div>
+                <ProjectCover row={row} dimmed={!row.published} />
 
                 <div className={cn('min-w-0', !row.published && 'opacity-60')}>
                   <div className="flex flex-wrap items-center gap-2">
@@ -405,24 +497,7 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
                     {row.published ? null : <Badge variant="warning">Not published</Badge>}
                   </div>
 
-                  <p className="mt-1 truncate text-xs text-neutral-500">
-                    {row.year}, {row.credit.trim() || 'no credit written yet'}
-                  </p>
-
-                  <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-500">
-                    <span>{countLabel(row.imageCount, 'image')}</span>
-                    <span>{countLabel(row.drawingCount, 'drawing')}</span>
-                    <span className="inline-flex items-center gap-1">
-                      {row.hasFilm ? (
-                        <>
-                          <Clapperboard className="h-3 w-3" aria-hidden="true" />
-                          Film
-                        </>
-                      ) : (
-                        'No film'
-                      )}
-                    </span>
-                  </p>
+                  <ProjectMeta row={row} />
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 sm:justify-end">
@@ -475,6 +550,19 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
 
                   <Button
                     variant="ghost"
+                    size="sm"
+                    disabled={busyRows.has(row.id)}
+                    onClick={() => handleShelve(row, true)}
+                    aria-label={`Archive ${row.title}`}
+                    title="Move to your Archives folder and take it off the site. Nothing is deleted."
+                    className="text-neutral-600"
+                  >
+                    <Archive className="h-4 w-4" aria-hidden="true" />
+                    Archive
+                  </Button>
+
+                  <Button
+                    variant="ghost"
                     size="icon"
                     onClick={() => setPendingDelete(row)}
                     aria-label={`Delete ${row.title}`}
@@ -488,6 +576,82 @@ export function ProjectsTable({ projects, initialNotice }: ProjectsTableProps) {
           />
         </div>
       )}
+
+      {/* The admin Archives folder. Not the website's Archive list: that is the
+          "Archive, a line in the list" placement above, and those projects are
+          on the site. Projects here are on no page at all. */}
+      <section
+        aria-labelledby="archives-heading"
+        className="grid gap-3 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-4"
+      >
+        <header className="grid gap-1">
+          <h2
+            id="archives-heading"
+            className="flex items-center gap-2 text-base font-semibold text-neutral-900"
+          >
+            <FolderArchive className="h-4 w-4" aria-hidden="true" />
+            Archives
+            <span className="text-sm font-normal text-neutral-500">({archived.length})</span>
+          </h2>
+          <p className="text-xs text-neutral-500">
+            Projects you have put away. They are not shown anywhere on the website, but nothing is
+            deleted. Restore one to put it back in the list, in its old spot, with the same
+            settings. This folder is only here in your admin. It is not the Archive list on the
+            website.
+          </p>
+        </header>
+
+        {archived.length === 0 ? (
+          <p className="text-sm text-neutral-500">
+            Nothing archived. Press Archive on a project above to move it here and take it off the
+            site without deleting it.
+          </p>
+        ) : (
+          <ul className="grid gap-2">
+            {archived.map((row) => (
+              <li
+                key={row.id}
+                className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-3 sm:grid-cols-[5rem_minmax(0,1fr)_auto] sm:items-center"
+              >
+                <ProjectCover row={row} dimmed />
+
+                <div className="min-w-0 opacity-80">
+                  <GuardedLink
+                    href={`/admin/projects/${row.id}`}
+                    className="truncate font-medium text-neutral-900 underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900"
+                  >
+                    {row.title}
+                  </GuardedLink>
+                  <ProjectMeta row={row} />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={busyRows.has(row.id)}
+                    onClick={() => handleShelve(row, false)}
+                    aria-label={`Restore ${row.title}`}
+                  >
+                    <ArchiveRestore className="h-4 w-4" aria-hidden="true" />
+                    Restore
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setPendingDelete(row)}
+                    aria-label={`Delete ${row.title}`}
+                    className="text-neutral-500 hover:bg-red-50 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <ConfirmDialog
         open={pendingDelete !== null}

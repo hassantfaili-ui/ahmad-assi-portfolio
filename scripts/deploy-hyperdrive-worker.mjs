@@ -32,16 +32,21 @@ const worker = {
       if (path === '/prepare') {
         /* Only the additive schema change this release needs. No arbitrary
            SQL endpoint and no content writes. A busy table causes a refusal. */
-        const columns = await client.query(`SELECT column_name FROM information_schema.columns
-          WHERE table_schema = current_schema() AND table_name = 'Drawing'
-          AND column_name IN ('ratio', 'focusX', 'focusY')`);
-        if (columns.rows.length === 3) return Response.json({ prepared: true }, { headers });
+        const columns = await client.query(`SELECT table_name, column_name FROM information_schema.columns
+          WHERE table_schema = current_schema()
+          AND ((table_name = 'Drawing' AND column_name IN ('ratio', 'focusX', 'focusY'))
+            OR (table_name = 'Project' AND column_name = 'shelved'))`);
+        if (columns.rows.length === 4) return Response.json({ prepared: true }, { headers });
         await client.query('BEGIN');
         await client.query("SET LOCAL lock_timeout = '3s'");
         await client.query(`ALTER TABLE "Drawing"
           ADD COLUMN IF NOT EXISTS "ratio" TEXT,
           ADD COLUMN IF NOT EXISTS "focusX" DOUBLE PRECISION NOT NULL DEFAULT 0.5,
           ADD COLUMN IF NOT EXISTS "focusY" DOUBLE PRECISION NOT NULL DEFAULT 0.5`);
+        /* The admin Archives folder. Defaults to false, so every existing
+           project stays exactly where it is on the site. */
+        await client.query(`ALTER TABLE "Project"
+          ADD COLUMN IF NOT EXISTS "shelved" BOOLEAN NOT NULL DEFAULT false`);
         await client.query('COMMIT');
         return Response.json({ prepared: true }, { headers });
       }

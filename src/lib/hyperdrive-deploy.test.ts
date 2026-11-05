@@ -37,13 +37,15 @@ describe('the temporary production preview', () => {
     expect(Client).not.toHaveBeenCalled();
   });
 
-  it('only adds the drawing crop columns, with a short lock timeout', async () => {
+  it('only adds the drawing crop and archive columns, with a short lock timeout', async () => {
     expect((await worker.fetch(request('/prepare'), env)).status).toBe(200);
     const sql = query.mock.calls.map((args) => String(args[0])).join('\n');
     expect(sql).toContain("SET LOCAL lock_timeout = '3s'");
     expect(sql).toContain('ADD COLUMN IF NOT EXISTS "ratio" TEXT');
     expect(sql).toContain('ADD COLUMN IF NOT EXISTS "focusX" DOUBLE PRECISION NOT NULL DEFAULT 0.5');
     expect(sql).toContain('ADD COLUMN IF NOT EXISTS "focusY" DOUBLE PRECISION NOT NULL DEFAULT 0.5');
+    expect(sql).toContain('ALTER TABLE "Project"');
+    expect(sql).toContain('ADD COLUMN IF NOT EXISTS "shelved" BOOLEAN NOT NULL DEFAULT false');
     expect(sql).not.toMatch(/\b(?:DELETE|TRUNCATE|UPDATE|INSERT|DROP)\b/);
     expect(end).toHaveBeenCalledOnce();
   });

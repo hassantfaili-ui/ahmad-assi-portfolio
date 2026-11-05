@@ -99,6 +99,11 @@ export interface EditorProject {
   tier: string;
   order: number;
   published: boolean;
+  /**
+   * In the admin Archives folder, so on no page of the site whatever
+   * `published` says. Not the site's Archive list (that is tier index).
+   */
+  shelved?: boolean;
   /** When this screen last read the project, sent back with every save. */
   updatedAt: string;
   leadImageId: string | null;
@@ -690,18 +695,24 @@ export function ProjectForm({
           <h1 className="truncate text-lg font-semibold">{values.title || 'Untitled project'}</h1>
         </div>
 
-        <Badge variant={published ? 'secondary' : 'warning'}>
-          {published === liveOnSite
-            ? published
-              ? 'On the site'
-              : 'Not on the site'
-            : published
-              ? 'Goes on the site when you save'
-              : 'Comes off the site when you save'}
-        </Badge>
+        {project.shelved ? (
+          /* Archived wins over published: the site shows it nowhere, so a
+             badge reading "On the site" here would be a lie. */
+          <Badge variant="warning">In your Archives folder, not on the site</Badge>
+        ) : (
+          <Badge variant={published ? 'secondary' : 'warning'}>
+            {published === liveOnSite
+              ? published
+                ? 'On the site'
+                : 'Not on the site'
+              : published
+                ? 'Goes on the site when you save'
+                : 'Comes off the site when you save'}
+          </Badge>
+        )}
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
-          {liveOnSite && (
+          {liveOnSite && !project.shelved && (
             <a
               href={`/work/${project.slug}/`}
               target="_blank"

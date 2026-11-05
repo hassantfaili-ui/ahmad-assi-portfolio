@@ -56,7 +56,7 @@ vi.mock('@/lib/translations', () => ({
   translationsFor: vi.fn(async () => new Map()),
 }));
 
-import { deleteProject, reorderProjects, setProjectPublished } from './mutations';
+import { deleteProject, reorderProjects, setProjectPublished, setProjectShelved } from './mutations';
 
 /* The listings, the project's own page, every other project page by pattern,
    and the sitemap. In this order, which is the order the code walks them. */
@@ -103,6 +103,41 @@ describe('setProjectPublished', () => {
 
     expect(result.ok).toBe(true);
     expect(revalidatePath.mock.calls).toEqual(EVERYTHING_A_PROJECT_TOUCHES);
+  });
+});
+
+describe('setProjectShelved', () => {
+  it('archiving writes only the shelved flag, never the tier, and regenerates the same set', async () => {
+    db.project.findUnique.mockResolvedValue({ slug: 'garden-heights' });
+    db.project.update.mockResolvedValue({});
+
+    const result = await setProjectShelved('p1', true);
+
+    expect(result.ok).toBe(true);
+    /* The admin Archives folder is not the site's Archive list (tier index):
+       archiving must leave tier, order and published exactly as they were. */
+    expect(db.project.update).toHaveBeenCalledWith({ where: { id: 'p1' }, data: { shelved: true } });
+    expect(revalidatePath.mock.calls).toEqual(EVERYTHING_A_PROJECT_TOUCHES);
+  });
+
+  it('counts only leads a visitor can see, so an archived lead frees its card', async () => {
+    db.project.findUnique.mockResolvedValue({ slug: 'garden-heights' });
+    db.project.update.mockResolvedValue({});
+
+    await setProjectShelved('p1', true);
+
+    expect(db.project.count).toHaveBeenCalledWith({
+      where: { tier: 'lead', published: true, shelved: false },
+    });
+  });
+
+  it('refuses a project deleted in another tab instead of throwing', async () => {
+    db.project.findUnique.mockResolvedValue(null);
+
+    const result = await setProjectShelved('gone', true);
+
+    expect(result.ok).toBe(false);
+    expect(db.project.update).not.toHaveBeenCalled();
   });
 });
 

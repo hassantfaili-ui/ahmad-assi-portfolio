@@ -10,6 +10,7 @@ import { pictureKey } from '@/lib/translate';
 import { forgetTranslations, saveTranslations } from '@/lib/translations';
 import { resolveCover } from '@/lib/cover-image';
 import { db } from '@/lib/db';
+import { ON_THE_SITE } from '@/lib/on-the-site';
 import { toSlug, uniqueSlug } from '@/lib/slug';
 import {
   hasErrors,
@@ -163,6 +164,30 @@ export async function setProjectPublished(id: string, published: boolean): Promi
 }
 
 /**
+ * Put a project away in the admin Archives folder, or bring it back.
+ *
+ * Shelving hides the project from every page of the site but keeps it whole:
+ * its pictures, drawings, film, tier, place in the running order and published
+ * setting are all left exactly as they were, so restoring puts it back on the
+ * site (if it was published) in the spot it came from.
+ *
+ * This is not the website's Archive list. That is the `index` tier, and its
+ * projects stay on the site. Nothing here reads or writes `tier`.
+ */
+export async function setProjectShelved(id: string, shelved: boolean): Promise<SaveResult> {
+  if (!(await authorised())) return DENIED;
+
+  const existing = await db.project.findUnique({ where: { id }, select: { slug: true } });
+  if (!existing) return { ok: false, message: 'That project no longer exists. Reload the page.' };
+
+  await db.project.update({ where: { id }, data: { shelved } });
+  const leadCount = await db.project.count({ where: { tier: 'lead', ...ON_THE_SITE } });
+
+  revalidateProject(existing.slug);
+  return { ok: true, warning: leadOverflowWarning(leadCount) ?? undefined };
+}
+
+/**
  * Write a whole new running order in one transaction.
  *
  * All of them, not just the pair that swapped. Writing only the moved rows
@@ -218,7 +243,7 @@ export async function setProjectTier(
   if (!existing) return { ok: false, message: 'That project no longer exists. Reload the page.' };
 
   await db.project.update({ where: { id }, data: { tier } });
-  const leadCount = await db.project.count({ where: { tier: 'lead', published: true } });
+  const leadCount = await db.project.count({ where: { tier: 'lead', ...ON_THE_SITE } });
 
   revalidateProject(existing.slug);
 
@@ -596,7 +621,7 @@ export async function saveWholeProject(
   revalidateProject(existing.slug);
   if (slug !== existing.slug) for (const path of inBothLanguages(PATHS.project(slug))) revalidatePath(path);
 
-  const leadCount = await db.project.count({ where: { tier: 'lead', published: true } });
+  const leadCount = await db.project.count({ where: { tier: 'lead', ...ON_THE_SITE } });
 
   /* The French, written after the English rather than inside the transaction.
      It lives in its own table and a failure here must not roll back a save that
